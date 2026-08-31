@@ -1,0 +1,19 @@
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+ appId: 'com.regenapp.mobile',
+ appName: 'REGEN',
+ webDir: 'dist',
+ plugins: {
+   SplashScreen: {
+     launchShowDuration: 2000,
+     backgroundColor: "#070E0D",
+     showSpinner: false,
+     androidSplashResourceName: "splash",
+     splashFullScreen: true,
+     splashImmersive: true,
+   }
+ }
+};
+
+export default config;
