@@ -1611,7 +1611,7 @@ function Onboarding({ onComplete }) {
     planQuestion: tr(lang, { fr: "Comment veux-tu commencer ?", en: "How do you want to start?", es: "¿Cómo quieres empezar?", pt: "Como você quer começar?" }),
     freeTitle: tr(lang, { fr: "Gratuit", en: "Free", es: "Gratis", pt: "Grátis" }),
     freeF1: tr(lang, { fr: "1 sport, 1 séance par jour", en: "1 sport, 1 session per day", es: "1 deporte, 1 sesión al día", pt: "1 esporte, 1 sessão por dia" }),
-    freeF2: tr(lang, { fr: "Récup ponctuelle & conseils blessures", en: "One-off recovery & injury guidance", es: "Recuperación puntual y orientación de lesiones", pt: "Recuperação pontual e orientação de lesões" }),
+    freeF2: tr(lang, { fr: "Récup après séance & conseils blessures", en: "Post-session recovery & injury guidance", es: "Recuperación tras la sesión y orientación de lesiones", pt: "Recuperação após a sessão e orientação de lesões" }),
     freeF3: tr(lang, { fr: `${FREE_EXCEPTIONS_PER_MONTH} RDV/exceptions par mois`, en: `${FREE_EXCEPTIONS_PER_MONTH} appointments/exceptions per month`, es: `${FREE_EXCEPTIONS_PER_MONTH} citas/excepciones al mes`, pt: `${FREE_EXCEPTIONS_PER_MONTH} consultas/exceções por mês` }),
     proTitle: tr(lang, { fr: "Pro — 7 jours gratuits", en: "Pro — 7 days free", es: "Pro — 7 días gratis", pt: "Pro — 7 dias grátis" }),
     proF1: tr(lang, { fr: "Sports & séances illimités", en: "Unlimited sports & sessions", es: "Deportes y sesiones ilimitados", pt: "Esportes e sessões ilimitados" }),
@@ -1775,9 +1775,9 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
 }
 
 /* ============================================================
-   RECUP PONCTUELLE
+   RÉCUP APRÈS SÉANCE (séance imprévue déjà faite)
    ============================================================ */
-function RecupTab({ profile, onGenerate, result, setResult }) {
+function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
   const { lang } = useLang();
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
@@ -1797,10 +1797,11 @@ function RecupTab({ profile, onGenerate, result, setResult }) {
   const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones }, lang); setResult(plan); onGenerate(plan); };
 
   const T = {
-    title: tr(lang, { fr: "Récup ponctuelle", en: "One-off recovery", es: "Recuperación puntual", pt: "Recuperação pontual" }),
-    subtitle: tr(lang, { fr: "Pour une séance précise, hors planning", en: "For a specific session, outside your plan", es: "Para una sesión concreta, fuera del plan", pt: "Para uma sessão específica, fora do planejamento" }),
+    title: tr(lang, { fr: "Récup après séance", en: "Post-session recovery", es: "Recuperación tras la sesión", pt: "Recuperação após a sessão" }),
+    subtitle: tr(lang, { fr: "Pour une séance imprévue que tu viens de faire", en: "For an unplanned session you just did", es: "Para una sesión imprevista que acabas de hacer", pt: "Para uma sessão imprevista que você acabou de fazer" }),
     how: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
-    howText: tr(lang, { fr: "Génère une récup pour une séance précise — un de tes sports déclarés ou une activité faite juste pour le plaisir. Ce plan n'est pas ajouté à ton planning, il reste ici pour consultation.", en: "Generate recovery guidance for a specific session — one of your declared sports, or something done just for fun. This plan isn't added to your schedule, it stays here for reference.", es: "Genera una recuperación para una sesión concreta — uno de tus deportes declarados o una actividad hecha por diversión. Este plan no se añade a tu planificación, queda aquí para consultarlo.", pt: "Gere uma recuperação para uma sessão específica — um dos seus esportes declarados ou uma atividade feita por diversão. Este plano não é adicionado ao seu planejamento, fica aqui para consulta." }),
+    howText: tr(lang, { fr: "Tu viens de faire une séance qui n'était pas prévue (un sport déclaré ou une activité pour le plaisir) ? Génère ton plan de récup juste après. Il est conservé : tu le retrouves dans l'historique de l'accueil, et la séance est ajoutée à ton planning pour aujourd'hui.", en: "Just did a session that wasn't planned (one of your sports or something for fun)? Generate your recovery plan right after. It's kept: you'll find it in the history on the home screen, and the session is added to your schedule for today.", es: "¿Acabas de hacer una sesión que no estaba prevista (uno de tus deportes o algo por diversión)? Genera tu plan de recuperación justo después. Se conserva: lo encuentras en el historial de inicio y la sesión se añade a tu planificación de hoy.", pt: "Acabou de fazer uma sessão que não estava prevista (um dos seus esportes ou algo por diversão)? Gere seu plano de recuperação logo depois. Ele fica guardado: você o encontra no histórico do início e a sessão é adicionada ao planejamento de hoje." }),
+    futureLink: tr(lang, { fr: "Une séance que tu connais à l'avance ? Ajoute-la au planning →", en: "A session you know about in advance? Add it to your schedule →", es: "¿Una sesión que conoces de antemano? Añádela a la planificación →", pt: "Uma sessão que você já conhece? Adicione-a ao planejamento →" }),
     step1: tr(lang, { fr: "1 · La séance", en: "1 · The session", es: "1 · La sesión", pt: "1 · A sessão" }),
     step2: tr(lang, { fr: "2 · Ton état", en: "2 · How you feel", es: "2 · Tu estado", pt: "2 · Seu estado" }),
     sportLabel: tr(lang, { fr: "Sport de la séance", en: "Session sport", es: "Deporte de la sesión", pt: "Esporte da sessão" }),
@@ -1863,6 +1864,7 @@ function RecupTab({ profile, onGenerate, result, setResult }) {
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
       </Card>
       <Btn full onClick={submit} icon={Sparkles}>{T.generate}</Btn>
+      {onPlanFuture && <button type="button" onClick={onPlanFuture} className="w-full text-center mt-5 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.futureLink}</button>}
     </div>
   );
 }
@@ -1875,7 +1877,7 @@ function NutritionTab({ lastPlan }) {
   const { isPro } = usePro();
   const T = {
     title: tr(lang, { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" }),
-    empty: tr(lang, { fr: "Génère d'abord une récup ponctuelle pour obtenir des conseils repas et hydratation.", en: "Generate a one-off recovery first to get meal and hydration advice.", es: "Genera primero una recuperación puntual para obtener consejos de comida e hidratación.", pt: "Gere primeiro uma recuperação pontual para obter dicas de refeição e hidratação." }),
+    empty: tr(lang, { fr: "Génère d'abord une récup après séance pour obtenir des conseils repas et hydratation.", en: "Generate a post-session recovery first to get meal and hydration advice.", es: "Genera primero una recuperación tras la sesión para obtener consejos de comida e hidratación.", pt: "Gere primeiro uma recuperação após a sessão para obter dicas de refeição e hidratação." }),
     lastSession: tr(lang, { fr: "dernière séance", en: "last session", es: "última sesión", pt: "última sessão" }),
     needs: tr(lang, { fr: "Besoins estimés", en: "Estimated needs", es: "Necesidades estimadas", pt: "Necessidades estimadas" }),
     kcal: "kcal", protein: tr(lang, { fr: "Protéines", en: "Protein", es: "Proteínas", pt: "Proteínas" }), carbs: tr(lang, { fr: "Glucides", en: "Carbs", es: "Carbohidratos", pt: "Carboidratos" }), fat: tr(lang, { fr: "Lipides", en: "Fat", es: "Grasas", pt: "Gorduras" }),
@@ -2257,13 +2259,13 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 /* ============================================================
    PLANNING TAB
    ============================================================ */
-function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById }) {
+function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
   const monthlyUsed = useMemo(() => countMonthlyExtras(exceptions), [exceptions]);
-  const [view, setView] = useState("calendrier");
+  const [view, setView] = useState(initialView || "calendrier");
   const [expandedDow, setExpandedDow] = useState(null);
   const [monthIdx, setMonthIdx] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -2302,8 +2304,9 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     intro: tr(lang, { fr: "L'app choisit elle-même quand insérer de la récup active ou du repos complet, en plus de la récup, la nutrition et les rappels générés pour toute l'année.", en: "The app decides on its own when to insert active recovery or full rest, on top of the recovery, nutrition and reminders generated for the whole year.", es: "La app decide por sí sola cuándo insertar recuperación activa o descanso completo, además de la recuperación, la nutrición y los avisos generados para todo el año.", pt: "O app decide sozinho quando inserir recuperação ativa ou descanso completo, além da recuperação, nutrição e lembretes gerados para o ano inteiro." }),
     fixedDays: tr(lang, { fr: "Jours fixes de la semaine", en: "Fixed weekly days", es: "Días fijos de la semana", pt: "Dias fixos da semana" }),
     off: tr(lang, { fr: "Off", en: "Off", es: "Libre", pt: "Livre" }),
-    addSession: tr(lang, { fr: "Ajouter une séance sportive ponctuelle", en: "Add a one-off sports session", es: "Añadir una sesión deportiva puntual", pt: "Adicionar uma sessão esportiva pontual" }),
-    addSessionHint: tr(lang, { fr: "Match imprévu, entraînement en plus, session loisir ou jour off exceptionnel — sur n'importe quelle date.", en: "Unplanned match, extra training, casual session or exceptional day off — on any date.", es: "Partido imprevisto, entrenamiento extra, sesión libre o día libre excepcional — en cualquier fecha.", pt: "Jogo imprevisto, treino extra, sessão livre ou folga excepcional — em qualquer data." }),
+    addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
+    addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, session loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a moved training, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
+    alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
     date: tr(lang, { fr: "Date", en: "Date", es: "Fecha", pt: "Data" }),
     saveDate: tr(lang, { fr: "Enregistrer pour cette date", en: "Save for this date", es: "Guardar para esta fecha", pt: "Salvar para esta data" }),
     offException: tr(lang, { fr: "Off exceptionnel", en: "Exceptional day off", es: "Libre excepcional", pt: "Folga excepcional" }),
@@ -2368,6 +2371,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         <Field label={T.date}><TextInput type="date" value={excDate} onChange={(e) => setExcDate(e.target.value)} /></Field>
         {excDate && <EntryListEditor entries={excEntries} defaultSport={profile.sports?.[0] || "autre"} onChange={setExcEntries} />}
         <div className="mt-2"><Btn onClick={saveExcForm} full disabled={!excDate} icon={Check}>{T.saveDate}</Btn></div>
+        {onNewRecup && <button type="button" onClick={onNewRecup} className="w-full text-center mt-4 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.alreadyDone}</button>}
         {Object.keys(exceptions).length > 0 && (
           <div className="flex flex-col gap-2 mt-4">
             {Object.entries(exceptions).sort(([a], [b]) => a.localeCompare(b)).map(([date, ents]) => (
@@ -2511,7 +2515,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
     tapDay: tr(lang, { fr: "Touche un jour pour voir le détail complet.", en: "Tap a day to see the full detail.", es: "Toca un día para ver el detalle completo.", pt: "Toque em um dia para ver o detalhe completo." }),
-    quickRecup: tr(lang, { fr: "Récup ponctuelle", en: "One-off recovery", es: "Recuperación puntual", pt: "Recuperação pontual" }),
+    quickRecup: tr(lang, { fr: "Après séance", en: "Post-session", es: "Tras sesión", pt: "Após sessão" }),
     nutrition: tr(lang, { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" }),
     injuries: tr(lang, { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" }),
     planning: tr(lang, { fr: "Planning", en: "Schedule", es: "Planificación", pt: "Planejamento" }),
@@ -2667,7 +2671,7 @@ function ProTab() {
     f6t: tr(lang, { fr: "Synchronisation multi-appareils", en: "Multi-device sync", es: "Sincronización multidispositivo", pt: "Sincronização multi-dispositivo" }),
     f6d: tr(lang, { fr: "Retrouve tes données sur tous tes appareils via ton compte cloud. Arrive avec la prochaine mise à jour.", en: "Access your data on all your devices via your cloud account. Coming in a future update.", es: "Accede a tus datos en todos tus dispositivos con tu cuenta en la nube. Llega en una próxima actualización.", pt: "Acesse seus dados em todos os dispositivos com sua conta na nuvem. Chega em uma próxima atualização." }),
     soon: tr(lang, { fr: "Bientôt", en: "Coming soon", es: "Próximamente", pt: "Em breve" }),
-    freeStaysFree: tr(lang, { fr: "Le reste de l'app (récup ponctuelle, conseils blessures, planning de base) reste gratuit, sans limite de temps.", en: "The rest of the app (one-off recovery, injury guidance, base scheduling) stays free, with no time limit.", es: "El resto de la app (recuperación puntual, orientación de lesiones, planificación básica) sigue siendo gratis, sin límite de tiempo.", pt: "O resto do app (recuperação pontual, orientação de lesões, planejamento básico) continua grátis, sem limite de tempo." }),
+    freeStaysFree: tr(lang, { fr: "Le reste de l'app (récup après séance, conseils blessures, planning de base) reste gratuit, sans limite de temps.", en: "The rest of the app (post-session recovery, injury guidance, base scheduling) stays free, with no time limit.", es: "El resto de la app (recuperación tras la sesión, orientación de lesiones, planificación básica) sigue siendo gratis, sin límite de tiempo.", pt: "O resto do app (recuperação após a sessão, orientação de lesões, planejamento básico) continua grátis, sem limite de tempo." }),
     history: tr(lang, { fr: "Historique des paiements", en: "Payment history", es: "Historial de pagos", pt: "Histórico de pagamentos" }),
     noHistory: tr(lang, { fr: "Aucun paiement pour l'instant.", en: "No payments yet.", es: "Sin pagos por el momento.", pt: "Nenhum pagamento por enquanto." }),
     demoBadge: tr(lang, { fr: "démo", en: "demo", es: "demo", pt: "demo" }),
@@ -3005,6 +3009,7 @@ export default function App() {
   const [screen, setScreen] = useState("auth");
   const [tab, setTab] = useState("home");
   const [recupResult, setRecupResult] = useState(null);
+  const [planningView, setPlanningView] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lang, setLangState] = useState("fr");
   const [recoveryToken, setRecoveryToken] = useState(null);
@@ -3094,7 +3099,7 @@ export default function App() {
   const handleGeneratePlan = async (plan) => {
     const row = await sbInsert("sessions_log", { user_id: authUser.id, data: plan }, accessToken);
     const saved = row ? { ...plan, id: row.id } : plan;
-    // La récup ponctuelle est aussi ajoutée au planning, pour CE jour seulement
+    // La récup après séance est aussi ajoutée au planning, pour CE jour seulement
     // (sauf si la même séance y figure déjà). N'est pas bloquée par les limites gratuites.
     const dateIso = isoLocal();
     const cfg = ensurePlanner();
@@ -3102,7 +3107,7 @@ export default function App() {
     const already = entries.some((e) => SPORT_TYPES.includes(e.type) && e.sport === plan.sport && e.type === plan.eventType);
     let newCfg = null;
     if (!already) {
-      const entry = { id: Date.now() + Math.random(), type: plan.eventType, sport: plan.sport, intensity: plan.intensity, label: tr(lang, { fr: "Récup ponctuelle", en: "One-off recovery", es: "Recuperación puntual", pt: "Recuperação pontual" }), heure: plan.heure || "", notify: false, notifyTime: "20:00", muscuZones: plan.muscuZones || [], sessionId: saved.id };
+      const entry = { id: Date.now() + Math.random(), type: plan.eventType, sport: plan.sport, intensity: plan.intensity, label: tr(lang, { fr: "Récup après séance", en: "Post-session recovery", es: "Recuperación tras la sesión", pt: "Recuperação após a sessão" }), heure: plan.heure || "", notify: false, notifyTime: "20:00", muscuZones: plan.muscuZones || [], sessionId: saved.id };
       newCfg = { ...cfg, exceptions: { ...cfg.exceptions, [dateIso]: [...entries, entry] } };
     }
     setUserData((prev) => ({ ...prev, sessionsLog: [...(prev.sessionsLog || []), saved], ...(newCfg ? { plannerConfig: newCfg } : {}) }));
@@ -3123,6 +3128,9 @@ export default function App() {
     setRecupResult((cur) => (cur && cur.id === session.id ? null : cur));
     if (changed) await savePlanner(newCfg);
   };
+  const goToTab = (k) => { setPlanningView(null); setTab(k); };
+  const openPlanningAdd = () => { setPlanningView("ajouts"); setTab("planning"); };
+  const openNewRecup = () => { setRecupResult(null); setTab("recup"); };
   const openPlan = (session) => { setRecupResult(session); setTab("recup"); };
   const openPlanById = (id) => { const sess = (userData?.sessionsLog || []).find((x) => x.id === id); if (sess) openPlan(sess); };
   const handleSaveProfile = async (p) => {
@@ -3238,7 +3246,7 @@ export default function App() {
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
-    recup: { fr: "Récup ponct.", en: "Recovery", es: "Recup.", pt: "Recup." },
+    recup: { fr: "Après séance", en: "Post-session", es: "Tras sesión", pt: "Após sessão" },
     nutrition: { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" },
     blessures: { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" },
     planning: { fr: "Planning", en: "Schedule", es: "Plan", pt: "Plano" },
@@ -3263,17 +3271,17 @@ export default function App() {
                   <button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={setTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
-                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} />}
+                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
+                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={setTab} onOpenPlanById={openPlanById} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} />}
                   {tab === "pro" && <ProTab />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
                   <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
                   <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,20,18,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
-                    {NAV.map(([key, Icon]) => (<button key={key} onClick={() => setTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: tab === key ? C.primary : C.textFaint }} /><span className="text-[9px] font-semibold text-center" style={{ color: tab === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
+                    {NAV.map(([key, Icon]) => (<button key={key} onClick={() => goToTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: tab === key ? C.primary : C.textFaint }} /><span className="text-[9px] font-semibold text-center" style={{ color: tab === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
                   </div>
                 </div>
                 {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} />}
