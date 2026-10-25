@@ -1209,7 +1209,7 @@ function PlanTabs({ plan }) {
       {tab === "avant" && !plan.restDay && (
         <div className="flex flex-col gap-3">
           <p className="text-[11px] px-1 -mt-1 mb-1" style={{ color: C.textFaint, ...fontBody }}>{T.warmupIntro}</p>
-          {plan.warmup.map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}
+          {(plan.warmup || []).map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}
         </div>
       )}
       {tab === "etirements" && <div className="flex flex-col gap-3">{plan.stretches.map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}</div>}
@@ -1774,7 +1774,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
 /* ============================================================
    RECUP PONCTUELLE
    ============================================================ */
-function RecupTab({ profile, onGenerate }) {
+function RecupTab({ profile, onGenerate, result, setResult }) {
   const { lang } = useLang();
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
@@ -1783,7 +1783,6 @@ function RecupTab({ profile, onGenerate }) {
   const [hoursToNext, setHoursToNext] = useState(48);
   const [heure, setHeure] = useState("");
   const [muscuZones, setMuscuZones] = useState([]);
-  const [result, setResult] = useState(null);
 
   const sportOptions = useMemo(() => {
     const declared = (profile.sports || []).map((k) => ({ value: k, label: `${sportIcon(k)} ${sportLabel(k, lang)}` }));
@@ -1831,7 +1830,7 @@ function RecupTab({ profile, onGenerate }) {
       <div className="px-5 pb-24 pt-4">
         <button onClick={() => setResult(null)} className="text-xs mb-5 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
         <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-6" style={{ paddingTop: 24, paddingBottom: 20 }}>
-          <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
+          <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{fmtDate(result.date, lang)}</Badge><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
           <RecoveryDial score={result.score} label={T.recoveryNeed} sub={result.duree} size={190} />
           <div className="flex gap-4 mt-4 text-center">
             <div><Moon size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.sommeil}h</p><p className="text-[10px]" style={{ color: C.textMuted }}>{T.sleep}</p></div>
@@ -2075,7 +2074,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
 /* ============================================================
    DAY DETAIL SHEET
    ============================================================ */
-function DayDetailSheet({ date, entries, isException, auto, profile, onClose, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo }) {
+function DayDetailSheet({ date, entries, isException, auto, profile, onClose, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlan }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const effectiveAuto = isPro ? auto : null;
@@ -2116,6 +2115,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
     sessionsOfDay: tr(lang, { fr: "Séances du jour — touche pour voir le détail", en: "Today's sessions — tap to see details", es: "Sesiones del día — toca para ver el detalle", pt: "Sessões do dia — toque para ver o detalhe" }),
     recupProgram: tr(lang, { fr: "Programme de récup", en: "Recovery program", es: "Programa de recuperación", pt: "Programa de recuperação" }),
     combinedNote: (n) => tr(lang, { fr: `Étirements et conseils réunis pour tes ${n} séances du jour.`, en: `Stretches and advice combined for your ${n} sessions today.`, es: `Estiramientos y consejos combinados para tus ${n} sesiones de hoy.`, pt: `Alongamentos e dicas reunidos para as suas ${n} sessões de hoje.` }),
+    openPlan: tr(lang, { fr: "Voir le plan de récup complet", en: "View full recovery plan", es: "Ver el plan de recuperación completo", pt: "Ver o plano de recuperação completo" }),
     thisSessionStretches: tr(lang, { fr: "Étirements spécifiques à cette séance", en: "Stretches specific to this session", es: "Estiramientos específicos de esta sesión", pt: "Alongamentos específicos desta sessão" }),
   };
 
@@ -2209,6 +2209,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
                             <span>{s.label}</span><span style={{ ...fontMono, color: C.primary, fontSize: 10 }}>{s.duree}</span>
                           </div>
                         ))}
+                        {e.sessionId && onOpenPlan && <button onClick={() => onOpenPlan(e.sessionId)} className="flex items-center gap-1.5 text-xs font-semibold mt-2" style={{ color: C.primary, ...fontBody }}><Sparkles size={13} /> {T.openPlan}</button>}
                       </div>
                     )}
                   </div>
@@ -2253,7 +2254,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 /* ============================================================
    PLANNING TAB
    ============================================================ */
-function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo }) {
+function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
@@ -2437,7 +2438,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
       </Card>
       </>)}
 
-      {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} />}
+      {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} onOpenPlan={onOpenPlanById} />}
     </div>
   );
 }
@@ -2445,7 +2446,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
 /* ============================================================
    HOME TAB
    ============================================================ */
-function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
+function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo, onOpenPlan, onOpenPlanById, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
   const { lang } = useLang();
   const today = new Date(); const todayIso = today.toISOString().slice(0, 10);
   const year = today.getFullYear();
@@ -2515,6 +2516,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     recoveryNeed: tr(lang, { fr: "Besoin de récupération", en: "Recovery need", es: "Necesidad de recuperación", pt: "Necessidade de recuperação" }),
     noSessionYet: tr(lang, { fr: "Aucune séance enregistrée. Génère ton premier plan de récup.", en: "No session logged yet. Generate your first recovery plan.", es: "Aún no hay sesiones registradas. Genera tu primer plan de recuperación.", pt: "Nenhuma sessão registrada ainda. Gere seu primeiro plano de recuperação." }),
     start: tr(lang, { fr: "Commencer", en: "Get started", es: "Empezar", pt: "Começar" }),
+    viewPlan: tr(lang, { fr: "Voir le plan de récup", en: "View recovery plan", es: "Ver el plan de recuperación", pt: "Ver o plano de recuperação" }),
     seeMore: tr(lang, { fr: "Voir plus", en: "See more", es: "Ver más", pt: "Ver mais" }),
     seeLess: tr(lang, { fr: "Réduire", en: "Show less", es: "Reducir", pt: "Reduzir" }),
     history: tr(lang, { fr: "Historique", en: "History", es: "Historial", pt: "Histórico" }),
@@ -2544,7 +2546,9 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
       )}
 
       {lastPlan ? (
-        <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center mb-5" style={{ paddingTop: 20 }}><p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /></HeroCard>
+        <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="block w-full text-left mb-5">
+          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
+        </button>
       ) : (
         <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
       )}
@@ -2588,8 +2592,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
       <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
       {sessionsLog.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.nothingYet}</p></Card> : (
         <GroupedList>
-          {[...sessionsLog].reverse().slice(0, showAllHistory ? 8 : 3).map((s, i, arr) => (
-            <ListRow key={s.id} last={i === arr.length - 1}
+          {[...sessionsLog].reverse().slice(0, showAllHistory ? 30 : 3).map((s, i, arr) => (
+            <ListRow key={s.id} last={i === arr.length - 1} onClick={() => onOpenPlan && onOpenPlan(s)} chevron
               left={<span className="text-lg shrink-0">{sportIcon(s.sport)}</span>}
               title={s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}
               subtitle={fmtDate(s.date, lang)}
@@ -2598,7 +2602,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
         </GroupedList>
       )}
 
-      {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} />}
+      {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} onOpenPlan={onOpenPlanById} />}
     </div>
   );
 }
@@ -2988,6 +2992,7 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [screen, setScreen] = useState("auth");
   const [tab, setTab] = useState("home");
+  const [recupResult, setRecupResult] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [lang, setLangState] = useState("fr");
   const [recoveryToken, setRecoveryToken] = useState(null);
@@ -3077,8 +3082,22 @@ export default function App() {
   const handleGeneratePlan = async (plan) => {
     const row = await sbInsert("sessions_log", { user_id: authUser.id, data: plan }, accessToken);
     const saved = row ? { ...plan, id: row.id } : plan;
-    setUserData((prev) => ({ ...prev, sessionsLog: [...(prev.sessionsLog || []), saved] }));
+    // La récup ponctuelle est aussi ajoutée au planning, pour CE jour seulement
+    // (sauf si la même séance y figure déjà). N'est pas bloquée par les limites gratuites.
+    const dateIso = new Date().toISOString().slice(0, 10);
+    const cfg = ensurePlanner();
+    const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions, dateIso);
+    const already = entries.some((e) => SPORT_TYPES.includes(e.type) && e.sport === plan.sport && e.type === plan.eventType);
+    let newCfg = null;
+    if (!already) {
+      const entry = { id: Date.now() + Math.random(), type: plan.eventType, sport: plan.sport, intensity: plan.intensity, label: tr(lang, { fr: "Récup ponctuelle", en: "One-off recovery", es: "Recuperación puntual", pt: "Recuperação pontual" }), heure: plan.heure || "", notify: false, notifyTime: "20:00", muscuZones: plan.muscuZones || [], sessionId: saved.id };
+      newCfg = { ...cfg, exceptions: { ...cfg.exceptions, [dateIso]: [...entries, entry] } };
+    }
+    setUserData((prev) => ({ ...prev, sessionsLog: [...(prev.sessionsLog || []), saved], ...(newCfg ? { plannerConfig: newCfg } : {}) }));
+    if (newCfg) await savePlanner(newCfg);
   };
+  const openPlan = (session) => { setRecupResult(session); setTab("recup"); };
+  const openPlanById = (id) => { const sess = (userData?.sessionsLog || []).find((x) => x.id === id); if (sess) openPlan(sess); };
   const handleSaveProfile = async (p) => {
     const sports = proStatus.isPro ? p.sports : p.sports.slice(0, FREE_SPORTS_MAX);
     const profile = { ...p, sports };
@@ -3168,7 +3187,7 @@ export default function App() {
   const handleLogout = async () => {
     await sbSignOut(accessToken);
     await storageDelete("auth:session");
-    setAuthUser(null); setAccessToken(null); setUserData(null); setScreen("auth"); setTab("home"); setShowProfile(false);
+    setAuthUser(null); setAccessToken(null); setUserData(null); setScreen("auth"); setTab("home"); setShowProfile(false); setRecupResult(null);
   };
 
   // Suppression complète et réelle du compte — appelle une fonction serveur
@@ -3185,7 +3204,7 @@ export default function App() {
     }
     await sbSignOut(accessToken);
     await storageDelete("auth:session");
-    setAuthUser(null); setAccessToken(null); setUserData(null); setScreen("auth"); setTab("home"); setShowProfile(false);
+    setAuthUser(null); setAccessToken(null); setUserData(null); setScreen("auth"); setTab("home"); setShowProfile(false); setRecupResult(null);
     return { ok: true };
   };
 
@@ -3217,11 +3236,11 @@ export default function App() {
                   <button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={setTab} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
-                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} />}
+                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={setTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
+                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={setTab} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={setTab} onOpenPlanById={openPlanById} />}
                   {tab === "pro" && <ProTab />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
