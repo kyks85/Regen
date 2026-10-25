@@ -984,7 +984,7 @@ function Btn({ children, onClick, variant = "primary", full, disabled, type = "b
     </button>
   );
 }
-function Field({ label, children }) { return <div className="mb-4"><label className="block text-[11px] font-semibold mb-1.5 tracking-wide uppercase" style={{ color: C.textMuted, ...fontBody }}>{label}</label>{children}</div>; }
+function Field({ label, children }) { return <div className="mb-5"><label className="block text-[11px] font-semibold mb-1.5 tracking-wide uppercase" style={{ color: C.textMuted, ...fontBody }}>{label}</label>{children}</div>; }
 const inputStyle = { background: C.glassSoft, border: `1px solid ${C.glassBorder}`, color: C.text, backdropFilter: "blur(10px)", ...fontBody };
 function TextInput(props) { return <input {...props} className="w-full rounded-xl px-3 py-2.5 outline-none" style={{ ...inputStyle, fontSize: 16, ...props.style }} />; }
 function Select({ value, onChange, options, placeholder }) {
@@ -999,7 +999,7 @@ function Select({ value, onChange, options, placeholder }) {
   );
 }
 function Card({ children, style, className = "" }) {
-  return <div className={`rounded-[22px] p-4 ${className}`} style={{ background: C.glass, backdropFilter: "blur(22px)", WebkitBackdropFilter: "blur(22px)", border: `1px solid ${C.glassBorder}`, boxShadow: `inset 0 1px 0 ${C.glassHighlight}, 0 20px 36px -22px rgba(0,0,0,0.65)`, ...style }}>{children}</div>;
+  return <div className={`rounded-[22px] p-5 ${className}`} style={{ background: C.glass, backdropFilter: "blur(22px)", WebkitBackdropFilter: "blur(22px)", border: `1px solid ${C.glassBorder}`, boxShadow: `inset 0 1px 0 ${C.glassHighlight}, 0 20px 36px -22px rgba(0,0,0,0.65)`, ...style }}>{children}</div>;
 }
 function HeroCard({ children, accent, style, className = "" }) {
   const a = accent || C.primary;
@@ -1020,16 +1020,46 @@ function SegmentedControl({ options, value, onChange, small, colorMap }) {
     </div>
   );
 }
-function SectionTitle({ icon: Icon, children, action }) { return <div className="flex items-center justify-between mb-3"><div className="flex items-center gap-2">{Icon && <Icon size={16} style={{ color: C.primary }} />}<h3 className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{children}</h3></div>{action}</div>; }
+function SectionTitle({ icon: Icon, children, action }) { return <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2">{Icon && <Icon size={16} style={{ color: C.primary }} />}<h3 className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{children}</h3></div>{action}</div>; }
 function Badge({ children, color }) { return <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: color + "22", color, backdropFilter: "blur(6px)", ...fontBody }}>{children}</span>; }
 function LargeHeader({ title, subtitle, right }) {
   return (
-    <div className="flex items-end justify-between mb-6 mt-1">
+    <div className="flex items-end justify-between mb-7 mt-2">
       <div>
         {subtitle && <p className="text-[13px] mb-0.5" style={{ color: C.textMuted, ...fontBody }}>{subtitle}</p>}
         <h1 className="text-[30px] font-extrabold tracking-tight leading-none" style={{ color: C.text, ...fontDisplay }}>{title}</h1>
       </div>
       {right}
+    </div>
+  );
+}
+/* Section repliable : garde tout le contenu mais le range proprement */
+function Accordion({ icon: Icon, title, hint, defaultOpen, color, children, className = "mb-4" }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const c = color || C.primary;
+  return (
+    <div className={`rounded-[22px] overflow-hidden ${className}`} style={{ background: C.glass, backdropFilter: "blur(22px)", WebkitBackdropFilter: "blur(22px)", border: `1px solid ${C.glassBorder}`, boxShadow: `inset 0 1px 0 ${C.glassHighlight}, 0 20px 36px -22px rgba(0,0,0,0.65)` }}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-5 py-4 text-left">
+        {Icon && <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: c + "22" }}><Icon size={16} style={{ color: c }} /></div>}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{title}</p>
+          {hint && <p className="text-[11px] mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{hint}</p>}
+        </div>
+        <ChevronDown size={16} style={{ color: C.textMuted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+      {open && <div className="px-5 pb-5 pt-1">{children}</div>}
+    </div>
+  );
+}
+/* Petit texte d'aide discret, replié par défaut */
+function InfoToggle({ label, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mb-6">
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>
+        <Sparkles size={12} /> {label} <ChevronDown size={12} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+      </button>
+      {open && <p className="text-[11px] leading-relaxed mt-2" style={{ color: C.textMuted, ...fontBody }}>{children}</p>}
     </div>
   );
 }
@@ -1149,13 +1179,13 @@ function PlanTabs({ plan }) {
   const programPlan = isPro ? plan : { ...plan, heure: null };
   return (
     <div>
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
         {tabs.map(([k, label, Icon]) => (
           <button key={k} onClick={() => setTab(k)} className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold" style={{ background: tab === k ? C.primary : C.surface, color: tab === k ? "#052821" : C.textMuted, border: `1px solid ${tab === k ? C.primary : C.borderSoft}66` }}><Icon size={13} /> {label}</button>
         ))}
       </div>
       {tab === "programme" && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           {buildProgram(programPlan, lang).map((s, i) => {
             const clickable = !!s.tab;
             const Comp = clickable ? "button" : "div";
@@ -1769,6 +1799,8 @@ function RecupTab({ profile, onGenerate }) {
     subtitle: tr(lang, { fr: "Pour une séance précise, hors planning", en: "For a specific session, outside your plan", es: "Para una sesión concreta, fuera del plan", pt: "Para uma sessão específica, fora do planejamento" }),
     how: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     howText: tr(lang, { fr: "Génère une récup pour une séance précise — un de tes sports déclarés ou une activité faite juste pour le plaisir. Ce plan n'est pas ajouté à ton planning, il reste ici pour consultation.", en: "Generate recovery guidance for a specific session — one of your declared sports, or something done just for fun. This plan isn't added to your schedule, it stays here for reference.", es: "Genera una recuperación para una sesión concreta — uno de tus deportes declarados o una actividad hecha por diversión. Este plan no se añade a tu planificación, queda aquí para consultarlo.", pt: "Gere uma recuperação para uma sessão específica — um dos seus esportes declarados ou uma atividade feita por diversão. Este plano não é adicionado ao seu planejamento, fica aqui para consulta." }),
+    step1: tr(lang, { fr: "1 · La séance", en: "1 · The session", es: "1 · La sesión", pt: "1 · A sessão" }),
+    step2: tr(lang, { fr: "2 · Ton état", en: "2 · How you feel", es: "2 · Tu estado", pt: "2 · Seu estado" }),
     sportLabel: tr(lang, { fr: "Sport de la séance", en: "Session sport", es: "Deporte de la sesión", pt: "Esporte da sessão" }),
     zonesLabel: tr(lang, { fr: "Zone(s) travaillée(s) — plusieurs choix possibles", en: "Muscle zone(s) — multiple choices possible", es: "Zona(s) trabajada(s) — varias opciones posibles", pt: "Zona(s) trabalhada(s) — múltiplas opções possíveis" }),
     typeLabel: tr(lang, { fr: "Type de séance", en: "Session type", es: "Tipo de sesión", pt: "Tipo de sessão" }),
@@ -1797,8 +1829,8 @@ function RecupTab({ profile, onGenerate }) {
   if (result) {
     return (
       <div className="px-5 pb-24 pt-4">
-        <button onClick={() => setResult(null)} className="text-xs mb-4 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
-        <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-4" style={{ paddingTop: 24, paddingBottom: 20 }}>
+        <button onClick={() => setResult(null)} className="text-xs mb-5 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
+        <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-6" style={{ paddingTop: 24, paddingBottom: 20 }}>
           <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
           <RecoveryDial score={result.score} label={T.recoveryNeed} sub={result.duree} size={190} />
           <div className="flex gap-4 mt-4 text-center">
@@ -1814,17 +1846,20 @@ function RecupTab({ profile, onGenerate }) {
   return (
     <div className="px-5 pb-24 pt-4">
       <LargeHeader title={T.title} subtitle={T.subtitle} />
-      <Card className="mb-5" style={{ background: C.primarySoft, border: `1px solid ${C.primary}33` }}>
-        <div className="flex items-center gap-2 mb-1"><Sparkles size={15} style={{ color: C.primary }} /><p className="font-bold text-sm tracking-tight" style={{ color: C.primary, ...fontDisplay }}>{T.how}</p></div>
-        <p className="text-[11px] leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.howText}</p>
+      <InfoToggle label={T.how}>{T.howText}</InfoToggle>
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step1}</p>
+      <Card className="mb-6">
+        <Field label={T.sportLabel}><Select value={sport} onChange={(e) => setSport(e.target.value)} options={sportOptions} /></Field>
+        {sport === "muscu" && <Field label={T.zonesLabel}><MuscuZonePicker selected={muscuZones} onToggle={toggleZone} /></Field>}
+        <Field label={T.typeLabel}><SegmentedControl options={[{ value: "entrainement", label: T.entrainementLabel }, { value: "match", label: T.matchLabel }, { value: "loisir", label: T.loisirLabel }]} value={eventType} onChange={setEventType} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></Field>
+        {eventType !== "match" && <Field label={T.intensityLabel}><SegmentedControl options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={intensity} onChange={setIntensity} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></Field>}
+        <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
       </Card>
-      <Field label={T.sportLabel}><Select value={sport} onChange={(e) => setSport(e.target.value)} options={sportOptions} /></Field>
-      {sport === "muscu" && <Field label={T.zonesLabel}><MuscuZonePicker selected={muscuZones} onToggle={toggleZone} /></Field>}
-      <Field label={T.typeLabel}><SegmentedControl options={[{ value: "entrainement", label: T.entrainementLabel }, { value: "match", label: T.matchLabel }, { value: "loisir", label: T.loisirLabel }]} value={eventType} onChange={setEventType} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></Field>
-      {eventType !== "match" && <Field label={T.intensityLabel}><SegmentedControl options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={intensity} onChange={setIntensity} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></Field>}
-      <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
-      <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
-      <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
+      <p className="text-[10px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
+      <Card className="mb-7">
+        <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
+        <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
+      </Card>
       <Btn full onClick={submit} icon={Sparkles}>{T.generate}</Btn>
     </div>
   );
@@ -1854,7 +1889,7 @@ function NutritionTab({ lastPlan }) {
     <div className="px-5 pt-4 pb-24">
       <LargeHeader title={T.title} subtitle={`${sportIcon(lastPlan.sport)} ${sportLabel(lastPlan.sport, lang)} · ${T.lastSession}`} />
       <ProLock active={!isPro}>
-        <Card className="mb-3">
+        <Card className="mb-4">
           <SectionTitle icon={Flame} action={<ProBadge />}>{T.needs}</SectionTitle>
           <div className="grid grid-cols-4 gap-2 text-center mb-1">
             <div><p style={{ ...fontMono, color: C.primary, fontSize: 18 }}>{lastPlan.nutrients.kcal}</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.kcal}</p></div>
@@ -1864,8 +1899,8 @@ function NutritionTab({ lastPlan }) {
           </div>
         </Card>
       </ProLock>
-      <Card className="mb-3"><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.pre}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).pre)}</p></Card>
-      <Card className="mb-3"><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.post}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).post)}</p></Card>
+      <Card className="mb-4"><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.pre}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).pre)}</p></Card>
+      <Card className="mb-4"><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.post}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).post)}</p></Card>
       <Card><SectionTitle icon={Droplet}>{T.hydration}</SectionTitle><div className="flex items-center gap-3 mb-2"><span style={{ ...fontMono, color: C.primary, fontSize: 28 }}>{lastPlan.hydratation}L</span><span className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.recommendedDay}</span></div></Card>
       <p className="text-[10px] mt-3 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.footer}</p>
     </div>
@@ -1877,14 +1912,15 @@ function NutritionTab({ lastPlan }) {
    ============================================================ */
 function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, onAddRdv }) {
   const { lang } = useLang();
+  const [view, setView] = useState("conseil");
   const [part, setPart] = useState(""); const [symptom, setSymptom] = useState(""); const [advice, setAdvice] = useState(null);
   const submitAdvice = () => { if (!part || !symptom) return; setAdvice(getInjuryAdvice(part, symptom, lang)); };
-  const saveConseil = () => { onAddInjury({ id: Date.now() + Math.random(), kind: "conseil", declaredDate: new Date().toISOString(), part, symptom, urgent: advice.urgent, specialistes: advice.specialistes, conseil: advice.conseil, arret: false, dateDebut: null, dateRetour: null }); setPart(""); setSymptom(""); setAdvice(null); };
+  const saveConseil = () => { onAddInjury({ id: Date.now() + Math.random(), kind: "conseil", declaredDate: new Date().toISOString(), part, symptom, urgent: advice.urgent, specialistes: advice.specialistes, conseil: advice.conseil, arret: false, dateDebut: null, dateRetour: null }); setPart(""); setSymptom(""); setAdvice(null); setView("historique"); };
 
   const [aPart, setAPart] = useState(""); const [aLabel, setALabel] = useState("");
   const [aDebut, setADebut] = useState(new Date().toISOString().slice(0, 10));
   const [aRetourConnu, setARetourConnu] = useState(false); const [aRetour, setARetour] = useState("");
-  const saveArret = () => { if (!aPart || !aLabel) return; onAddInjury({ id: Date.now() + Math.random(), kind: "arret", declaredDate: new Date().toISOString(), part: aPart, symptom: aLabel, urgent: false, specialistes: [], conseil: "", arret: true, dateDebut: aDebut, dateRetour: aRetourConnu ? aRetour : null }); setAPart(""); setALabel(""); setADebut(new Date().toISOString().slice(0, 10)); setARetourConnu(false); setARetour(""); };
+  const saveArret = () => { if (!aPart || !aLabel) return; onAddInjury({ id: Date.now() + Math.random(), kind: "arret", declaredDate: new Date().toISOString(), part: aPart, symptom: aLabel, urgent: false, specialistes: [], conseil: "", arret: true, dateDebut: aDebut, dateRetour: aRetourConnu ? aRetour : null }); setAPart(""); setALabel(""); setADebut(new Date().toISOString().slice(0, 10)); setARetourConnu(false); setARetour(""); setView("historique"); };
 
   const [editingReturn, setEditingReturn] = useState(null); const [editDate, setEditDate] = useState("");
   const saveReturnDate = (id) => { onUpdateInjury(id, { dateRetour: editDate || null }); setEditingReturn(null); setEditDate(""); };
@@ -1920,6 +1956,8 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
     laterHint: tr(lang, { fr: "Pas de souci, tu pourras la renseigner plus tard depuis l'historique ci-dessous.", en: "No worries, you can fill it in later from the history below.", es: "No pasa nada, podrás indicarla más tarde desde el historial de abajo.", pt: "Sem problema, você pode informar depois pelo histórico abaixo." }),
     declareStopBtn: tr(lang, { fr: "Déclarer l'arrêt", en: "Report time off", es: "Declarar la baja", pt: "Declarar o afastamento" }),
     history: tr(lang, { fr: "Historique", en: "History", es: "Historial", pt: "Histórico" }),
+    tabAdvice: tr(lang, { fr: "Conseil", en: "Advice", es: "Consejo", pt: "Conselho" }),
+    tabStop: tr(lang, { fr: "Arrêt", en: "Time off", es: "Baja", pt: "Afastamento" }),
     noEntry: tr(lang, { fr: "Aucune entrée pour le moment.", en: "No entries yet.", es: "Sin entradas por el momento.", pt: "Nenhum registro por enquanto." }),
     stop: tr(lang, { fr: "Arrêt", en: "Time off", es: "Baja", pt: "Afastamento" }),
     advice: tr(lang, { fr: "Conseil", en: "Advice", es: "Consejo", pt: "Conselho" }),
@@ -1942,17 +1980,22 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
   return (
     <div className="px-5 pt-4 pb-24">
       <LargeHeader title={T.title} subtitle={T.subtitle} />
-      <div className="flex items-start gap-2 mb-5 px-3 py-2.5 rounded-2xl" style={{ background: C.warnSoft, border: `1px solid ${C.warn}33` }}>
+      <div className="flex items-start gap-2 mb-6 px-3.5 py-3 rounded-2xl" style={{ background: C.warnSoft, border: `1px solid ${C.warn}33` }}>
         <AlertTriangle size={14} style={{ color: C.warn, marginTop: 1, flexShrink: 0 }} />
         <p className="text-[11px] leading-relaxed" style={{ color: C.warn, ...fontBody }}>{T.disclaimer}</p>
       </div>
 
+      <div className="mb-6"><SegmentedControl options={[{ value: "conseil", label: T.tabAdvice }, { value: "arret", label: T.tabStop }, { value: "historique", label: `${T.history}${sorted.length ? ` (${sorted.length})` : ""}` }]} value={view} onChange={setView} /></div>
+
+      {view === "conseil" && (<>
+      <Card>
       <SectionTitle icon={User}>{T.specialistAdvice}</SectionTitle>
       <Field label={T.zone}><Select value={part} onChange={(e) => { setPart(e.target.value); setAdvice(null); }} options={BODY_PARTS.map((b) => ({ value: b.key, label: tr(lang, b) }))} placeholder={T.chooseZone} /></Field>
       <Field label={T.symptomType}><Select value={symptom} onChange={(e) => { setSymptom(e.target.value); setAdvice(null); }} options={SYMPTOMS.map((s) => ({ value: s.key, label: tr(lang, s) }))} placeholder={T.describeSymptom} /></Field>
       <Btn full onClick={submitAdvice} disabled={!part || !symptom}>{T.getGuidance}</Btn>
+      </Card>
       {advice && (
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-5 flex flex-col gap-4">
           {advice.urgent && <Card style={{ background: C.dangerSoft, border: `1px solid ${C.danger}44` }}><div className="flex items-center gap-2 mb-1"><AlertTriangle size={15} style={{ color: C.danger }} /><p className="font-bold text-sm" style={{ color: C.danger, ...fontBody }}>{T.attention}</p></div><p className="text-xs leading-relaxed" style={{ color: C.danger, ...fontBody }}>{advice.urgentMsg}</p></Card>}
           <Card><SectionTitle icon={User}>{T.specialists}</SectionTitle><div className="flex flex-wrap gap-2">{advice.specialistes.map((s, i) => <span key={i} className="text-xs px-3 py-1.5 rounded-full font-semibold" style={{ background: C.primarySoft, color: C.primary, ...fontBody }}>{s}</span>)}</div></Card>
           <Card><SectionTitle icon={Sparkles}>{T.inTheMeantime}</SectionTitle><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{advice.conseil}</p></Card>
@@ -1960,10 +2003,12 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
         </div>
       )}
 
-      <div className="my-6" style={{ borderTop: `1px dashed ${C.border}` }} />
+      </>)}
 
+      {view === "arret" && (
+      <Card>
       <SectionTitle icon={Bell}>{T.declareStop}</SectionTitle>
-      <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.declareStopHint}</p>
+      <p className="text-[11px] mb-5" style={{ color: C.textFaint, ...fontBody }}>{T.declareStopHint}</p>
       <Field label={T.zone}><Select value={aPart} onChange={(e) => setAPart(e.target.value)} options={BODY_PARTS.map((b) => ({ value: b.key, label: tr(lang, b) }))} placeholder={T.chooseZone} /></Field>
       <Field label={T.injuryType}><TextInput value={aLabel} onChange={(e) => setALabel(e.target.value)} placeholder={T.injuryTypePh} /></Field>
       <Field label={T.startDate}><TextInput type="date" value={aDebut} onChange={(e) => setADebut(e.target.value)} /></Field>
@@ -1973,11 +2018,14 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
       </button>
       {aRetourConnu ? <Field label={T.plannedReturn}><TextInput type="date" value={aRetour} onChange={(e) => setARetour(e.target.value)} /></Field> : <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.laterHint}</p>}
       <Btn full onClick={saveArret} disabled={!aPart || !aLabel} icon={Check}>{T.declareStopBtn}</Btn>
+      </Card>
+      )}
 
-      <div className="mt-7">
+      {view === "historique" && (
+      <div>
         <SectionTitle icon={Clock}>{T.history}</SectionTitle>
         {sorted.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.noEntry}</p></Card> : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {sorted.map((inj) => (
               <Card key={inj.id}>
                 <div className="flex justify-between items-start mb-1.5">
@@ -2019,6 +2067,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -2210,6 +2259,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
   const monthlyUsed = useMemo(() => countMonthlyExtras(exceptions), [exceptions]);
+  const [view, setView] = useState("calendrier");
   const [expandedDow, setExpandedDow] = useState(null);
   const [monthIdx, setMonthIdx] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -2241,6 +2291,10 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   const T = {
     title: tr(lang, { fr: "Planning", en: "Schedule", es: "Planificación", pt: "Planejamento" }),
     subtitle: tr(lang, { fr: "Modifiable à tout moment si besoin", en: "Editable anytime if needed", es: "Editable en cualquier momento si es necesario", pt: "Editável a qualquer momento se necessário" }),
+    tabCalendar: tr(lang, { fr: "Calendrier", en: "Calendar", es: "Calendario", pt: "Calendário" }),
+    tabWeek: tr(lang, { fr: "Semaine type", en: "Weekly", es: "Semana tipo", pt: "Semana tipo" }),
+    tabAdd: tr(lang, { fr: "Ajouts", en: "Add", es: "Añadir", pt: "Adicionar" }),
+    howLabel: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     intro: tr(lang, { fr: "L'app choisit elle-même quand insérer de la récup active ou du repos complet, en plus de la récup, la nutrition et les rappels générés pour toute l'année.", en: "The app decides on its own when to insert active recovery or full rest, on top of the recovery, nutrition and reminders generated for the whole year.", es: "La app decide por sí sola cuándo insertar recuperación activa o descanso completo, además de la recuperación, la nutrición y los avisos generados para todo el año.", pt: "O app decide sozinho quando inserir recuperação ativa ou descanso completo, além da recuperação, nutrição e lembretes gerados para o ano inteiro." }),
     fixedDays: tr(lang, { fr: "Jours fixes de la semaine", en: "Fixed weekly days", es: "Días fijos de la semana", pt: "Dias fixos da semana" }),
     off: tr(lang, { fr: "Off", en: "Off", es: "Libre", pt: "Livre" }),
@@ -2273,20 +2327,23 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   return (
     <div className="px-5 pt-4 pb-24">
       <LargeHeader title={T.title} subtitle={T.subtitle} />
-      <p className="text-xs mb-4 -mt-3" style={{ color: C.textMuted, ...fontBody }}>{T.intro}</p>
+      <InfoToggle label={T.howLabel}>{T.intro}</InfoToggle>
 
       {!isPro && (
-        <button onClick={openPro} className="w-full flex items-center gap-2 mb-4 px-3.5 py-2.5 rounded-2xl" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}>
+        <button onClick={openPro} className="w-full flex items-center gap-2 mb-5 px-3.5 py-3 rounded-2xl" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}>
           <Lock size={13} style={{ color: C.textFaint }} />
           <span className="text-[11px] flex-1 text-left" style={{ color: C.textMuted, ...fontBody }}>{T.quotaHint(monthlyUsed, FREE_EXCEPTIONS_PER_MONTH)}</span>
           <ProBadge />
         </button>
       )}
 
+      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }]} value={view} onChange={setView} /></div>
+
+      {view === "semaine" && (
       <Card className="mb-4">
         <SectionTitle icon={CalendarDays}>{T.fixedDays}</SectionTitle>
         {DAYS[lang].map((d, i) => (
-          <div key={d} className="mb-2 pb-2" style={{ borderBottom: `1px solid ${C.borderSoft}66` }}>
+          <div key={d} className="mb-3 pb-3" style={{ borderBottom: `1px solid ${C.borderSoft}66` }}>
             <button onClick={() => setExpandedDow(expandedDow === i ? null : i)} className="w-full flex items-center justify-between">
               <span className="text-xs font-semibold" style={{ color: C.text, ...fontBody }}>{d}</span>
               <div className="flex items-center gap-1.5">
@@ -2298,8 +2355,10 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </div>
         ))}
       </Card>
+      )}
 
-      <Card className="mb-4">
+      {view === "ajouts" && (<>
+      <Card className="mb-5">
         <SectionTitle icon={Plus}>{T.addSession}</SectionTitle>
         <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionHint}</p>
         <Field label={T.date}><TextInput type="date" value={excDate} onChange={(e) => setExcDate(e.target.value)} /></Field>
@@ -2336,9 +2395,11 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </div>
         )}
       </Card>
+      </>)}
 
-      <Card className="mb-4">
-        <div className="flex items-center justify-between mb-3">
+      {view === "calendrier" && (<>
+      <Card className="mb-5">
+        <div className="flex items-center justify-between mb-4">
           <button onClick={() => setMonthIdx((m) => (m + 11) % 12)}><ChevronLeft size={18} style={{ color: C.textMuted }} /></button>
           <span className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{MONTHS[lang][monthIdx]} {year}</span>
           <button onClick={() => setMonthIdx((m) => (m + 1) % 12)}><ChevronRight size={18} style={{ color: C.textMuted }} /></button>
@@ -2374,6 +2435,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </GroupedList>
         )}
       </Card>
+      </>)}
 
       {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} />}
     </div>
@@ -2391,6 +2453,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
   const exceptions = plannerConfig?.exceptions || {};
   const hasPlanner = weeklyDays.some((d) => d.length > 0) || Object.keys(exceptions).length > 0;
   const [selectedDate, setSelectedDate] = useState(null);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const schedule = useMemo(() => buildYearSchedule(weeklyDays, exceptions, year, profile), [plannerConfig, profile, year]);
   const activeInjury = useMemo(() => injuries.find((i) => i.arret && i.dateDebut && i.dateDebut.slice(0, 10) <= todayIso && (!i.dateRetour || i.dateRetour.slice(0, 10) >= todayIso)), [injuries]);
@@ -2452,6 +2515,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     recoveryNeed: tr(lang, { fr: "Besoin de récupération", en: "Recovery need", es: "Necesidad de recuperación", pt: "Necessidade de recuperação" }),
     noSessionYet: tr(lang, { fr: "Aucune séance enregistrée. Génère ton premier plan de récup.", en: "No session logged yet. Generate your first recovery plan.", es: "Aún no hay sesiones registradas. Genera tu primer plan de recuperación.", pt: "Nenhuma sessão registrada ainda. Gere seu primeiro plano de recuperação." }),
     start: tr(lang, { fr: "Commencer", en: "Get started", es: "Empezar", pt: "Começar" }),
+    seeMore: tr(lang, { fr: "Voir plus", en: "See more", es: "Ver más", pt: "Ver mais" }),
+    seeLess: tr(lang, { fr: "Réduire", en: "Show less", es: "Reducir", pt: "Reduzir" }),
     history: tr(lang, { fr: "Historique", en: "History", es: "Historial", pt: "Histórico" }),
     nothingYet: tr(lang, { fr: "Rien pour l'instant.", en: "Nothing yet.", es: "Nada por el momento.", pt: "Nada por enquanto." }),
     match: tr(lang, { fr: "Match / Combat", en: "Match / Fight", es: "Partido / Combate", pt: "Jogo / Luta" }),
@@ -2464,21 +2529,27 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
       <LargeHeader title={profile.name} subtitle={T.hi} right={<div className="flex gap-1">{(profile.sports || []).slice(0, 3).map((s) => <span key={s} className="text-xl">{sportIcon(s)}</span>)}</div>} />
 
       {activeInjury && (
-        <button onClick={() => goTo("blessures")} className="w-full text-left mb-4 rounded-[22px] p-3.5 flex items-start gap-3" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}33` }}>
+        <button onClick={() => goTo("blessures")} className="w-full text-left mb-5 rounded-[22px] p-4 flex items-start gap-3" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}33` }}>
           <HeartPulse size={18} style={{ color: C.danger, flexShrink: 0, marginTop: 1 }} />
           <div><p className="text-xs font-bold" style={{ color: C.danger, ...fontBody }}>{T.injuryOff(bodyPartLabel(activeInjury.part, lang))}</p><p className="text-[11px] mt-0.5" style={{ color: C.danger, ...fontBody }}>{T.since(fmtDate(activeInjury.dateDebut, lang))} {T.returnLabel(activeInjury.dateRetour ? T.onDate(fmtDate(activeInjury.dateRetour, lang)) : T.tbd)}</p></div>
         </button>
       )}
 
       {reminders.length > 0 && (
-        <Card className="mb-4" style={{ background: `linear-gradient(160deg, ${C.primary}22 0%, ${C.surface} 60%)` }}>
+        <Card className="mb-5" style={{ background: `linear-gradient(160deg, ${C.primary}22 0%, ${C.surface} 60%)` }}>
           <div className="flex items-center gap-2 mb-2"><Bell size={15} style={{ color: C.primary }} /><p className="font-bold text-sm tracking-tight" style={{ color: C.primary, ...fontDisplay }}>{T.reminderTomorrow}</p></div>
           {reminders.map((r) => <p key={r.id} className="text-[11px] mb-1" style={{ color: C.primary, ...fontBody }}>{r.type === "rdv" ? `${praticienLabel(r.praticien, lang)}${r.motif ? " — " + r.motif : ""}` : `${eventLabel(r.type, lang)} ${sportIcon(r.sport)}`}{r.heure && ` ${r.heure}`} {T.reminderAt(r.notifyTime)}</p>)}
           <p className="text-[9px] mt-1" style={{ color: C.primary, opacity: 0.7, ...fontBody }}>{T.reminderNote}</p>
         </Card>
       )}
 
-      <Card style={{ padding: 0 }} className="mb-4">
+      {lastPlan ? (
+        <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center mb-5" style={{ paddingTop: 20 }}><p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /></HeroCard>
+      ) : (
+        <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
+      )}
+
+      <Card style={{ padding: 0 }} className="mb-6">
         <div className="grid grid-cols-3">
           {[{ v: weekCount, l: T.sessionsWeek, c: C.primary }, { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint }, { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text }].map((s, i) => (
             <div key={i} className="flex flex-col items-center py-3.5" style={{ borderRight: i < 2 ? `1px solid ${C.borderSoft}66` : "none" }}>
@@ -2489,7 +2560,14 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
         </div>
       </Card>
 
-      <Card className="mb-4">
+      <div className="flex justify-between gap-2 mb-7 pb-1">
+        <IconTile icon={Sparkles} label={T.quickRecup} onClick={() => goTo("recup")} color={C.primary} />
+        <IconTile icon={Utensils} label={T.nutrition} onClick={() => goTo("nutrition")} color={C.warn} />
+        <IconTile icon={HeartPulse} label={T.injuries} onClick={() => goTo("blessures")} color={C.blessure} />
+        <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
+      </div>
+
+      <Card className="mb-7">
         <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[10px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
         {hasPlanner ? (
           <div className="grid grid-cols-7 gap-1.5">
@@ -2507,23 +2585,10 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
         <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
       </Card>
 
-      <div className="flex gap-3 mb-5 overflow-x-auto pb-1">
-        <IconTile icon={Sparkles} label={T.quickRecup} onClick={() => goTo("recup")} color={C.primary} />
-        <IconTile icon={Utensils} label={T.nutrition} onClick={() => goTo("nutrition")} color={C.warn} />
-        <IconTile icon={HeartPulse} label={T.injuries} onClick={() => goTo("blessures")} color={C.blessure} />
-        <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
-      </div>
-
-      {lastPlan ? (
-        <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center mb-4" style={{ paddingTop: 20 }}><p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /></HeroCard>
-      ) : (
-        <Card className="mb-4"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
-      )}
-
-      <SectionTitle icon={TrendingUp}>{T.history}</SectionTitle>
+      <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
       {sessionsLog.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.nothingYet}</p></Card> : (
         <GroupedList>
-          {[...sessionsLog].reverse().slice(0, 8).map((s, i, arr) => (
+          {[...sessionsLog].reverse().slice(0, showAllHistory ? 8 : 3).map((s, i, arr) => (
             <ListRow key={s.id} last={i === arr.length - 1}
               left={<span className="text-lg shrink-0">{sportIcon(s.sport)}</span>}
               title={s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}
@@ -2605,7 +2670,7 @@ function ProTab() {
 
   return (
     <div className="px-5 pt-4 pb-24">
-      <div className="flex flex-col items-center mb-6 mt-1">
+      <div className="flex flex-col items-center mb-8 mt-2">
         <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-3" style={{ background: gradPrimary, boxShadow: `0 12px 28px -10px ${C.primary}88` }}><Crown size={28} color="#052821" /></div>
         <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h1>
         <p className="text-xs mt-1" style={{ color: C.textMuted, ...fontBody }}>{T.subtitle}</p>
@@ -2654,7 +2719,7 @@ function ProTab() {
           </div>
         </>
       ) : (
-        <Card className="mb-6" style={{ background: `linear-gradient(155deg, ${C.primary}22, ${C.surface})` }}>
+        <Card className="mb-8" style={{ background: `linear-gradient(155deg, ${C.primary}22, ${C.surface})` }}>
           <div className="mb-4"><SegmentedControl options={[{ value: "monthly", label: T.monthly }, { value: "yearly", label: T.yearly }]} value={pickCycle} onChange={setPickCycle} /></div>
           <Btn full icon={Sparkles} onClick={() => startTrial(pickCycle)}>{T.startTrial}</Btn>
           <p className="text-[11px] text-center mt-3" style={{ color: C.textMuted, ...fontBody }}>{pickCycle === "yearly" ? T.priceNoteYearly : T.priceNoteMonthly}</p>
@@ -2666,16 +2731,18 @@ function ProTab() {
       )}
 
       <SectionTitle icon={Crown}>{T.included}</SectionTitle>
-      <div className="flex flex-col gap-3 mb-5">
-        {features.map((f, i) => (
-          <Card key={i} className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft }}><f.Icon size={17} style={{ color: C.primary }} /></div>
-            <div>
-              <div className="flex items-center gap-2"><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{f.title}</p>{f.soon && <Badge color={C.textMuted}>{T.soon}</Badge>}</div>
-              <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{f.desc}</p>
+      <div className="mb-7">
+        <GroupedList>
+          {features.map((f, i) => (
+            <div key={i} className="flex items-start gap-3.5 px-5 py-4" style={{ borderBottom: i === features.length - 1 ? "none" : `1px solid ${C.glassBorder}` }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft }}><f.Icon size={17} style={{ color: C.primary }} /></div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2"><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{f.title}</p>{f.soon && <Badge color={C.textMuted}>{T.soon}</Badge>}</div>
+                <p className="text-[11px] leading-relaxed mt-1" style={{ color: C.textMuted, ...fontBody }}>{f.desc}</p>
+              </div>
             </div>
-          </Card>
-        ))}
+          ))}
+        </GroupedList>
       </div>
       <p className="text-[10px] text-center leading-relaxed" style={{ color: C.textFaint, ...fontBody }}>{T.freeStaysFree}</p>
     </div>
@@ -2686,14 +2753,36 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   const { lang } = useLang();
   const { isPro, isTrial, trialDaysLeft } = usePro();
   const [p, setP] = useState(profile);
+  const [ptab, setPtab] = useState("profil");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [notifStatus, setNotifStatus] = useState(typeof Notification !== "undefined" ? Notification.permission : "unsupported");
+  const [notifStatus, setNotifStatus] = useState(
+    (typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.())
+      ? "default" // app native : état réel interrogé juste après, via le plugin natif
+      : (typeof Notification !== "undefined" ? Notification.permission : "unsupported")
+  );
   const [notifLoading, setNotifLoading] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.Capacitor?.isNativePlatform?.()) {
+      (async () => {
+        try {
+          const { PushNotifications } = await import("@capacitor/push-notifications");
+          const perm = await PushNotifications.checkPermissions();
+          setNotifStatus(perm.receive === "granted" ? "granted" : perm.receive === "denied" ? "denied" : "default");
+        } catch { setNotifStatus("unsupported"); }
+      })();
+    }
+  }, []);
   const toggleNotif = async () => {
     setNotifLoading(true);
     if (notifStatus === "granted") { await unsubscribeFromPush(userId, accessToken); setNotifStatus("default"); }
-    else { const r = await subscribeToPush(userId, accessToken); setNotifStatus(r.ok ? "granted" : (typeof Notification !== "undefined" ? Notification.permission : "denied")); }
+    else {
+      const r = await subscribeToPush(userId, accessToken);
+      if (r.ok) setNotifStatus("granted");
+      else if (r.reason === "denied") setNotifStatus("denied");
+      else if (r.reason === "unsupported") setNotifStatus("unsupported");
+      else setNotifStatus(typeof Notification !== "undefined" ? Notification.permission : "denied");
+    }
     setNotifLoading(false);
   };
   const toggleSport = (k) => {
@@ -2731,6 +2820,11 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   };
   const T = {
     title: tr(lang, { fr: "Mon profil", en: "My profile", es: "Mi perfil", pt: "Meu perfil" }),
+    save: tr(lang, { fr: "Enregistrer", en: "Save", es: "Guardar", pt: "Guardar" }),
+    tabProfile: tr(lang, { fr: "Profil", en: "Profile", es: "Perfil", pt: "Perfil" }),
+    tabSport: tr(lang, { fr: "Sport", en: "Sport", es: "Deporte", pt: "Esporte" }),
+    tabFood: tr(lang, { fr: "Aliments", en: "Food", es: "Comida", pt: "Comida" }),
+    tabAccount: tr(lang, { fr: "Compte", en: "Account", es: "Cuenta", pt: "Conta" }),
     language: tr(lang, { fr: "Langue", en: "Language", es: "Idioma", pt: "Idioma" }),
     notifications: tr(lang, { fr: "Notifications", en: "Notifications", es: "Notificaciones", pt: "Notificações" }),
     notifOn: tr(lang, { fr: "Rappels activés", en: "Reminders on", es: "Recordatorios activados", pt: "Lembretes ativados" }),
@@ -2774,8 +2868,55 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
       <div className="flex items-center justify-between px-5 py-4" style={{ background: "rgba(10,20,18,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose}><X size={20} style={{ color: C.textMuted }} /></button></div>
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        <button onClick={onOpenPro} className="w-full text-left mb-4 rounded-2xl p-3.5 flex items-center gap-3" style={{ background: gradPrimary }}>
+      <div className="px-5 pt-3 pb-1 shrink-0" style={{ background: "rgba(10,20,18,0.40)", borderBottom: `1px solid ${C.glassBorder}` }}>
+        <SegmentedControl small options={[{ value: "profil", label: T.tabProfile }, { value: "sport", label: T.tabSport }, { value: "nutrition", label: T.tabFood }, { value: "compte", label: T.tabAccount }]} value={ptab} onChange={setPtab} />
+        <div className="h-3" />
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 py-6">
+        {ptab === "profil" && (<>
+        <div className="mb-6 px-4 py-3 rounded-2xl" style={{ background: `linear-gradient(155deg, ${C.primary}26, ${C.primaryAlt}12)`, border: `1px solid ${C.primary}33`, backdropFilter: "blur(14px)" }}>
+          <p className="text-[11px] leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.note}</p>
+        </div>
+        <Field label={T.firstNameShown}><TextInput value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} /></Field>
+        <Field label={T.sexe}><SegmentedControl options={SEXES.map((s) => ({ value: s.key, label: tr(lang, s) }))} value={p.sexe} onChange={(v) => setP({ ...p, sexe: v })} /></Field>
+        <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-[11px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageToday(computeAge(p.dateNaissance))}</p>}</Field>
+        <Field label={T.height}><TextInput type="number" value={p.taille} onChange={(e) => setP({ ...p, taille: e.target.value })} /></Field>
+        <Field label={T.weight}><TextInput type="number" value={p.poids} onChange={(e) => setP({ ...p, poids: e.target.value })} /></Field>
+        </>)}
+        {ptab === "sport" && (<>
+        <Field label={<span>{T.sports}{!isPro && <span className="ml-1.5"><ProBadge /></span>}</span>}>
+          <SportGrid selected={p.sports} onToggle={toggleSport} />
+          {!isPro && <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}
+        </Field>
+        <Field label={T.level}><div className="flex flex-wrap gap-2">{NIVEAUX.map((n) => <Pill key={n.key} active={p.niveau === n.key} onClick={() => setP({ ...p, niveau: n.key })}>{tr(lang, n)}</Pill>)}</div></Field>
+        <Field label={T.equipment}>
+          <div className="flex flex-col gap-2">{EQUIPEMENTS.map((e) => (<button key={e.key} onClick={() => toggleEquip(e.key)} className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left" style={{ background: p.equipement.includes(e.key) ? C.primarySoft : C.surface, border: `1px solid ${p.equipement.includes(e.key) ? C.primary : C.borderSoft}66` }}><div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: p.equipement.includes(e.key) ? C.primary : "transparent", border: `1px solid ${p.equipement.includes(e.key) ? C.primary : C.border}` }}>{p.equipement.includes(e.key) && <Check size={11} color="#052821" />}</div><span className="text-xs" style={{ color: C.text, ...fontBody }}>{tr(lang, e)}</span></button>))}</div>
+        </Field>
+        </>)}
+        {ptab === "nutrition" && (<>
+        <Field label={T.allergiesLabel}>
+          <div className="flex flex-wrap gap-2">{ALLERGENS.map((a) => (<Pill key={a.key} active={(p.allergies || []).includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
+        </Field>
+        <Field label={T.dislikedLabel}>
+          <p className="text-[11px] mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
+          <div className="flex gap-2 mb-2">
+            <div className="flex-1"><TextInput value={dislikedInput} onChange={(e) => setDislikedInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDisliked(); } }} placeholder={T.dislikedPh} /></div>
+            <Btn small onClick={addDisliked}>{T.add}</Btn>
+          </div>
+          {(p.dislikedFoods || []).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {(p.dislikedFoods || []).map((food, i) => (
+                <div key={i} className="flex items-center gap-1.5 rounded-full pl-3 pr-1.5 py-1" style={{ background: C.surface, border: `1px solid ${C.borderSoft}66` }}>
+                  <span className="text-xs" style={{ color: C.text, ...fontBody }}>{food}</span>
+                  <button onClick={() => removeDisliked(i)} className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: C.glassSoft }}><X size={10} style={{ color: C.textMuted }} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Field>
+        </>)}
+        {ptab === "compte" && (<>
+        <button onClick={onOpenPro} className="w-full text-left mb-6 rounded-2xl p-4 flex items-center gap-3" style={{ background: gradPrimary }}>
           <Crown size={20} color="#052821" />
           <div className="flex-1">
             <p className="text-sm font-bold" style={{ color: "#052821", ...fontDisplay }}>{T.proCardTitle}{isPro && <span className="ml-1.5">{isTrial ? `· ${trialDaysLeft}j` : "· actif"}</span>}</p>
@@ -2799,22 +2940,6 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
             </button>
           )}
         </Field>
-        <div className="mb-4 px-3 py-2.5 rounded-2xl" style={{ background: `linear-gradient(155deg, ${C.primary}26, ${C.primaryAlt}12)`, border: `1px solid ${C.primary}33`, backdropFilter: "blur(14px)" }}>
-          <p className="text-[11px] leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.note}</p>
-        </div>
-        <Field label={T.firstNameShown}><TextInput value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} /></Field>
-        <Field label={T.sexe}><SegmentedControl options={SEXES.map((s) => ({ value: s.key, label: tr(lang, s) }))} value={p.sexe} onChange={(v) => setP({ ...p, sexe: v })} /></Field>
-        <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-[11px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageToday(computeAge(p.dateNaissance))}</p>}</Field>
-        <Field label={T.height}><TextInput type="number" value={p.taille} onChange={(e) => setP({ ...p, taille: e.target.value })} /></Field>
-        <Field label={T.weight}><TextInput type="number" value={p.poids} onChange={(e) => setP({ ...p, poids: e.target.value })} /></Field>
-        <Field label={<span>{T.sports}{!isPro && <span className="ml-1.5"><ProBadge /></span>}</span>}>
-          <SportGrid selected={p.sports} onToggle={toggleSport} />
-          {!isPro && <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}
-        </Field>
-        <Field label={T.level}><div className="flex flex-wrap gap-2">{NIVEAUX.map((n) => <Pill key={n.key} active={p.niveau === n.key} onClick={() => setP({ ...p, niveau: n.key })}>{tr(lang, n)}</Pill>)}</div></Field>
-        <Field label={T.equipment}>
-          <div className="flex flex-col gap-2">{EQUIPEMENTS.map((e) => (<button key={e.key} onClick={() => toggleEquip(e.key)} className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left" style={{ background: p.equipement.includes(e.key) ? C.primarySoft : C.surface, border: `1px solid ${p.equipement.includes(e.key) ? C.primary : C.borderSoft}66` }}><div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: p.equipement.includes(e.key) ? C.primary : "transparent", border: `1px solid ${p.equipement.includes(e.key) ? C.primary : C.border}` }}>{p.equipement.includes(e.key) && <Check size={11} color="#052821" />}</div><span className="text-xs" style={{ color: C.text, ...fontBody }}>{tr(lang, e)}</span></button>))}</div>
-        </Field>
         <Field label={T.emailLabel}>
           <div className="flex gap-2">
             <div className="flex-1"><TextInput type="email" value={newEmail} onChange={(e) => { setNewEmail(e.target.value); setEmailChangeStatus(""); }} placeholder={T.emailPh} autoComplete="email" /></div>
@@ -2823,39 +2948,17 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
           {emailChangeStatus === "sent" && <p className="text-[11px] mt-2" style={{ color: C.primary, ...fontBody }}>{T.emailSent}</p>}
           {emailChangeStatus === "error" && <p className="text-[11px] mt-2" style={{ color: C.danger, ...fontBody }}>{emailChangeError}</p>}
         </Field>
-        <Field label={T.allergiesLabel}>
-          <div className="flex flex-wrap gap-2">{ALLERGENS.map((a) => (<Pill key={a.key} active={(p.allergies || []).includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
-        </Field>
-        <Field label={T.dislikedLabel}>
-          <p className="text-[11px] mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
-          <div className="flex gap-2 mb-2">
-            <div className="flex-1"><TextInput value={dislikedInput} onChange={(e) => setDislikedInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDisliked(); } }} placeholder={T.dislikedPh} /></div>
-            <Btn small onClick={addDisliked}>{T.add}</Btn>
-          </div>
-          {(p.dislikedFoods || []).length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {(p.dislikedFoods || []).map((food, i) => (
-                <div key={i} className="flex items-center gap-1.5 rounded-full pl-3 pr-1.5 py-1" style={{ background: C.surface, border: `1px solid ${C.borderSoft}66` }}>
-                  <span className="text-xs" style={{ color: C.text, ...fontBody }}>{food}</span>
-                  <button onClick={() => removeDisliked(i)} className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: C.glassSoft }}><X size={10} style={{ color: C.textMuted }} /></button>
-                </div>
-              ))}
-            </div>
-          )}
-        </Field>
-      </div>
-      <div className="px-5 pt-3 shrink-0" style={{ background: "rgba(10,20,18,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
-        <Btn full onClick={() => onSave(p)} disabled={p.sports.length === 0} icon={Check}>{T.save}</Btn>
+          <div className="mt-8">
         <div className="mt-2"><Btn full variant="danger" onClick={onLogout} icon={LogOut}>{T.logout}</Btn></div>
-        <p className="text-[10px] text-center mt-3" style={{ color: C.textFaint, ...fontBody }}>
+        <p className="text-[11px] text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>
           <a href="/conditions.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
           {" · "}
           <a href="/confidentialite.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
         </p>
         {!confirmingDelete ? (
-          <button onClick={() => setConfirmingDelete(true)} className="w-full text-center mt-3 pb-1 text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.deleteAccount}</button>
+          <button onClick={() => setConfirmingDelete(true)} className="w-full text-center mt-4 pb-2 text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.deleteAccount}</button>
         ) : (
-          <div className="mt-3 mb-1 p-3 rounded-2xl" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}44` }}>
+          <div className="mt-4 mb-1 p-4 rounded-2xl" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}44` }}>
             <p className="font-bold text-xs mb-1" style={{ color: C.danger, ...fontBody }}>{T.confirmDeleteTitle}</p>
             <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.danger, ...fontBody }}>{T.confirmDeleteNote}</p>
             {deleteError && <p className="text-[11px] leading-relaxed mb-3 font-semibold" style={{ color: C.danger, ...fontBody }}>⚠️ {deleteError}</p>}
@@ -2865,6 +2968,11 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
             </div>
           </div>
         )}
+          </div>
+        </>)}
+      </div>
+      <div className="px-5 pt-3 shrink-0" style={{ background: "rgba(10,20,18,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+        <Btn full onClick={() => onSave(p)} disabled={p.sports.length === 0} icon={Check}>{T.save}</Btn>
       </div>
     </div>
   );
