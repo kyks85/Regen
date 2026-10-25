@@ -17,6 +17,9 @@ const LANG_META = {
   pt: { flag: "🇵🇹", label: "Português" },
 };
 function tr(lang, d) { return d[lang] || d.fr; }
+// Date du jour dans le fuseau horaire de l'utilisateur (YYYY-MM-DD) — et non en UTC,
+// sinon entre minuit et 2h du matin l'app croirait être encore la veille.
+function isoLocal(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 const LangContext = createContext({ lang: "fr", setLang: () => {} });
 const useLang = () => useContext(LangContext);
 
@@ -79,7 +82,7 @@ function computeProStatus(pro) {
   return { isPro: false, isTrial: false, trialDaysLeft: 0, cycle: null, cancelled: false, renewalDate: null, subscribedAt: null, history: p.history || [] };
 }
 function countMonthlyExtras(exceptions) {
-  const monthKey = new Date().toISOString().slice(0, 7);
+  const monthKey = isoLocal().slice(0, 7);
   let count = 0;
   Object.entries(exceptions || {}).forEach(([date, ents]) => { if (date.startsWith(monthKey)) (ents || []).forEach((e) => { if (e.type !== "blessure") count++; }); });
   return count;
@@ -722,7 +725,7 @@ const emptyWeekly = () => Array.from({ length: 7 }, () => []);
 function newEntry(defaultSport) { return { id: Date.now() + Math.random(), type: "entrainement", sport: defaultSport, intensity: "moyen", label: "", heure: "", notify: false, notifyTime: "20:00", muscuZones: [] }; }
 function newRdv() { return { praticien: "kine", motif: "", heure: "", notify: false, notifyTime: "20:00" }; }
 function getDayEntries(weeklyDays, exceptions, dateIso) {
-  const dow = (new Date(dateIso).getDay() + 6) % 7;
+  const dow = (new Date(dateIso + "T12:00:00").getDay() + 6) % 7;
   const isException = Object.prototype.hasOwnProperty.call(exceptions, dateIso);
   return { entries: isException ? exceptions[dateIso] : (weeklyDays[dow] || []), isException, dow };
 }
@@ -742,7 +745,7 @@ function autoRecovery(schedule, idx, profile) {
 function buildYearSchedule(weeklyDays, exceptions, year, profile) {
   const base = []; const start = new Date(year, 0, 1); const end = new Date(year, 11, 31);
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const iso = d.toISOString().slice(0, 10);
+    const iso = isoLocal(d);
     const { entries, isException, dow } = getDayEntries(weeklyDays, exceptions, iso);
     base.push({ date: iso, dow, entries, isException });
   }
@@ -1917,15 +1920,15 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
   const saveConseil = () => { onAddInjury({ id: Date.now() + Math.random(), kind: "conseil", declaredDate: new Date().toISOString(), part, symptom, urgent: advice.urgent, specialistes: advice.specialistes, conseil: advice.conseil, arret: false, dateDebut: null, dateRetour: null }); setPart(""); setSymptom(""); setAdvice(null); setView("historique"); };
 
   const [aPart, setAPart] = useState(""); const [aLabel, setALabel] = useState("");
-  const [aDebut, setADebut] = useState(new Date().toISOString().slice(0, 10));
+  const [aDebut, setADebut] = useState(isoLocal());
   const [aRetourConnu, setARetourConnu] = useState(false); const [aRetour, setARetour] = useState("");
-  const saveArret = () => { if (!aPart || !aLabel) return; onAddInjury({ id: Date.now() + Math.random(), kind: "arret", declaredDate: new Date().toISOString(), part: aPart, symptom: aLabel, urgent: false, specialistes: [], conseil: "", arret: true, dateDebut: aDebut, dateRetour: aRetourConnu ? aRetour : null }); setAPart(""); setALabel(""); setADebut(new Date().toISOString().slice(0, 10)); setARetourConnu(false); setARetour(""); setView("historique"); };
+  const saveArret = () => { if (!aPart || !aLabel) return; onAddInjury({ id: Date.now() + Math.random(), kind: "arret", declaredDate: new Date().toISOString(), part: aPart, symptom: aLabel, urgent: false, specialistes: [], conseil: "", arret: true, dateDebut: aDebut, dateRetour: aRetourConnu ? aRetour : null }); setAPart(""); setALabel(""); setADebut(isoLocal()); setARetourConnu(false); setARetour(""); setView("historique"); };
 
   const [editingReturn, setEditingReturn] = useState(null); const [editDate, setEditDate] = useState("");
   const saveReturnDate = (id) => { onUpdateInjury(id, { dateRetour: editDate || null }); setEditingReturn(null); setEditDate(""); };
 
   const [rdvFor, setRdvFor] = useState(null);
-  const [rdvDate, setRdvDate] = useState(new Date().toISOString().slice(0, 10));
+  const [rdvDate, setRdvDate] = useState(isoLocal());
   const [rdvVal, setRdvVal] = useState(newRdv());
   const saveRdv = (inj) => { onAddRdv(rdvDate, { id: Date.now() + Math.random(), type: "rdv", ...rdvVal, motif: rdvVal.motif || `${tr(lang, { fr: "Suivi", en: "Follow-up", es: "Seguimiento", pt: "Acompanhamento" })} : ${bodyPartLabel(inj.part, lang)}`, injuryId: inj.id }); setRdvFor(null); setRdvVal(newRdv()); };
 
@@ -2265,7 +2268,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   const [monthIdx, setMonthIdx] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
   const [excDate, setExcDate] = useState(""); const [excEntries, setExcEntries] = useState([]);
-  const [rdvDate, setRdvDate] = useState(new Date().toISOString().slice(0, 10));
+  const [rdvDate, setRdvDate] = useState(isoLocal());
   const [rdvVal, setRdvVal] = useState(newRdv());
   const year = new Date().getFullYear();
 
@@ -2285,7 +2288,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
 
   const addRdv = () => { if (!rdvDate || !rdvVal.motif) return; onAddEntry(rdvDate, { id: Date.now() + Math.random(), type: "rdv", ...rdvVal }); setRdvVal(newRdv()); };
   const upcomingRdvs = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = isoLocal();
     return schedule.filter((d) => d.date >= today && d.entries.some((e) => e.type === "rdv")).flatMap((d) => d.entries.filter((e) => e.type === "rdv").map((e) => ({ date: d.date, entry: e }))).slice(0, 20);
   }, [schedule]);
 
@@ -2446,9 +2449,9 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
 /* ============================================================
    HOME TAB
    ============================================================ */
-function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo, onOpenPlan, onOpenPlanById, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
+function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo, onOpenPlan, onOpenPlanById, onDeleteSession, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
   const { lang } = useLang();
-  const today = new Date(); const todayIso = today.toISOString().slice(0, 10);
+  const today = new Date(); const todayIso = isoLocal(today);
   const year = today.getFullYear();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
@@ -2463,7 +2466,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
     return Array.from({ length: 7 }).map((_, i) => {
       const d = new Date(monday); d.setDate(monday.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
+      const iso = isoLocal(d);
       const found = schedule.find((s) => s.date === iso);
       return found ? { ...found, isToday: iso === todayIso } : { date: iso, dow: i, entries: [], isToday: iso === todayIso };
     });
@@ -2471,7 +2474,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
 
   const reminders = useMemo(() => {
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-    const iso = tomorrow.toISOString().slice(0, 10);
+    const iso = isoLocal(tomorrow);
     const found = schedule.find((s) => s.date === iso);
     return (found?.entries || []).filter((e) => e.notify && e.type !== "blessure");
   }, [schedule]);
@@ -2516,6 +2519,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     recoveryNeed: tr(lang, { fr: "Besoin de récupération", en: "Recovery need", es: "Necesidad de recuperación", pt: "Necessidade de recuperação" }),
     noSessionYet: tr(lang, { fr: "Aucune séance enregistrée. Génère ton premier plan de récup.", en: "No session logged yet. Generate your first recovery plan.", es: "Aún no hay sesiones registradas. Genera tu primer plan de recuperación.", pt: "Nenhuma sessão registrada ainda. Gere seu primeiro plano de recuperação." }),
     start: tr(lang, { fr: "Commencer", en: "Get started", es: "Empezar", pt: "Começar" }),
+    deleteSession: tr(lang, { fr: "Supprimer cette séance", en: "Delete this session", es: "Eliminar esta sesión", pt: "Excluir esta sessão" }),
+    deleteSessionConfirm: tr(lang, { fr: "Supprimer cette séance de l'historique ? Elle sera aussi retirée du planning.", en: "Delete this session from your history? It will also be removed from your schedule.", es: "¿Eliminar esta sesión del historial? También se quitará de la planificación.", pt: "Excluir esta sessão do histórico? Ela também será removida do planejamento." }),
     viewPlan: tr(lang, { fr: "Voir le plan de récup", en: "View recovery plan", es: "Ver el plan de recuperación", pt: "Ver o plano de recuperação" }),
     seeMore: tr(lang, { fr: "Voir plus", en: "See more", es: "Ver más", pt: "Ver mais" }),
     seeLess: tr(lang, { fr: "Réduire", en: "Show less", es: "Reducir", pt: "Reduzir" }),
@@ -2593,11 +2598,18 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
       {sessionsLog.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.nothingYet}</p></Card> : (
         <GroupedList>
           {[...sessionsLog].reverse().slice(0, showAllHistory ? 30 : 3).map((s, i, arr) => (
-            <ListRow key={s.id} last={i === arr.length - 1} onClick={() => onOpenPlan && onOpenPlan(s)} chevron
-              left={<span className="text-lg shrink-0">{sportIcon(s.sport)}</span>}
-              title={s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}
-              subtitle={fmtDate(s.date, lang)}
-              right={<div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: scoreColor(s.score) }} /><span style={{ ...fontMono, color: C.text, fontSize: 15 }}>{s.score}</span></div>} />
+            <div key={s.id} className="flex items-center" style={{ borderBottom: i === arr.length - 1 ? "none" : `1px solid ${C.glassBorder}` }}>
+              <button type="button" onClick={() => onOpenPlan && onOpenPlan(s)} className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 py-3 text-left">
+                <span className="text-lg shrink-0">{sportIcon(s.sport)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: C.text, ...fontBody }}>{s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}</p>
+                  <p className="text-[11px] truncate" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(s.date, lang)}</p>
+                </div>
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: scoreColor(s.score) }} /><span style={{ ...fontMono, color: C.text, fontSize: 15 }}>{s.score}</span></div>
+                <ChevronRightIcon size={15} style={{ color: C.textFaint }} />
+              </button>
+              <button type="button" aria-label={T.deleteSession} onClick={() => { if (onDeleteSession && window.confirm(T.deleteSessionConfirm)) onDeleteSession(s); }} className="px-4 py-3"><Trash2 size={14} style={{ color: C.textFaint }} /></button>
+            </div>
           ))}
         </GroupedList>
       )}
@@ -3084,7 +3096,7 @@ export default function App() {
     const saved = row ? { ...plan, id: row.id } : plan;
     // La récup ponctuelle est aussi ajoutée au planning, pour CE jour seulement
     // (sauf si la même séance y figure déjà). N'est pas bloquée par les limites gratuites.
-    const dateIso = new Date().toISOString().slice(0, 10);
+    const dateIso = isoLocal();
     const cfg = ensurePlanner();
     const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions, dateIso);
     const already = entries.some((e) => SPORT_TYPES.includes(e.type) && e.sport === plan.sport && e.type === plan.eventType);
@@ -3094,7 +3106,22 @@ export default function App() {
       newCfg = { ...cfg, exceptions: { ...cfg.exceptions, [dateIso]: [...entries, entry] } };
     }
     setUserData((prev) => ({ ...prev, sessionsLog: [...(prev.sessionsLog || []), saved], ...(newCfg ? { plannerConfig: newCfg } : {}) }));
+    setRecupResult((cur) => (cur && cur.id === plan.id ? saved : cur));
     if (newCfg) await savePlanner(newCfg);
+  };
+  const handleDeleteSession = async (session) => {
+    if (session.id != null) await sbDelete("sessions_log", `id=eq.${session.id}`, accessToken);
+    const cfg = ensurePlanner();
+    const exceptions = {}; let changed = false;
+    Object.entries(cfg.exceptions).forEach(([date, ents]) => {
+      const rest = ents.filter((e) => e.sessionId !== session.id);
+      if (rest.length !== ents.length) { changed = true; if (rest.length > 0) exceptions[date] = rest; }
+      else exceptions[date] = ents;
+    });
+    const newCfg = changed ? { ...cfg, exceptions } : cfg;
+    setUserData((prev) => ({ ...prev, sessionsLog: (prev.sessionsLog || []).filter((x) => x.id !== session.id), plannerConfig: changed ? newCfg : prev.plannerConfig }));
+    setRecupResult((cur) => (cur && cur.id === session.id ? null : cur));
+    if (changed) await savePlanner(newCfg);
   };
   const openPlan = (session) => { setRecupResult(session); setTab("recup"); };
   const openPlanById = (id) => { const sess = (userData?.sessionsLog || []).find((x) => x.id === id); if (sess) openPlan(sess); };
@@ -3123,7 +3150,7 @@ export default function App() {
     const clamped = clampSportEntries(entries);
     if (!proStatus.isPro) {
       if (clamped.filter((e) => SPORT_TYPES.includes(e.type)).length < entries.filter((e) => SPORT_TYPES.includes(e.type)).length) { openPro(); return; }
-      const monthKey = new Date().toISOString().slice(0, 7);
+      const monthKey = isoLocal().slice(0, 7);
       const otherMonths = { ...cfg.exceptions }; delete otherMonths[date];
       const usedElsewhere = countMonthlyExtras(otherMonths);
       const newCount = clamped.filter((e) => e.type !== "blessure").length;
@@ -3143,7 +3170,7 @@ export default function App() {
     if (!proStatus.isPro) {
       if (SPORT_TYPES.includes(entry.type) && entries.filter((e) => SPORT_TYPES.includes(e.type)).length >= FREE_SESSIONS_PER_DAY) { openPro(); return; }
       if (entry.type !== "blessure") {
-        const monthKey = new Date().toISOString().slice(0, 7);
+        const monthKey = isoLocal().slice(0, 7);
         if (date.startsWith(monthKey) && countMonthlyExtras(cfg.exceptions) >= FREE_EXCEPTIONS_PER_MONTH) { openPro(); return; }
       }
     }
@@ -3236,7 +3263,7 @@ export default function App() {
                   <button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={setTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
+                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={setTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
                   {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
