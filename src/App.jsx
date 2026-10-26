@@ -87,6 +87,8 @@ function countMonthlyExtras(exceptions) {
   Object.entries(exceptions || {}).forEach(([date, ents]) => { if (date.startsWith(monthKey)) (ents || []).forEach((e) => { if (e.type !== "blessure") count++; }); });
   return count;
 }
+// METTRE false AVANT LA PUBLICATION : masque le bouton « Activer Pro (démo) » qui contourne le paiement.
+const ENABLE_DEMO_PRO = true;
 const ProContext = createContext({ isPro: false, isTrial: false, trialDaysLeft: 0, startTrial: () => {}, activateDemo: () => {}, setProDemo: () => {}, cancelSub: () => {}, resumeSub: () => {}, openPro: () => {} });
 const usePro = () => useContext(ProContext);
 
@@ -101,14 +103,14 @@ function ProLock({ active, children }) {
       <div style={{ filter: "blur(5px)", opacity: 0.5, pointerEvents: "none", userSelect: "none" }}>{children}</div>
       <button onClick={openPro} className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-[22px]" style={{ background: "rgba(7,14,13,0.55)" }}>
         <Lock size={18} style={{ color: C.primary }} />
-        <span className="text-[11px] font-bold px-3 py-1.5 rounded-full" style={{ background: gradPrimary, color: "#052821" }}>{tr(lang, { fr: "Débloquer avec Pro", en: "Unlock with Pro", es: "Desbloquear con Pro", pt: "Desbloquear com Pro" })}</span>
+        <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: gradPrimary, color: "#052821" }}>{tr(lang, { fr: "Débloquer avec Pro", en: "Unlock with Pro", es: "Desbloquear con Pro", pt: "Desbloquear com Pro" })}</span>
       </button>
     </div>
   );
 }
 function ProBadge() {
   const { lang } = useLang();
-  return <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: gradPrimary, color: "#052821" }}><Crown size={9} /> PRO</span>;
+  return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: gradPrimary, color: "#052821" }}><Crown size={9} /> PRO</span>;
 }
 
 
@@ -117,20 +119,21 @@ function ProBadge() {
    DESIGN TOKENS
    ============================================================ */
 const C = {
-  bg: "#070E0D",
+  bg: "#0A1613",
   mesh: "radial-gradient(ellipse 900px 650px at 8% -8%, rgba(73,227,196,0.20), transparent 58%), radial-gradient(ellipse 750px 750px at 108% 6%, rgba(124,109,255,0.17), transparent 55%), radial-gradient(ellipse 900px 550px at 45% 118%, rgba(255,111,165,0.12), transparent 55%), #070E0D",
-  glass: "rgba(24,50,45,0.50)", glassStrong: "rgba(24,50,45,0.68)", glassSoft: "rgba(255,255,255,0.045)",
-  glassBorder: "rgba(255,255,255,0.09)", glassHighlight: "rgba(255,255,255,0.07)",
-  bgElevated: "rgba(255,255,255,0.045)", surface: "rgba(24,50,45,0.55)", surfaceAlt: "rgba(27,59,50,0.6)",
-  border: "#20463B", borderSoft: "#193830",
+  glass: "rgba(30,62,56,0.55)", glassStrong: "rgba(30,62,56,0.72)", glassSoft: "rgba(255,255,255,0.045)",
+  glassBorder: "rgba(255,255,255,0.13)", glassHighlight: "rgba(255,255,255,0.07)",
+  bgElevated: "rgba(255,255,255,0.045)", surface: "rgba(30,62,56,0.62)", surfaceAlt: "rgba(34,70,60,0.66)",
+  border: "#2A5648", borderSoft: "#214439",
   primary: "#49E3C4", primaryAlt: "#3DA9FF", primaryDim: "#2E8C77", primarySoft: "rgba(73,227,196,0.16)",
   warn: "#FF9366", warnSoft: "rgba(255,147,102,0.16)",
   danger: "#FF6161", dangerSoft: "rgba(255,97,97,0.14)",
+  scoreMid: "#F2C14E", scoreHigh: "#FF8A66",
   loisir: "#B98CFF", loisirSoft: "rgba(185,140,255,0.16)",
   reposActif: "#3D8A78", reposActifSoft: "rgba(61,138,120,0.22)",
   blessure: "#E27FA0", blessureSoft: "rgba(226,127,160,0.16)",
   rdv: "#6BA8FF", rdvSoft: "rgba(107,168,255,0.16)",
-  text: "#EAF4F0", textMuted: "#8FAAA2", textFaint: "#547066",
+  text: "#EAF4F0", textMuted: "#8FAAA2", textFaint: "#7D9A91",
 };
 const gradPrimary = `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryAlt} 100%)`;
 const APP_LOGO = "data:image/png;base64,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";
@@ -391,61 +394,143 @@ const REST_MEALS = {
   main: { fr: ["Riz complet + poulet + légumes de saison", "Pâtes complètes + œufs + légumes rôtis", "Quinoa + poisson + brocolis", "Patate douce + poulet + haricots verts", "Riz + tofu ou légumineuses + légumes sautés"], en: ["Whole rice + chicken + seasonal vegetables", "Wholegrain pasta + eggs + roasted vegetables", "Quinoa + fish + broccoli", "Sweet potato + chicken + green beans", "Rice + tofu or legumes + sautéed vegetables"], es: ["Arroz integral + pollo + verduras de temporada", "Pasta integral + huevos + verduras asadas", "Quinoa + pescado + brócoli", "Boniato + pollo + judías verdes", "Arroz + tofu o legumbres + verduras salteadas"], pt: ["Arroz integral + frango + legumes da estação", "Massa integral + ovos + legumes assados", "Quinoa + peixe + brócolis", "Batata-doce + frango + vagem", "Arroz + tofu ou leguminosas + legumes salteados"] },
   snack: { fr: ["Yaourt + fruits + une poignée d'oléagineux", "Fromage blanc + miel + fruits secs", "Fruit frais + une poignée d'amandes", "Tartine de pain complet + avocat", "Smoothie fruits + lait ou boisson végétale"], en: ["Yogurt + fruit + a handful of nuts", "Cottage cheese + honey + dried fruit", "Fresh fruit + a handful of almonds", "Wholegrain toast + avocado", "Fruit smoothie + milk or plant-based drink"], es: ["Yogur + fruta + un puñado de frutos secos", "Queso fresco + miel + frutos secos", "Fruta fresca + un puñado de almendras", "Tostada integral + aguacate", "Batido de frutas + leche o bebida vegetal"], pt: ["Iogurte + fruta + um punhado de oleaginosas", "Queijo cottage + mel + frutas secas", "Fruta fresca + um punhado de amêndoas", "Torrada integral + abacate", "Vitamina de frutas + leite ou bebida vegetal"] },
 };
-// Allergènes courants — chaque mot-clé est cherché dans le texte FRANÇAIS
-// du repas (les tableaux sont alignés par index entre les langues, donc
-// filtrer sur le français exclut le bon repas quelle que soit la langue
-// affichée à l'utilisateur).
+// Repas végétariens / vegan (utilisés quand le régime est choisi dans le profil).
+// Tableaux alignés par index entre les 4 langues.
+const VEG_MEALS = {
+  train: {
+    pre: {
+      fr: ["Riz + lentilles corail + épinards", "Pâtes complètes + pois chiches + sauce tomate", "Porridge d'avoine + banane + purée d'amande", "Patate douce rôtie + houmous + légumes", "Pain complet + houmous + avocat"],
+      en: ["Rice + red lentils + spinach", "Wholegrain pasta + chickpeas + tomato sauce", "Oat porridge + banana + almond paste", "Roasted sweet potato + hummus + vegetables", "Wholegrain bread + hummus + avocado"],
+      es: ["Arroz + lentejas rojas + espinacas", "Pasta integral + garbanzos + salsa de tomate", "Porridge de avena + plátano + crema de almendra", "Boniato asado + hummus + verduras", "Pan integral + hummus + aguacate"],
+      pt: ["Arroz + lentilhas vermelhas + espinafre", "Massa integral + grão-de-bico + molho de tomate", "Mingau de aveia + banana + pasta de amêndoa", "Batata-doce assada + húmus + legumes", "Pão integral + húmus + abacate"],
+    },
+    post: {
+      fr: ["Bol de quinoa + tofu grillé + légumes sautés", "Smoothie banane + boisson végétale + flocons d'avoine", "Riz + haricots rouges + maïs + avocat", "Houmous + pain complet + crudités", "Dal de lentilles + riz basmati"],
+      en: ["Quinoa bowl + grilled tofu + sautéed vegetables", "Banana smoothie + plant drink + rolled oats", "Rice + kidney beans + corn + avocado", "Hummus + wholegrain bread + raw vegetables", "Lentil dal + basmati rice"],
+      es: ["Bol de quinoa + tofu a la plancha + verduras salteadas", "Batido de plátano + bebida vegetal + copos de avena", "Arroz + alubias rojas + maíz + aguacate", "Hummus + pan integral + crudités", "Dal de lentejas + arroz basmati"],
+      pt: ["Bowl de quinoa + tofu grelhado + legumes salteados", "Vitamina de banana + bebida vegetal + flocos de aveia", "Arroz + feijão vermelho + milho + abacate", "Húmus + pão integral + crudités", "Dal de lentilhas + arroz basmati"],
+    },
+  },
+  match: {
+    pre: {
+      fr: ["Pâtes blanches + sauce tomate + huile d'olive", "Riz blanc + carottes cuites + compote", "Pain blanc + confiture + banane", "Semoule + légumes cuits sans peau + pois chiches", "Purée de pommes de terre + carottes + huile d'olive"],
+      en: ["White pasta + tomato sauce + olive oil", "White rice + cooked carrots + apple sauce", "White bread + jam + banana", "Couscous + peeled cooked vegetables + chickpeas", "Mashed potatoes + carrots + olive oil"],
+      es: ["Pasta blanca + salsa de tomate + aceite de oliva", "Arroz blanco + zanahorias cocidas + compota", "Pan blanco + mermelada + plátano", "Cuscús + verduras cocidas sin piel + garbanzos", "Puré de patatas + zanahorias + aceite de oliva"],
+      pt: ["Massa branca + molho de tomate + azeite", "Arroz branco + cenouras cozidas + compota", "Pão branco + geleia + banana", "Cuscuz + legumes cozidos sem casca + grão-de-bico", "Purê de batatas + cenouras + azeite"],
+    },
+    post: {
+      fr: ["Riz + lentilles + légumes + jus d'orange", "Pâtes + pois chiches + tomates cerises + huile d'olive", "Purée de patate douce + haricots blancs + épinards", "Smoothie banane + dattes + boisson végétale + purée d'amande", "Bol de quinoa + tofu + légumes + jus d'orange"],
+      en: ["Rice + lentils + vegetables + orange juice", "Pasta + chickpeas + cherry tomatoes + olive oil", "Mashed sweet potato + white beans + spinach", "Banana smoothie + dates + plant drink + almond paste", "Quinoa bowl + tofu + vegetables + orange juice"],
+      es: ["Arroz + lentejas + verduras + zumo de naranja", "Pasta + garbanzos + tomates cherry + aceite de oliva", "Puré de boniato + alubias blancas + espinacas", "Batido de plátano + dátiles + bebida vegetal + crema de almendra", "Bol de quinoa + tofu + verduras + zumo de naranja"],
+      pt: ["Arroz + lentilhas + legumes + suco de laranja", "Massa + grão-de-bico + tomates-cereja + azeite", "Purê de batata-doce + feijão-branco + espinafre", "Vitamina de banana + tâmaras + bebida vegetal + pasta de amêndoa", "Bowl de quinoa + tofu + legumes + suco de laranja"],
+    },
+  },
+};
+const REST_VEG = {
+  main: {
+    fr: ["Riz complet + lentilles + légumes de saison", "Pâtes complètes + pois chiches + légumes rôtis", "Quinoa + tofu + brocolis", "Patate douce + haricots rouges + haricots verts", "Bol de riz + houmous + légumes crus"],
+    en: ["Whole rice + lentils + seasonal vegetables", "Wholegrain pasta + chickpeas + roasted vegetables", "Quinoa + tofu + broccoli", "Sweet potato + kidney beans + green beans", "Rice bowl + hummus + raw vegetables"],
+    es: ["Arroz integral + lentejas + verduras de temporada", "Pasta integral + garbanzos + verduras asadas", "Quinoa + tofu + brócoli", "Boniato + alubias rojas + judías verdes", "Bol de arroz + hummus + verduras crudas"],
+    pt: ["Arroz integral + lentilhas + legumes da estação", "Massa integral + grão-de-bico + legumes assados", "Quinoa + tofu + brócolis", "Batata-doce + feijão vermelho + vagem", "Bowl de arroz + húmus + legumes crus"],
+  },
+  snack: {
+    fr: ["Fruit frais + une poignée de noix", "Tartine de pain complet + houmous", "Compote sans sucre ajouté + flocons d'avoine", "Smoothie fruits + boisson végétale", "Banane + purée d'amande sur pain complet"],
+    en: ["Fresh fruit + a handful of walnuts", "Wholegrain toast + hummus", "Unsweetened apple sauce + rolled oats", "Fruit smoothie + plant drink", "Banana + almond paste on wholegrain bread"],
+    es: ["Fruta fresca + un puñado de nueces", "Tostada de pan integral + hummus", "Compota sin azúcar añadido + copos de avena", "Batido de frutas + bebida vegetal", "Plátano + crema de almendra sobre pan integral"],
+    pt: ["Fruta fresca + um punhado de nozes", "Torrada de pão integral + húmus", "Compota sem açúcar adicionado + flocos de aveia", "Vitamina de frutas + bebida vegetal", "Banana + pasta de amêndoa em pão integral"],
+  },
+};
+// Allergènes et régimes — chaque mot-clé est cherché (sans accents, en début
+// de mot) dans le texte FRANÇAIS du repas. Les tableaux de repas sont alignés
+// par index entre les langues : filtrer sur le français exclut le bon repas
+// quelle que soit la langue affichée. En cas de doute on EXCLUT (sécurité).
+const MEAT_KW = ["poulet", "dinde", "boeuf", "steak", "jambon", "porc", "bacon", "lardon", "saucisse", "viande", "canard", "agneau", "veau", "poisson", "thon", "saumon", "crevette", "fruits de mer", "anchois", "sardine", "cabillaud", "maquereau", "truite", "moule", "calamar"];
+const DAIRY_KW = ["lait", "fromage", "yaourt", "yogourt", "whey", "skyr", "beurre", "creme", "proteine", "recuperation", "kefir", "mozzarella", "ricotta"];
 const ALLERGENS = [
-  { key: "gluten", fr: "Gluten", en: "Gluten", es: "Gluten", pt: "Glúten", kw: ["pain", "pâtes", "pate", "semoule", "couscous", "biscuit", "toast", "granola"] },
-  { key: "lactose", fr: "Lactose / produits laitiers", en: "Lactose / dairy", es: "Lactosa / lácteos", pt: "Lactose / laticínios", kw: ["lait", "fromage", "yaourt", "yogourt"] },
-  { key: "oeufs", fr: "Œufs", en: "Eggs", es: "Huevos", pt: "Ovos", kw: ["oeuf", "œuf"] },
-  { key: "fruits_coque", fr: "Fruits à coque", en: "Tree nuts", es: "Frutos secos", pt: "Oleaginosas", kw: ["amande", "noix", "oléagineux", "oleagineux"] },
-  { key: "poisson", fr: "Poisson / fruits de mer", en: "Fish / seafood", es: "Pescado / marisco", pt: "Peixe / frutos do mar", kw: ["poisson", "thon", "saumon"] },
-  { key: "soja", fr: "Soja", en: "Soy", es: "Soja", pt: "Soja", kw: ["soja", "tofu"] },
-  { key: "porc", fr: "Porc", en: "Pork", es: "Cerdo", pt: "Porco", kw: ["jambon", "porc"] },
+  { key: "gluten", group: "allergy", fr: "Gluten", en: "Gluten", es: "Gluten", pt: "Glúten", kw: ["pain", "pate", "semoule", "couscous", "biscuit", "toast", "granola", "avoine", "porridge", "flocons", "tartine", "muesli", "ble", "orge", "seigle", "boulgour", "wrap", "cereale", "barre", "crepe"] },
+  { key: "lactose", group: "allergy", fr: "Lactose / produits laitiers", en: "Lactose / dairy", es: "Lactosa / lácteos", pt: "Lactose / laticínios", kw: DAIRY_KW },
+  { key: "oeufs", group: "allergy", fr: "Œufs", en: "Eggs", es: "Huevos", pt: "Ovos", kw: ["oeuf", "omelette", "mayonnaise"] },
+  { key: "fruits_coque", group: "allergy", fr: "Fruits à coque", en: "Tree nuts", es: "Frutos secos", pt: "Oleaginosas", kw: ["amande", "noix", "noisette", "pistache", "cajou", "pecan", "oleagineux", "fruits secs", "granola", "muesli", "praline"] },
+  { key: "arachide", group: "allergy", fr: "Arachides / cacahuètes", en: "Peanuts", es: "Cacahuetes", pt: "Amendoim", kw: ["arachide", "cacahuete", "cacahuette"] },
+  { key: "poisson", group: "allergy", fr: "Poisson / fruits de mer", en: "Fish / seafood", es: "Pescado / marisco", pt: "Peixe / frutos do mar", kw: ["poisson", "thon", "saumon", "crevette", "fruits de mer", "anchois", "sardine", "maquereau", "cabillaud", "truite", "moule", "calamar"] },
+  { key: "soja", group: "allergy", fr: "Soja", en: "Soy", es: "Soja", pt: "Soja", kw: ["soja", "tofu", "tempeh", "edamame", "boisson vegetale"] },
+  { key: "porc", group: "allergy", fr: "Porc", en: "Pork", es: "Cerdo", pt: "Porco", kw: ["jambon", "porc", "bacon", "lardon", "saucisse", "gelatine"] },
+  { key: "halal", group: "diet", fr: "Halal (sans porc)", en: "Halal (no pork)", es: "Halal (sin cerdo)", pt: "Halal (sem porco)", kw: ["jambon", "porc", "bacon", "lardon", "saucisse", "gelatine"] },
+  { key: "vegetarien", group: "diet", fr: "Végétarien", en: "Vegetarian", es: "Vegetariano", pt: "Vegetariano", kw: MEAT_KW },
+  { key: "vegan", group: "diet", fr: "Vegan", en: "Vegan", es: "Vegano", pt: "Vegano", kw: [...MEAT_KW, ...DAIRY_KW, "oeuf", "omelette", "miel", "gelatine", "mayonnaise"] },
 ];
+// Texte sans accents / œ → oe, en minuscules, pour comparer sans se tromper.
+const normFood = (s) => (s || "").toLowerCase().replace(/œ/g, "oe").normalize("NFD").replace(/[̀-ͯ]/g, "");
+// Le mot-clé doit commencer un mot (évite "ble" dans "table"), sans exiger la fin (pluriels).
+const hasFoodKw = (lowerNorm, kw) => new RegExp("(^|[^a-z])" + kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(lowerNorm);
 function excludedMealIndices(frArray, allergyKeys, dislikedWords) {
   const excluded = new Set();
-  const words = (dislikedWords || []).map((w) => (w || "").toLowerCase().trim()).filter(Boolean);
+  const words = (dislikedWords || []).map((w) => normFood(w).trim()).filter(Boolean).map((w) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w));
   const allergenKws = (allergyKeys || []).flatMap((k) => ALLERGENS.find((a) => a.key === k)?.kw || []);
   frArray.forEach((text, i) => {
-    const lower = text.toLowerCase();
-    if (allergenKws.some((kw) => lower.includes(kw)) || words.some((w) => lower.includes(w))) excluded.add(i);
+    const lower = normFood(text);
+    if (allergenKws.some((kw) => hasFoodKw(lower, kw)) || words.some((w) => hasFoodKw(lower, w))) excluded.add(i);
   });
   return excluded;
 }
-// Choisit un repas dans le pool en excluant allergies/aliments non aimés —
-// si le filtre exclut TOUT le pool (cas extrême), on retombe sur le pool
-// complet plutôt que de planter ou de ne rien proposer du tout.
-function pickFromPoolSafe(langArray, frArray, seed, allergyKeys, dislikedWords) {
-  const excluded = excludedMealIndices(frArray, allergyKeys, dislikedWords);
-  const allowed = langArray.map((_, i) => i).filter((i) => !excluded.has(i));
-  const indices = allowed.length > 0 ? allowed : langArray.map((_, i) => i);
-  const idx = indices[hashStr(seed) % indices.length];
-  return langArray[idx];
+// Repas "neutres" de secours (sans viande, œuf, produit laitier, gluten, fruit à coque…).
+const SAFE_MEALS = {
+  fr: ["Riz + légumes de saison + fruit frais", "Pommes de terre vapeur + légumes verts + fruit frais", "Quinoa + légumes rôtis + fruit frais"],
+  en: ["Rice + seasonal vegetables + fresh fruit", "Steamed potatoes + green vegetables + fresh fruit", "Quinoa + roasted vegetables + fresh fruit"],
+  es: ["Arroz + verduras de temporada + fruta fresca", "Patatas al vapor + verduras verdes + fruta fresca", "Quinoa + verduras asadas + fruta fresca"],
+  pt: ["Arroz + legumes da estação + fruta fresca", "Batatas cozidas no vapor + legumes verdes + fruta fresca", "Quinoa + legumes assados + fruta fresca"],
+};
+// Choisit un repas en excluant allergies/régimes/aliments non aimés.
+// Si le pool est entièrement exclu, on NE retombe JAMAIS sur un repas à risque :
+// on tente les repas neutres, puis un conseil générique.
+function pickFromPoolSafe(langArray, frArray, seed, allergyKeys, dislikedWords, lang) {
+  const pick = (arr, frArr) => {
+    const excluded = excludedMealIndices(frArr, allergyKeys, dislikedWords);
+    const allowed = arr.map((_, i) => i).filter((i) => !excluded.has(i));
+    return allowed.length > 0 ? arr[allowed[hashStr(seed) % allowed.length]] : null;
+  };
+  const fromPool = pick(langArray, frArray);
+  if (fromPool) return fromPool;
+  const l = lang || "fr";
+  const safe = pick(SAFE_MEALS[l] || SAFE_MEALS.fr, SAFE_MEALS.fr);
+  const addProtein = tr(l, { fr: " — ajoute une source de protéines compatible avec tes restrictions", en: " — add a protein source that fits your restrictions", es: " — añade una fuente de proteínas compatible con tus restricciones", pt: " — adicione uma fonte de proteína compatível com suas restrições" });
+  if (safe) return safe + addProtein;
+  return tr(l, { fr: "Compose un repas adapté à tes restrictions : féculent + légumes + protéine compatible.", en: "Build a meal that fits your restrictions: starch + vegetables + a compatible protein.", es: "Compón una comida adaptada a tus restricciones: almidón + verduras + proteína compatible.", pt: "Monte uma refeição adequada às suas restrições: carboidrato + legumes + proteína compatível." });
 }
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
 function pickFromPool(pool, seed) { return pool[hashStr(seed) % pool.length]; }
 function buildMeals(eventType, intensity, sportKey, seed, lang, allergies, dislikedFoods) {
   const category = SPORT_CATEGORY[sportKey] || "team";
-  const pool = (MEALS[category] || MEALS.team)[eventType === "match" ? "match" : "train"];
+  const slot = eventType === "match" ? "match" : "train";
+  const pool = (MEALS[category] || MEALS.team)[slot];
+  const isVeg = (allergies || []).some((k) => k === "vegetarien" || k === "vegan");
+  const vp = VEG_MEALS[slot];
+  // Régime végétarien/vegan : les repas sans viande passent en premier, puis le reste (filtré).
+  const preList = isVeg ? (vp.pre[lang] || vp.pre.fr).concat(pool.pre[lang] || pool.pre.fr) : (pool.pre[lang] || pool.pre.fr);
+  const preFr = isVeg ? vp.pre.fr.concat(pool.pre.fr) : pool.pre.fr;
+  const postList = isVeg ? (vp.post[lang] || vp.post.fr).concat(pool.post[lang] || pool.post.fr) : (pool.post[lang] || pool.post.fr);
+  const postFr = isVeg ? vp.post.fr.concat(pool.post.fr) : pool.post.fr;
   // L'intensité influence le choix ET la portion : sur une séance chill, le
   // repas d'avant reste léger (première moitié du pool, pensée plus digeste) ;
   // sur une séance intense, on va chercher dans toute la liste sans restriction.
-  const preList = pool.pre[lang] || pool.pre.fr;
-  const preFr = pool.pre.fr;
-  const prePool = (eventType !== "match" && intensity === "chill") ? preList.slice(0, Math.ceil(preList.length / 2)) : preList;
-  const prePoolFr = (eventType !== "match" && intensity === "chill") ? preFr.slice(0, Math.ceil(preFr.length / 2)) : preFr;
+  const chill = eventType !== "match" && intensity === "chill";
+  const prePool = chill ? preList.slice(0, Math.ceil(preList.length / 2)) : preList;
+  const prePoolFr = chill ? preFr.slice(0, Math.ceil(preFr.length / 2)) : preFr;
   const portionNote = eventType !== "match" ? (intensity === "chill" ? tr(lang, { fr: " (portion modérée suffit)", en: " (a moderate portion is enough)", es: " (una porción moderada basta)", pt: " (uma porção moderada basta)" }) : intensity === "intense" ? tr(lang, { fr: " (portion complète, ne lésine pas sur les glucides)", en: " (full portion, don't skimp on carbs)", es: " (porción completa, no escatimes en carbohidratos)", pt: " (porção completa, não economize nos carboidratos)" }) : "") : "";
   return {
-    pre: pickFromPoolSafe(prePool, prePoolFr, seed + "-pre", allergies, dislikedFoods) + portionNote,
-    post: pickFromPoolSafe(pool.post[lang] || pool.post.fr, pool.post.fr, seed + "-post", allergies, dislikedFoods),
+    pre: pickFromPoolSafe(prePool, prePoolFr, seed + "-pre", allergies, dislikedFoods, lang) + portionNote,
+    post: pickFromPoolSafe(postList, postFr, seed + "-post", allergies, dislikedFoods, lang),
   };
 }
 function buildRestDayMeals(seed, lang, allergies, dislikedFoods) {
+  const isVeg = (allergies || []).some((k) => k === "vegetarien" || k === "vegan");
+  const mainL = isVeg ? (REST_VEG.main[lang] || REST_VEG.main.fr).concat(REST_MEALS.main[lang] || REST_MEALS.main.fr) : (REST_MEALS.main[lang] || REST_MEALS.main.fr);
+  const mainFr = isVeg ? REST_VEG.main.fr.concat(REST_MEALS.main.fr) : REST_MEALS.main.fr;
+  const snackL = isVeg ? (REST_VEG.snack[lang] || REST_VEG.snack.fr).concat(REST_MEALS.snack[lang] || REST_MEALS.snack.fr) : (REST_MEALS.snack[lang] || REST_MEALS.snack.fr);
+  const snackFr = isVeg ? REST_VEG.snack.fr.concat(REST_MEALS.snack.fr) : REST_MEALS.snack.fr;
   return {
-    pre: pickFromPoolSafe(REST_MEALS.main[lang] || REST_MEALS.main.fr, REST_MEALS.main.fr, seed + "-main", allergies, dislikedFoods),
-    post: pickFromPoolSafe(REST_MEALS.snack[lang] || REST_MEALS.snack.fr, REST_MEALS.snack.fr, seed + "-snack", allergies, dislikedFoods),
+    pre: pickFromPoolSafe(mainL, mainFr, seed + "-main", allergies, dislikedFoods, lang),
+    post: pickFromPoolSafe(snackL, snackFr, seed + "-snack", allergies, dislikedFoods, lang),
   };
 }
 // Combien de temps avant/après l'effort prendre son repas pour qu'il soit
@@ -532,7 +617,7 @@ function buildProgram(plan, lang) {
     { offsetMin: 45, label: tr(lang, { fr: "Repas de récupération", en: "Recovery meal", es: "Comida de recuperación", pt: "Refeição de recuperação" }), Icon: Utensils, tab: "nutrition" },
     { offsetMin: 120, label: tr(lang, { fr: "Massage / auto-massage", en: "Massage / self-massage", es: "Masaje / automasaje", pt: "Massagem / automassagem" }), Icon: HeartPulse, tab: "massage" },
   ];
-  if (plan.coldHeat?.[0]) raw.push({ offsetMin: 180, label: plan.coldHeat[0].titre, Icon: Snowflake, tab: "froid" });
+  if (plan.coldHeat?.[0]) raw.push({ offsetMin: plan.coldHeat[0].delayMin || 180, label: plan.coldHeat[0].titre, Icon: Snowflake, tab: "froid" });
   const timed = raw.map((s) => ({
     ...s,
     timeLabel: endTime ? addMinutes(endTime, s.offsetMin, lang) : (s.offsetMin === 0 ? rightAfter : s.offsetMin < 60 ? `+${s.offsetMin} min` : `+${Math.floor(s.offsetMin / 60)}h${s.offsetMin % 60 ? String(s.offsetMin % 60).padStart(2, "0") : ""}`),
@@ -543,8 +628,10 @@ function buildProgram(plan, lang) {
 /* ============================================================
    RECOVERY LOGIC
    ============================================================ */
-function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau }) {
+function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0 }) {
   let s = fatigue * 10;
+  // Charge de la semaine : plus tu as enchaîné de séances sur 7 jours, plus le besoin de récup monte.
+  if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
   if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
@@ -554,7 +641,9 @@ function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau 
   s *= NIVEAU_MULT[niveau] || 1;
   return Math.max(5, Math.min(100, Math.round(s)));
 }
-const scoreColor = (score) => (score >= 70 ? C.danger : score >= 40 ? C.warn : C.primary);
+const scoreColor = (score) => (score >= 70 ? C.scoreHigh : score >= 40 ? C.scoreMid : C.primary);
+// Mot associé au score : la couleur ne doit jamais être le seul indice (daltonisme).
+const scoreWord = (score, lang) => (score >= 70 ? tr(lang, { fr: "Intense", en: "Hard", es: "Intenso", pt: "Intenso" }) : score >= 40 ? tr(lang, { fr: "Modéré", en: "Moderate", es: "Moderado", pt: "Moderado" }) : tr(lang, { fr: "Léger", en: "Light", es: "Ligero", pt: "Leve" }));
 function recoveryDurationLabel(score, lang) {
   if (score >= 75) return tr(lang, { fr: "48-72h de récup renforcée", en: "48-72h of intensive recovery", es: "48-72h de recuperación reforzada", pt: "48-72h de recuperação reforçada" });
   if (score >= 50) return tr(lang, { fr: "24-48h de récup active", en: "24-48h of active recovery", es: "24-48h de recuperación activa", pt: "24-48h de recuperação ativa" });
@@ -571,10 +660,13 @@ function buildMassage(equipement, zoneLabel, lang) {
   if (has("massage_ball")) return { titre: tr(lang, { fr: "Auto-massage à la balle", en: "Massage ball self-release", es: "Automasaje con pelota", pt: "Automassagem com bola" }), texte: tr(lang, { fr: "Place la balle sous la zone tendue et applique une pression progressive en petits cercles, 1-2 min par zone.", en: "Place the ball under the tight area and apply progressive pressure in small circles, 1-2 min per area.", es: "Coloca la pelota bajo la zona tensa y aplica presión progresiva en pequeños círculos, 1-2 min por zona.", pt: "Coloque a bola sob a área tensa e aplique pressão progressiva em pequenos círculos, 1-2 min por área." }) + on };
   return { titre: tr(lang, { fr: "Auto-massage manuel", en: "Manual self-massage", es: "Automasaje manual", pt: "Automassagem manual" }), texte: tr(lang, { fr: "Pétrissage manuel des muscles sollicités par pressions circulaires en remontant vers le cœur, 1-2 min par zone.", en: "Manually knead the worked muscles with circular pressure moving toward the heart, 1-2 min per area.", es: "Amasado manual de los músculos trabajados con presiones circulares hacia el corazón, 1-2 min por zona.", pt: "Amasse manualmente os músculos trabalhados com pressões circulares em direção ao coração, 1-2 min por área." }) + on };
 }
-function buildColdHeat(equipement, score, zoneLabel, lang) {
+function buildColdHeat(equipement, score, zoneLabel, lang, strength = false) {
   const has = (x) => equipement?.includes(x); const items = [];
   const on = zoneLabel ? tr(lang, { fr: ` (${zoneLabel} en priorité)`, en: ` (${zoneLabel} first)`, es: ` (${zoneLabel} primero)`, pt: ` (${zoneLabel} primeiro)` }) : "";
-  if (has("cold_bath") && score >= 45) items.push({ type: "froid", titre: tr(lang, { fr: "Bain froid / douche froide", en: "Cold bath / cold shower", es: "Baño frío / ducha fría", pt: "Banho frio / ducha fria" }), texte: tr(lang, { fr: "10-15 min en eau à 10-15°C dans les 30-60 min après l'effort pour limiter l'inflammation.", en: "10-15 min in 10-15°C water within 30-60 min after training to limit inflammation.", es: "10-15 min en agua a 10-15°C dentro de los 30-60 min tras el esfuerzo para limitar la inflamación.", pt: "10-15 min em água a 10-15°C nos 30-60 min após o esforço para limitar a inflamação." }) });
+  if (has("cold_bath") && score >= 45) {
+    if (strength) items.push({ type: "froid", delayMin: 300, titre: tr(lang, { fr: "Bain froid / douche froide (plus tard)", en: "Cold bath / cold shower (later)", es: "Baño frío / ducha fría (más tarde)", pt: "Banho frio / ducha fria (mais tarde)" }), texte: tr(lang, { fr: "Après de la musculation, attends au moins 4 à 6 h avant un bain froid : juste après l'effort, il peut freiner les gains de force et de masse musculaire. Utile surtout les jours de grosse fatigue ou de courbatures.", en: "After strength training, wait at least 4-6 h before a cold bath: right after the session it can blunt strength and muscle gains. Most useful on days of heavy fatigue or soreness.", es: "Tras entrenar fuerza, espera al menos 4-6 h antes de un baño frío: justo después puede frenar las ganancias de fuerza y masa muscular. Útil sobre todo en días de mucha fatiga o agujetas.", pt: "Após musculação, espere pelo menos 4-6 h antes de um banho frio: logo após o treino ele pode atrapalhar os ganhos de força e massa muscular. Útil sobretudo em dias de muita fadiga ou dor muscular." }) });
+    else items.push({ type: "froid", delayMin: 180, titre: tr(lang, { fr: "Bain froid / douche froide", en: "Cold bath / cold shower", es: "Baño frío / ducha fría", pt: "Banho frio / ducha fria" }), texte: tr(lang, { fr: "10-15 min en eau à 10-15°C dans les 30-60 min après l'effort pour limiter l'inflammation.", en: "10-15 min in 10-15°C water within 30-60 min after training to limit inflammation.", es: "10-15 min en agua a 10-15°C dentro de los 30-60 min tras el esfuerzo para limitar la inflamación.", pt: "10-15 min em água a 10-15°C nos 30-60 min após o esforço para limitar a inflamação." }) });
+  }
   if (has("ice_pack")) items.push({ type: "froid", titre: tr(lang, { fr: "Glaçage localisé", en: "Localized icing", es: "Hielo localizado", pt: "Gelo localizado" }), texte: tr(lang, { fr: "15 min de froid sur les zones sollicitées ou ayant reçu des impacts, 2-3 fois dans la journée.", en: "15 min of cold on worked areas or areas that took impact, 2-3 times during the day.", es: "15 min de frío en las zonas trabajadas o golpeadas, 2-3 veces al día.", pt: "15 min de gelo nas áreas trabalhadas ou que sofreram impacto, 2-3 vezes ao dia." }) + on });
   if (has("sauna")) items.push({ type: "chaud", titre: tr(lang, { fr: "Sauna / hammam", en: "Sauna / steam room", es: "Sauna / baño de vapor", pt: "Sauna / banho a vapor" }), texte: tr(lang, { fr: "Idéal le lendemain d'un effort intense, favorise la circulation. Bien s'hydrater avant/après, 10-15 min.", en: "Ideal the day after intense training, boosts circulation. Hydrate well before/after, 10-15 min.", es: "Ideal al día siguiente de un esfuerzo intenso, favorece la circulación. Hidrátate bien antes/después, 10-15 min.", pt: "Ideal no dia seguinte a um esforço intenso, favorece a circulação. Hidrate-se bem antes/depois, 10-15 min." }) });
   if (items.length === 0) items.push({ type: "mixte", titre: tr(lang, { fr: "Douche écossaise", en: "Contrast shower", es: "Ducha de contraste", pt: "Ducha de contraste" }), texte: tr(lang, { fr: "Alterne 30 sec chaud puis 15 sec froid sur les zones sollicitées, 3-4 cycles, en terminant par le froid.", en: "Alternate 30 sec hot then 15 sec cold on worked areas, 3-4 cycles, ending on cold.", es: "Alterna 30 seg caliente y 15 seg frío en las zonas trabajadas, 3-4 ciclos, terminando en frío.", pt: "Alterne 30 seg quente e 15 seg frio nas áreas trabalhadas, 3-4 ciclos, terminando no frio." }) + on });
@@ -588,6 +680,41 @@ function buildProducts(equipement, eventType, score, lang) {
   if (score >= 60) list.push(tr(lang, { fr: "Magnésium : peut aider en cas de crampes fréquentes, à discuter avec un pharmacien.", en: "Magnesium: may help with frequent cramps, discuss with a pharmacist.", es: "Magnesio: puede ayudar con calambres frecuentes, coméntalo con un farmacéutico.", pt: "Magnésio: pode ajudar em caso de cãibras frequentes, converse com um farmacêutico." }));
   if (list.length === 0) list.push(tr(lang, { fr: "Pas de produit indispensable ici : hydratation et sommeil suffisant restent la priorité.", en: "No essential product here: hydration and enough sleep remain the priority.", es: "Ningún producto imprescindible aquí: la hidratación y dormir lo suficiente siguen siendo la prioridad.", pt: "Nenhum produto essencial aqui: hidratação e sono suficiente continuam sendo a prioridade." }));
   return list;
+}
+// Conseils d'amélioration de la récup : (1) matériel à envisager selon CE que l'utilisateur
+// ne possède pas encore, (2) astuces gratuites. Rien n'est présenté comme indispensable.
+function buildAdvice(equipement, sportKey, eventType, score, weekLoad, niveau, lang) {
+  const has = (x) => (equipement || []).includes(x);
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const cat = SPORT_CATEGORY[sportKey] || "autre";
+  const strength = sportKey === "muscu";
+  const buy = [];
+  if (!has("foam_roller")) buy.push({ p: 1, price: "15–30 €", t: T4("Un rouleau de massage", "A foam roller", "Un rodillo de espuma", "Um rolo de espuma"), d: T4("Le meilleur rapport utilité/prix : il détend cuisses, mollets et dos en quelques minutes. Choisis une densité moyenne si tu débutes.", "Best value for money: it loosens quads, calves and back in a few minutes. Pick a medium density if you're starting out.", "La mejor relación utilidad/precio: relaja muslos, gemelos y espalda en pocos minutos. Elige densidad media si empiezas.", "Melhor custo-benefício: alivia coxas, panturrilhas e costas em poucos minutos. Escolha densidade média se está começando.") });
+  if (!has("massage_ball")) buy.push({ p: 3, price: "5–10 €", t: T4("Une balle de massage", "A massage ball", "Una pelota de masaje", "Uma bola de massagem"), d: T4("Idéale pour les zones que le rouleau n'atteint pas : voûte du pied, fessiers, omoplates. Se glisse dans un sac.", "Ideal for spots the roller can't reach: arch of the foot, glutes, shoulder blades. Fits in a bag.", "Ideal para zonas que el rodillo no alcanza: planta del pie, glúteos, omóplatos. Cabe en una bolsa.", "Ideal para áreas que o rolo não alcança: sola do pé, glúteos, omoplatas. Cabe numa bolsa.") });
+  if (!has("mat")) buy.push({ p: 4, price: "15–30 €", t: T4("Un tapis de sol", "A floor mat", "Una colchoneta", "Um tapete de solo"), d: T4("Rend les étirements et le retour au calme plus confortables, surtout à la maison.", "Makes stretching and cool-downs more comfortable, especially at home.", "Hace los estiramientos y la vuelta a la calma más cómodos, sobre todo en casa.", "Torna alongamentos e volta à calma mais confortáveis, principalmente em casa.") });
+  if (!has("elastic_bands") && cat !== "natation") buy.push({ p: 2, price: "10–20 €", t: T4("Des bandes élastiques", "Resistance bands", "Bandas elásticas", "Faixas elásticas"), d: T4("Parfaites pour la mobilité et le renforcement léger des épaules, hanches et chevilles : bon pour la prévention des blessures.", "Great for mobility and light strengthening of shoulders, hips and ankles: good for injury prevention.", "Perfectas para movilidad y refuerzo ligero de hombros, caderas y tobillos: buenas para prevenir lesiones.", "Ótimas para mobilidade e fortalecimento leve de ombros, quadris e tornozelos: boas para prevenir lesões.") });
+  if (!has("ice_pack") && !has("cold_bath") && !strength && score >= 55) buy.push({ p: 2, price: "5–10 €", t: T4("Une poche de froid réutilisable", "A reusable cold pack", "Una bolsa de frío reutilizable", "Uma bolsa de frio reutilizável"), d: T4("Utile pour calmer une zone qui chauffe (cheville, genou) après un gros effort. Toujours avec un tissu entre la poche et la peau.", "Useful to calm a sore spot (ankle, knee) after a hard effort. Always keep a cloth between the pack and your skin.", "Útil para calmar una zona dolorida (tobillo, rodilla) tras un gran esfuerzo. Siempre con una tela entre la bolsa y la piel.", "Útil para acalmar uma área dolorida (tornozelo, joelho) após um grande esforço. Sempre com um pano entre a bolsa e a pele.") });
+  if (!has("massage_gun") && score >= 60) buy.push({ p: 5, price: "60–150 €", t: T4("Pistolet de massage (optionnel)", "Massage gun (optional)", "Pistola de masaje (opcional)", "Pistola de massagem (opcional)"), d: T4("Confortable et rapide, mais pas indispensable : un rouleau fait presque le même travail. Jamais sur une zone blessée, un os ou une articulation.", "Comfortable and quick but not essential: a roller does almost the same job. Never on an injured area, a bone or a joint.", "Cómoda y rápida, pero no imprescindible: un rodillo hace casi lo mismo. Nunca sobre una zona lesionada, un hueso o una articulación.", "Confortável e rápida, mas não essencial: um rolo faz quase o mesmo. Nunca em área lesionada, osso ou articulação.") });
+  buy.sort((a, b) => a.p - b.p);
+
+  const tips = [];
+  tips.push({ p: score >= 50 ? 1 : 3, t: T4("Dors 7 à 9 h", "Sleep 7–9 h", "Duerme 7 a 9 h", "Durma 7 a 9 h"), d: T4("Le sommeil est le premier outil de récupération. Couche-toi à heure régulière et coupe les écrans 30 min avant.", "Sleep is the #1 recovery tool. Go to bed at a regular time and cut screens 30 min before.", "El sueño es la primera herramienta de recuperación. Acuéstate a hora regular y apaga pantallas 30 min antes.", "O sono é a principal ferramenta de recuperação. Deite em horário regular e desligue as telas 30 min antes.") });
+  tips.push({ p: 2, t: T4("Des protéines à chaque repas", "Protein at every meal", "Proteína en cada comida", "Proteína em cada refeição"), d: T4("Répartis-les sur la journée (20 à 40 g par repas) plutôt que tout le soir : c'est plus efficace pour réparer les muscles.", "Spread them across the day (20–40 g per meal) rather than all at night: more effective for muscle repair.", "Repártela durante el día (20 a 40 g por comida) en vez de todo por la noche: es más eficaz para reparar el músculo.", "Distribua ao longo do dia (20 a 40 g por refeição) em vez de tudo à noite: é mais eficaz para reparar os músculos.") });
+  if (score >= 40) tips.push({ p: 2, t: T4("Surveille la couleur de ton urine", "Check your urine colour", "Vigila el color de tu orina", "Observe a cor da urina"), d: T4("Jaune très pâle = bien hydraté. Foncé = bois davantage, et pense à saler un peu tes repas si tu transpires beaucoup.", "Pale yellow = well hydrated. Dark = drink more, and salt your meals a little if you sweat a lot.", "Amarillo muy pálido = bien hidratado. Oscuro = bebe más, y sala un poco las comidas si sudas mucho.", "Amarelo bem claro = bem hidratado. Escuro = beba mais e use um pouco de sal nas refeições se suar muito.") });
+  if (score >= 50) tips.push({ p: 3, t: T4("Bouge doucement le lendemain", "Move gently the next day", "Muévete suave al día siguiente", "Mexa-se suavemente no dia seguinte"), d: T4("10 à 20 min de marche, vélo tranquille ou mobilité : ça relance la circulation mieux que le canapé.", "10–20 min of walking, easy cycling or mobility: it gets circulation going better than the couch.", "10 a 20 min de caminata, bici suave o movilidad: reactiva la circulación mejor que el sofá.", "10 a 20 min de caminhada, bike leve ou mobilidade: ativa a circulação melhor que o sofá.") });
+  if (weekLoad >= 3 || niveau === "avance" || niveau === "competition") tips.push({ p: 1, t: T4("Prévois une semaine allégée", "Plan a lighter week", "Planifica una semana ligera", "Planeje uma semana leve"), d: T4("Toutes les 4 à 6 semaines, réduis le volume d'environ un tiers : le corps progresse pendant le repos, pas seulement pendant l'effort.", "Every 4–6 weeks, cut volume by about a third: the body improves during rest, not only during effort.", "Cada 4 a 6 semanas, reduce el volumen en un tercio: el cuerpo progresa en el descanso, no solo en el esfuerzo.", "A cada 4 a 6 semanas, reduza o volume em cerca de um terço: o corpo evolui no descanso, não só no esforço.") });
+  if (eventType === "match" || score >= 65) tips.push({ p: 4, t: T4("Limite l'alcool ce soir-là", "Limit alcohol that night", "Limita el alcohol esa noche", "Limite o álcool nessa noite"), d: T4("Il dégrade le sommeil et ralentit la réparation musculaire, surtout après un gros effort.", "It hurts sleep and slows muscle repair, especially after a hard effort.", "Empeora el sueño y frena la reparación muscular, sobre todo tras un gran esfuerzo.", "Prejudica o sono e atrasa a reparação muscular, principalmente após um grande esforço.") });
+  const sp = {
+    running: [T4("Surveille l'usure de tes chaussures", "Track your shoe wear", "Controla el desgaste de tus zapatillas", "Acompanhe o desgaste dos tênis"), T4("Une paire dure en général 600 à 800 km. Alterner deux paires réduit un peu les contraintes répétées.", "A pair usually lasts 600–800 km. Rotating two pairs slightly reduces repeated stress.", "Un par suele durar 600 a 800 km. Alternar dos pares reduce algo el estrés repetido.", "Um par costuma durar 600 a 800 km. Alternar dois pares reduz um pouco o estresse repetido.")],
+    cyclisme: [T4("Vérifie ton réglage de selle", "Check your saddle setup", "Revisa la altura del sillín", "Verifique a altura do selim"), T4("Une selle trop haute ou trop basse charge genoux et bas du dos. Un réglage en magasin prend 20 minutes.", "A saddle too high or low loads knees and lower back. A shop fitting takes about 20 minutes.", "Un sillín muy alto o bajo carga rodillas y lumbares. Un ajuste en tienda lleva 20 minutos.", "Um selim alto ou baixo demais sobrecarrega joelhos e lombar. Um ajuste em loja leva 20 minutos.")],
+    muscu: [T4("Alterne les groupes musculaires", "Rotate muscle groups", "Alterna grupos musculares", "Alterne grupos musculares"), T4("Laisse 48 h entre deux séances sur les mêmes muscles. Après la muscu, garde le froid intense pour un autre jour.", "Leave 48 h between sessions on the same muscles. After lifting, save intense cold for another day.", "Deja 48 h entre sesiones de los mismos músculos. Tras la musculación, deja el frío intenso para otro día.", "Deixe 48 h entre sessões dos mesmos músculos. Após a musculação, deixe o frio intenso para outro dia.")],
+    natation: [T4("Entretiens la mobilité des épaules", "Keep your shoulders mobile", "Cuida la movilidad de los hombros", "Cuide da mobilidade dos ombros"), T4("Quelques rotations avec une bande élastique après la séance protègent les épaules, très sollicitées en nage.", "A few rotations with a resistance band after the session protect the shoulders, heavily used in swimming.", "Unas rotaciones con banda elástica tras la sesión protegen los hombros, muy exigidos al nadar.", "Algumas rotações com faixa elástica após a sessão protegem os ombros, muito exigidos na natação.")],
+    tennis: [T4("Renforce épaule et poignet", "Strengthen shoulder and wrist", "Refuerza hombro y muñeca", "Fortaleça ombro e punho"), T4("Un peu de renforcement des rotateurs et des avant-bras limite les douleurs au coude et à l'épaule.", "A little rotator-cuff and forearm strengthening reduces elbow and shoulder pain.", "Un poco de refuerzo de manguito rotador y antebrazos reduce el dolor de codo y hombro.", "Um pouco de fortalecimento de manguito rotador e antebraços reduz dores no cotovelo e ombro.")],
+  };
+  if (sp[sportKey]) tips.push({ p: 2, t: sp[sportKey][0], d: sp[sportKey][1] });
+  else if (cat === "team") tips.push({ p: 3, t: T4("Soigne tes chevilles et tes ischios", "Look after ankles and hamstrings", "Cuida tobillos e isquios", "Cuide de tornozelos e posteriores"), d: T4("Ce sont les zones les plus touchées dans les sports collectifs : 5 min d'équilibre et de renfo léger avant l'entraînement aident.", "These are the most injured areas in team sports: 5 min of balance and light strengthening before training helps.", "Son las zonas más lesionadas en deportes de equipo: 5 min de equilibrio y refuerzo ligero antes de entrenar ayudan.", "São as áreas mais lesionadas em esportes coletivos: 5 min de equilíbrio e reforço leve antes do treino ajudam.") });
+  tips.sort((a, b) => a.p - b.p);
+  return { buy: buy.slice(0, 3), tips: tips.slice(0, 4), hasAll: buy.length === 0 };
 }
 // Construit une courte liste de noms de zones (ex: "genoux, mollets") à
 // partir des muscleKeys, pour rendre massage/froid-chaud spécifiques au sport
@@ -605,9 +732,9 @@ function computeMuscleKeys(sportKey, muscuZones) {
   return (SPORTS[sportKey] || SPORTS.autre).muscles;
 }
 function generatePlan(profile, input, lang) {
-  const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay } = input;
+  const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay, weekLoad = 0 } = input;
   const age = computeAge(profile.dateNaissance);
-  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau });
+  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau, weekLoad });
   const sportKey = sport || profile.sports?.[0] || "autre";
   const muscleKeys = computeMuscleKeys(sportKey, muscuZones);
   const stretches = muscleKeys.map((k) => { const d = STRETCH_DB[k] || STRETCH_DB.corps_entier; return { key: k, ...(d[lang] || d.fr) }; });
@@ -616,11 +743,12 @@ function generatePlan(profile, input, lang) {
   const mealSeed = seed || `${Date.now()}-${Math.random()}`;
   return {
     id: Date.now() + Math.random(), date: new Date().toISOString(), heure: heure || null,
-    eventType, intensity, fatigue, hoursToNext, sport: sportKey, muscuZones: muscuZones || [], lang, restDay: !!restDay,
+    eventType, intensity, fatigue, hoursToNext, sport: sportKey, muscuZones: muscuZones || [], lang, restDay: !!restDay, weekLoad,
     score, duree: recoveryDurationLabel(score, lang), stretches, warmup,
-    massage: buildMassage(profile.equipement, zones, lang), coldHeat: buildColdHeat(profile.equipement, score, zones, lang),
+    massage: buildMassage(profile.equipement, zones, lang), coldHeat: buildColdHeat(profile.equipement, score, zones, lang, sportKey === "muscu"),
     sommeil: sleepHours(score, eventType), hydratation: hydrationLiters(Number(profile.poids), eventType, intensity),
     produits: buildProducts(profile.equipement, eventType, score, lang),
+    conseils: buildAdvice(profile.equipement, sportKey, eventType, score, weekLoad, profile.niveau, lang),
     meals: restDay ? buildRestDayMeals(mealSeed, lang, profile.allergies, profile.dislikedFoods) : buildMeals(eventType, intensity, sportKey, mealSeed, lang, profile.allergies, profile.dislikedFoods),
     nutrients: computeNutrientTargets(profile, eventType, intensity, sportKey),
   };
@@ -660,8 +788,8 @@ function mergeSportEntriesPlan(profile, sportEntries, date, lang) {
     id: Date.now() + Math.random(), date: new Date().toISOString(), heure: heures[0] || null, restDay: false,
     eventType: ref.eventType, intensity: ref.intensity, sport: ref.sport, muscuZones: ref.muscuZones, lang,
     score, duree: recoveryDurationLabel(score, lang), stretches, warmup,
-    massage: buildMassage(profile.equipement, zones, lang), coldHeat: buildColdHeat(profile.equipement, score, zones, lang),
-    sommeil, hydratation, produits: buildProducts(profile.equipement, ref.eventType, score, lang), meals: ref.meals,
+    massage: buildMassage(profile.equipement, zones, lang), coldHeat: buildColdHeat(profile.equipement, score, zones, lang, sportEntries.some((e) => e.sport === "muscu")),
+    sommeil, hydratation, produits: buildProducts(profile.equipement, ref.eventType, score, lang), conseils: buildAdvice(profile.equipement, sportEntries[0]?.sport || "autre", ref.eventType, score, 0, profile.niveau, lang), meals: ref.meals,
     nutrients, combined: individual.length > 1, sessionsCount: individual.length,
   };
 }
@@ -696,7 +824,7 @@ function getInjuryAdvice(partKey, symptomKey, lang) {
     conseil = S("Une imagerie peut être nécessaire pour écarter une fracture ou fissure. Glace et repos en attendant.", "Imaging may be needed to rule out a fracture. Ice and rest in the meantime.", "Puede ser necesaria una imagen para descartar una fractura. Hielo y reposo mientras tanto.", "Pode ser necessário exame de imagem para descartar fratura. Gelo e repouso enquanto isso.");
   } else if (symptomKey === "gonflement" && (partKey === "genou" || partKey === "cheville")) {
     specialistes = [S("Médecin du sport", "Sports physician", "Médico deportivo", "Médico do esporte"), S("Kinésithérapeute pour le suivi", "Physiotherapist for follow-up", "Fisioterapeuta para el seguimiento", "Fisioterapeuta para acompanhamento")];
-    conseil = S("Applique le protocole GREC : Glace, Repos, Élévation, Contention légère, en attendant la consultation.", "Apply the RICE protocol: Rest, Ice, Compression, Elevation, until you see a doctor.", "Aplica el protocolo RICE: Reposo, Hielo, Compresión, Elevación, mientras esperas la consulta.", "Aplique o protocolo RICE: Repouso, Gelo, Compressão, Elevação, até a consulta.");
+    conseil = S("Protocole PEACE & LOVE, recommandé aujourd'hui : les premiers jours, protège la zone (repos relatif), surélève-la, comprime légèrement, évite de prendre des anti-inflammatoires sans avis médical. Dès que la douleur le permet, reprends progressivement le mouvement (marche, mobilité douce). Consulte rapidement si ça gonfle beaucoup ou si tu ne peux pas poser le pied.", "PEACE & LOVE protocol, recommended today: for the first days, protect the area (relative rest), elevate it, compress lightly, and avoid anti-inflammatory drugs without medical advice. As soon as pain allows, gradually restart movement (walking, gentle mobility). See a doctor quickly if it swells a lot or you can't put weight on it.", "Protocolo PEACE & LOVE, recomendado hoy: los primeros días protege la zona (reposo relativo), elévala, comprime ligeramente y evita los antiinflamatorios sin consejo médico. En cuanto el dolor lo permita, retoma el movimiento poco a poco (caminar, movilidad suave). Consulta pronto si se hincha mucho o no puedes apoyar el pie.", "Protocolo PEACE & LOVE, recomendado hoje: nos primeiros dias proteja a área (repouso relativo), eleve-a, comprima levemente e evite anti-inflamatórios sem orientação médica. Assim que a dor permitir, retome o movimento aos poucos (caminhada, mobilidade suave). Procure um médico rápido se inchar muito ou se não conseguir apoiar o pé.");
   } else if (symptomKey === "instabilite") {
     specialistes = [S("Médecin du sport", "Sports physician", "Médico deportivo", "Médico do esporte"), S("Kinésithérapeute", "Physiotherapist", "Fisioterapeuta", "Fisioterapeuta")];
     conseil = S("Une suspicion de lésion ligamentaire nécessite un bilan avant reprise du sport.", "A suspected ligament injury needs an assessment before returning to sport.", "Una sospecha de lesión ligamentosa requiere una evaluación antes de volver al deporte.", "Suspeita de lesão ligamentar exige avaliação antes de retomar o esporte.");
@@ -729,6 +857,76 @@ function getDayEntries(weeklyDays, exceptions, dateIso) {
   const isException = Object.prototype.hasOwnProperty.call(exceptions, dateIso);
   return { entries: isException ? exceptions[dateIso] : (weeklyDays[dow] || []), isException, dow };
 }
+/* ============================================================
+   SOMMEIL & RAPPELS (coucher, étirements)
+   Les réglages vivent dans la table `user_settings`. L'app calcule à l'avance
+   la liste des rappels des 14 prochains jours (`queue`) ; le serveur n'a plus
+   qu'à envoyer ceux dont l'heure est arrivée.
+   ============================================================ */
+const defaultSettings = () => ({ wake: ["07:00", "07:00", "07:00", "07:00", "07:00", "07:00", "07:00"], sleepOn: false, sleepScope: "sessions", stretchOn: false, stretchDelay: 30, queue: [] });
+const toMin = (hhmm) => { const [h, m] = String(hhmm || "").split(":").map(Number); return (Number.isFinite(h) && Number.isFinite(m)) ? h * 60 + m : null; };
+const fmtHM = (min) => { const m = ((Math.round(min) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
+const dowOfIso = (iso) => (new Date(iso + "T12:00:00").getDay() + 6) % 7;
+const addDaysIso = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return isoLocal(d); };
+const fmtHoursLabel = (h) => (h % 1 ? `${Math.floor(h)}h30` : `${h}h`);
+
+// Heures de sommeil conseillées pour la nuit qui suit le jour `dateIso`
+// (même logique que le plan de récup). null = pas de séance ce jour-là.
+function sleepHoursForDay(entries, profile, dateIso, sessionsLog) {
+  const sp = (entries || []).filter((e) => SPORT_TYPES.includes(e.type));
+  const logged = (sessionsLog || []).filter((x) => x.date && !x.restDay && x.sommeil && isoLocal(new Date(x.date)) === dateIso);
+  if (!sp.length && !logged.length) return null;
+  const age = computeAge(profile.dateNaissance);
+  let h = 0;
+  sp.forEach((e) => {
+    const sc = computeScore({ eventType: e.type, intensity: e.intensity || "moyen", fatigue: 3, hoursToNext: 48, age, niveau: profile.niveau });
+    h = Math.max(h, sleepHours(sc, e.type));
+  });
+  if (sp.length > 1) h = Math.min(10, h + 0.5);
+  logged.forEach((x) => { h = Math.max(h, Number(x.sommeil) || 0); });
+  return h;
+}
+
+function buildReminderQueue(cfg, settings, profile, sessionsLog, lang, now = new Date()) {
+  const out = [];
+  if (!profile || !(settings.sleepOn || settings.stretchOn)) return out;
+  const weekly = cfg?.weeklyDays || emptyWeekly(); const exc = cfg?.exceptions || {};
+  const todayIso = isoLocal(now); const nowAbs = now.getHours() * 60 + now.getMinutes();
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const seen = new Set();
+  const push = (item) => { const k = `${item.date}-${item.kind}-${item.time}`; if (seen.has(k)) return; seen.add(k); out.push(item); };
+  for (let i = 0; i < 14; i++) {
+    const date = addDaysIso(todayIso, i);
+    const { entries } = getDayEntries(weekly, exc, date);
+    if (settings.sleepOn) {
+      let hrs = sleepHoursForDay(entries, profile, date, sessionsLog);
+      if (hrs == null && settings.sleepScope === "all") hrs = 8;
+      const wakeStr = (settings.wake || [])[dowOfIso(addDaysIso(date, 1))];
+      const wake = toMin(wakeStr);
+      if (hrs != null && wake != null) {
+        const bedAbs = 1440 + wake - Math.round(hrs * 60);   // minutes depuis 00:00 du jour `date`
+        const remAbs = bedAbs - 30;
+        if (i * 1440 + remAbs > nowAbs) {
+          const bed = fmtHM(bedAbs);
+          push({ date: remAbs >= 1440 ? addDaysIso(date, 1) : date, time: fmtHM(remAbs), kind: "sleep", bed, wake: wakeStr, hours: hrs,
+            body: T4(`Dodo dans 30 min 🌙 Couche-toi à ${bed} pour ${fmtHoursLabel(hrs)} de sommeil (réveil ${wakeStr}).`, `Bedtime in 30 min 🌙 Be in bed by ${bed} for ${fmtHoursLabel(hrs)} of sleep (wake-up ${wakeStr}).`, `Hora de dormir en 30 min 🌙 Acuéstate a las ${bed} para dormir ${fmtHoursLabel(hrs)} (despertar ${wakeStr}).`, `Hora de dormir em 30 min 🌙 Deite às ${bed} para ${fmtHoursLabel(hrs)} de sono (despertar ${wakeStr}).`) });
+        }
+      }
+    }
+    if (settings.stretchOn) {
+      (entries || []).filter((e) => SPORT_TYPES.includes(e.type)).forEach((e) => {
+        const base = toMin(e.heure);
+        const t = base != null ? base + (Number(settings.stretchDelay) || 30) : 19 * 60;
+        if (t >= 1440 || i * 1440 + t <= nowAbs) return;
+        const zones = zonesLabel(computeMuscleKeys(e.sport, e.muscuZones), lang);
+        push({ date, time: fmtHM(t), kind: "stretch", sport: e.sport,
+          body: T4(`Étirements 🧘 5 à 10 min${zones ? ` (${zones})` : ""} pour accélérer ta récup.`, `Stretch time 🧘 5–10 min${zones ? ` (${zones})` : ""} to speed up your recovery.`, `Hora de estirar 🧘 5 a 10 min${zones ? ` (${zones})` : ""} para acelerar tu recuperación.`, `Hora de alongar 🧘 5 a 10 min${zones ? ` (${zones})` : ""} para acelerar sua recuperação.`) });
+      });
+    }
+  }
+  return out.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
 function autoRecovery(schedule, idx, profile) {
   const prev = schedule[idx - 1]; if (!prev) return null;
   const relevant = prev.entries.filter((e) => SPORT_TYPES.includes(e.type));
@@ -926,12 +1124,13 @@ async function sbDelete(table, matchQuery, accessToken) {
 // Rassemble les 5 tables en un seul objet, dans la même forme que le reste
 // de l'app attend déjà (profile / sessionsLog / plannerConfig / injuries / pro).
 async function loadUserData(userId, accessToken, meta) {
-  const [profileRows, sessionRows, plannerRows, injuryRows, proRows] = await Promise.all([
+  const [profileRows, sessionRows, plannerRows, injuryRows, proRows, settingsRows] = await Promise.all([
     sbSelect("profiles", `id=eq.${userId}&select=*`, accessToken),
     sbSelect("sessions_log", `user_id=eq.${userId}&select=*&order=created_at`, accessToken),
     sbSelect("planner_config", `user_id=eq.${userId}&select=*`, accessToken),
     sbSelect("injuries", `user_id=eq.${userId}&select=*&order=created_at`, accessToken),
     sbSelect("subscriptions", `user_id=eq.${userId}&select=*`, accessToken),
+    sbSelect("user_settings", `user_id=eq.${userId}&select=*`, accessToken),
   ]);
   const profileRow = profileRows[0];
   const profile = profileRow ? {
@@ -949,6 +1148,7 @@ async function loadUserData(userId, accessToken, meta) {
   return {
     nom: profileRow?.nom || meta?.nom || "", prenom: profileRow?.prenom || meta?.prenom || "", username: profileRow?.username || meta?.username || "",
     profile, sessionsLog, plannerConfig, injuries, pro,
+    settings: { ...defaultSettings(), ...((settingsRows && settingsRows[0] && settingsRows[0].data) || {}) },
   };
 }
 
@@ -987,7 +1187,7 @@ function Btn({ children, onClick, variant = "primary", full, disabled, type = "b
     </button>
   );
 }
-function Field({ label, children }) { return <div className="mb-5"><label className="block text-[11px] font-semibold mb-1.5 tracking-wide uppercase" style={{ color: C.textMuted, ...fontBody }}>{label}</label>{children}</div>; }
+function Field({ label, children }) { return <div className="mb-5"><label className="block text-xs font-semibold mb-1.5 tracking-wide uppercase" style={{ color: C.textMuted, ...fontBody }}>{label}</label>{children}</div>; }
 const inputStyle = { background: C.glassSoft, border: `1px solid ${C.glassBorder}`, color: C.text, backdropFilter: "blur(10px)", ...fontBody };
 function TextInput(props) { return <input {...props} className="w-full rounded-xl px-3 py-2.5 outline-none" style={{ ...inputStyle, fontSize: 16, ...props.style }} />; }
 function Select({ value, onChange, options, placeholder }) {
@@ -1009,7 +1209,7 @@ function HeroCard({ children, accent, style, className = "" }) {
   return <div className={`rounded-[26px] p-5 relative overflow-hidden ${className}`} style={{ background: `linear-gradient(155deg, ${a}3D 0%, ${C.glassStrong} 55%, ${C.glass} 100%)`, backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", border: `1px solid ${C.glassBorder}`, boxShadow: `inset 0 1px 0 ${C.glassHighlight}, 0 24px 48px -22px ${a}33`, ...style }}>{children}</div>;
 }
 function Pill({ children, active, onClick, color, small }) {
-  return <button onClick={onClick} className={`rounded-full font-semibold transition-colors ${small ? "px-2.5 py-1.5 text-[10px]" : "px-3 py-2 text-xs"}`} style={{ background: active ? (color || C.primary) : C.glassSoft, color: active ? "#052821" : C.textMuted, border: `1px solid ${active ? (color || C.primary) : C.glassBorder}`, backdropFilter: "blur(10px)", ...fontBody }}>{children}</button>;
+  return <button onClick={onClick} className={`rounded-full font-semibold transition-colors ${small ? "px-2.5 py-1.5 text-[11px]" : "px-3 py-2 text-xs"}`} style={{ background: active ? (color || C.primary) : C.glassSoft, color: active ? "#052821" : C.textMuted, border: `1px solid ${active ? (color || C.primary) : C.glassBorder}`, backdropFilter: "blur(10px)", ...fontBody }}>{children}</button>;
 }
 function SegmentedControl({ options, value, onChange, small, colorMap }) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
@@ -1018,13 +1218,13 @@ function SegmentedControl({ options, value, onChange, small, colorMap }) {
     <div className={`relative flex rounded-2xl ${small ? "p-0.5" : "p-1"}`} style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}`, backdropFilter: "blur(10px)" }}>
       <div className="absolute top-0.5 bottom-0.5 rounded-xl transition-all duration-300 ease-out" style={{ left: `calc(${100 / options.length}% * ${idx} + 2px)`, width: `calc(${100 / options.length}% - 4px)`, background: activeColor === C.primary ? gradPrimary : activeColor, boxShadow: `0 4px 12px -4px ${activeColor}77` }} />
       {options.map((opt) => (
-        <button key={opt.value} type="button" onClick={() => onChange(opt.value)} className={`relative z-10 flex-1 font-semibold rounded-xl transition-colors ${small ? "py-1.5 text-[10px]" : "py-2.5 text-xs"}`} style={{ color: value === opt.value ? "#052821" : C.textMuted, ...fontBody }}>{opt.label}</button>
+        <button key={opt.value} type="button" onClick={() => onChange(opt.value)} className={`relative z-10 flex-1 font-semibold rounded-xl transition-colors ${small ? "py-1.5 text-[11px]" : "py-2.5 text-xs"}`} style={{ color: value === opt.value ? "#052821" : C.textMuted, ...fontBody }}>{opt.label}</button>
       ))}
     </div>
   );
 }
 function SectionTitle({ icon: Icon, children, action }) { return <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2">{Icon && <Icon size={16} style={{ color: C.primary }} />}<h3 className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{children}</h3></div>{action}</div>; }
-function Badge({ children, color }) { return <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: color + "22", color, backdropFilter: "blur(6px)", ...fontBody }}>{children}</span>; }
+function Badge({ children, color }) { return <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: color + "22", color, backdropFilter: "blur(6px)", ...fontBody }}>{children}</span>; }
 function LargeHeader({ title, subtitle, right }) {
   return (
     <div className="flex items-end justify-between mb-7 mt-2">
@@ -1046,7 +1246,7 @@ function Accordion({ icon: Icon, title, hint, defaultOpen, color, children, clas
         {Icon && <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: c + "22" }}><Icon size={16} style={{ color: c }} /></div>}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{title}</p>
-          {hint && <p className="text-[11px] mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{hint}</p>}
+          {hint && <p className="text-xs mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{hint}</p>}
         </div>
         <ChevronDown size={16} style={{ color: C.textMuted, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
@@ -1059,10 +1259,10 @@ function InfoToggle({ label, children }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-6">
-      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.primary, ...fontBody }}>
         <Sparkles size={12} /> {label} <ChevronDown size={12} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
-      {open && <p className="text-[11px] leading-relaxed mt-2" style={{ color: C.textMuted, ...fontBody }}>{children}</p>}
+      {open && <p className="text-xs leading-relaxed mt-2" style={{ color: C.textMuted, ...fontBody }}>{children}</p>}
     </div>
   );
 }
@@ -1074,7 +1274,7 @@ function ListRow({ onClick, left, title, subtitle, right, last, chevron }) {
       {left}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold truncate" style={{ color: C.text, ...fontBody }}>{title}</p>
-        {subtitle && <p className="text-[11px] truncate" style={{ color: C.textFaint, ...fontBody }}>{subtitle}</p>}
+        {subtitle && <p className="text-xs truncate" style={{ color: C.textFaint, ...fontBody }}>{subtitle}</p>}
       </div>
       {right}
       {chevron && <ChevronRightIcon size={15} style={{ color: C.textFaint }} />}
@@ -1086,7 +1286,7 @@ function IconTile({ icon: Icon, label, onClick, color }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-2 shrink-0" style={{ width: 76 }}>
       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: `linear-gradient(155deg, ${c}33 0%, ${c}14 100%)`, border: `1px solid ${c}40`, backdropFilter: "blur(12px)", boxShadow: `0 8px 16px -8px ${c}55` }}><Icon size={22} style={{ color: c }} /></div>
-      <span className="text-[10px] font-semibold text-center leading-tight" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
+      <span className="text-[11px] font-semibold text-center leading-tight" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
     </button>
   );
 }
@@ -1095,7 +1295,7 @@ function LanguageSwitcher({ compact }) {
   return (
     <div className={`flex gap-1.5 ${compact ? "" : "flex-wrap"}`}>
       {LANGS.map((l) => (
-        <button key={l} onClick={() => setLang(l)} className="px-2.5 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1" style={{ background: lang === l ? C.primary : C.glassSoft, color: lang === l ? "#052821" : C.textMuted, border: `1px solid ${lang === l ? C.primary : C.glassBorder}`, backdropFilter: "blur(8px)", ...fontBody }}>
+        <button key={l} onClick={() => setLang(l)} className="px-2.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1" style={{ background: lang === l ? C.primary : C.glassSoft, color: lang === l ? "#052821" : C.textMuted, border: `1px solid ${lang === l ? C.primary : C.glassBorder}`, backdropFilter: "blur(8px)", ...fontBody }}>
           <span>{LANG_META[l].flag}</span>{compact ? l.toUpperCase() : LANG_META[l].label}
         </button>
       ))}
@@ -1106,16 +1306,18 @@ function LanguageSwitcher({ compact }) {
 function RecoveryDial({ score, label, sub, size = 200 }) {
   const r = 80, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100), col = scoreColor(score);
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 200 200" style={{ transform: "rotate(-90deg)" }}>
-        <circle cx="100" cy="100" r={r} fill="none" stroke={C.border} strokeWidth="14" />
-        <circle cx="100" cy="100" r={r} fill="none" stroke={col} strokeWidth="14" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.8s ease", filter: `drop-shadow(0 0 18px ${col}99)` }} />
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <span style={{ ...fontMono, color: col, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{score}</span>
-        <span className="text-[10px] uppercase tracking-widest mt-1 text-center px-4" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
-        {sub && <span className="text-[11px] mt-1 font-semibold text-center" style={{ color: col, ...fontBody }}>{sub}</span>}
+    <div className="flex flex-col items-center">
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox="0 0 200 200" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="100" cy="100" r={r} fill="none" stroke={C.border} strokeWidth="14" />
+          <circle cx="100" cy="100" r={r} fill="none" stroke={col} strokeWidth="14" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.8s ease", filter: `drop-shadow(0 0 18px ${col}99)` }} />
+        </svg>
+        <div className="absolute flex flex-col items-center">
+          <span style={{ ...fontMono, color: col, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{score}</span>
+          <span className="text-[11px] uppercase tracking-widest mt-1 text-center px-4" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
+        </div>
       </div>
+      {sub && <span className="text-[12px] mt-3 font-semibold text-center px-2" style={{ color: col, ...fontBody }}>{sub}</span>}
     </div>
   );
 }
@@ -1139,7 +1341,7 @@ function RdvForm({ value, onChange }) {
       <Field label={T.heure}><TextInput type="time" value={value.heure} onChange={(e) => onChange({ ...value, heure: e.target.value })} /></Field>
       <button onClick={() => onChange({ ...value, notify: !value.notify })} className="flex items-center gap-2 mb-3">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: value.notify ? C.rdv : "transparent", border: `1px solid ${value.notify ? C.rdv : C.border}` }}>{value.notify && <Check size={11} color="#052821" />}</div>
-        <span className="text-[11px]" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
+        <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
       </button>
       {value.notify && <div className="mb-1"><TextInput type="time" value={value.notifyTime} onChange={(e) => onChange({ ...value, notifyTime: e.target.value })} /></div>}
     </div>
@@ -1160,7 +1362,7 @@ function PlanTabs({ plan }) {
     ["massage", tr(lang, { fr: "Massage", en: "Massage", es: "Masaje", pt: "Massagem" }), HeartPulse],
     ["froid", tr(lang, { fr: "Froid / Chaud", en: "Cold / Heat", es: "Frío / Calor", pt: "Frio / Calor" }), Snowflake],
     ["nutrition", tr(lang, { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" }), Utensils],
-    ["produits", tr(lang, { fr: "Produits", en: "Products", es: "Productos", pt: "Produtos" }), ShoppingBag],
+    ["produits", tr(lang, { fr: "Conseils", en: "Tips", es: "Consejos", pt: "Dicas" }), ShoppingBag],
   ];
   const T = {
     noHeureHint: tr(lang, { fr: "Renseigne l'heure de la séance pour des horaires précis — sinon voici l'ordre à suivre avec des délais indicatifs.", en: "Enter the session time for precise timing — otherwise here's the order to follow with rough delays.", es: "Indica la hora de la sesión para horarios precisos — si no, aquí tienes el orden a seguir con tiempos indicativos.", pt: "Informe o horário da sessão para horários precisos — caso contrário, aqui está a ordem a seguir com tempos indicativos." }),
@@ -1170,6 +1372,11 @@ function PlanTabs({ plan }) {
     estimateNote: tr(lang, { fr: "Estimation selon ton profil (taille, poids, sexe, âge) et l'intensité de la séance — indicatif, pas un avis nutritionnel professionnel.", en: "Estimate based on your profile (height, weight, sex, age) and session intensity — indicative only, not professional nutritional advice.", es: "Estimación según tu perfil (altura, peso, sexo, edad) y la intensidad de la sesión — orientativo, no es un consejo nutricional profesional.", pt: "Estimativa com base no seu perfil (altura, peso, sexo, idade) e na intensidade da sessão — indicativo, não é aconselhamento nutricional profissional." }),
     mealBefore: tr(lang, { fr: "Repas avant l'effort", en: "Meal before training", es: "Comida antes del esfuerzo", pt: "Refeição antes do esforço" }),
     mealAfter: tr(lang, { fr: "Repas après l'effort", en: "Meal after training", es: "Comida después del esfuerzo", pt: "Refeição depois do esforço" }),
+    withYourGear: tr(lang, { fr: "Avec ton matériel", en: "With your gear", es: "Con tu equipo", pt: "Com o seu equipamento" }),
+    toConsider: tr(lang, { fr: "À envisager (facultatif)", en: "Worth considering (optional)", es: "A considerar (opcional)", pt: "A considerar (opcional)" }),
+    gearOk: tr(lang, { fr: "Tu as déjà le matériel essentiel : rien à acheter pour mieux récupérer.", en: "You already have the essential gear: nothing to buy to recover better.", es: "Ya tienes el material esencial: no necesitas comprar nada para recuperarte mejor.", pt: "Você já tem o equipamento essencial: nada a comprar para recuperar melhor." }),
+    freeTips: tr(lang, { fr: "Astuces gratuites", en: "Free tips", es: "Consejos gratuitos", pt: "Dicas gratuitas" }),
+    adviceNote: tr(lang, { fr: "Suggestions indicatives, sans lien commercial. Les prix sont des ordres de grandeur.", en: "Indicative suggestions with no commercial link. Prices are rough ranges.", es: "Sugerencias orientativas, sin vínculo comercial. Los precios son aproximados.", pt: "Sugestões indicativas, sem vínculo comercial. Os preços são aproximados." }),
     mealMain: tr(lang, { fr: "Repas conseillé", en: "Suggested meal", es: "Comida sugerida", pt: "Refeição sugerida" }),
     mealSnack: tr(lang, { fr: "Autre repas / collation", en: "Other meal / snack", es: "Otra comida / tentempié", pt: "Outra refeição / lanche" }),
     toEatAt: (t) => tr(lang, { fr: `À prendre ${t}`, en: `Eat it ${t}`, es: `Tómalo ${t}`, pt: `Coma ${t}` }),
@@ -1204,18 +1411,18 @@ function PlanTabs({ plan }) {
           {!plan.restDay && !programPlan.heure && (
             <button onClick={!isPro ? openPro : undefined} className="flex items-center gap-1.5 mt-1 px-1 text-left">
               {!isPro && <Lock size={11} style={{ color: C.textFaint }} />}
-              <p className="text-[10px]" style={{ color: C.textFaint, ...fontBody }}>{isPro ? T.noHeureHint : T.proTimingHint}</p>
+              <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{isPro ? T.noHeureHint : T.proTimingHint}</p>
             </button>
           )}
         </div>
       )}
       {tab === "avant" && !plan.restDay && (
         <div className="flex flex-col gap-3">
-          <p className="text-[11px] px-1 -mt-1 mb-1" style={{ color: C.textFaint, ...fontBody }}>{T.warmupIntro}</p>
-          {(plan.warmup || []).map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}
+          <p className="text-xs px-1 -mt-1 mb-1" style={{ color: C.textFaint, ...fontBody }}>{T.warmupIntro}</p>
+          {(plan.warmup || []).map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}
         </div>
       )}
-      {tab === "etirements" && <div className="flex flex-col gap-3">{plan.stretches.map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}</div>}
+      {tab === "etirements" && <div className="flex flex-col gap-3">{plan.stretches.map((s, i) => <Card key={i}><div className="flex justify-between items-start mb-1"><p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{s.label}</p><span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{s.duree}</span></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{s.instr}</p></Card>)}</div>}
       {tab === "massage" && <Card><SectionTitle icon={HeartPulse}>{plan.massage.titre}</SectionTitle><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{plan.massage.texte}</p></Card>}
       {tab === "froid" && <div className="flex flex-col gap-3">{plan.coldHeat.map((c, i) => <Card key={i}><div className="flex items-center gap-2 mb-1">{c.type === "froid" ? <Snowflake size={14} style={{ color: "#6BC6FF" }} /> : c.type === "chaud" ? <Flame size={14} style={{ color: C.warn }} /> : <Zap size={14} style={{ color: C.primary }} />}<p className="font-semibold text-sm" style={{ color: C.text, ...fontBody }}>{c.titre}</p></div><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{c.texte}</p></Card>)}</div>}
       {tab === "nutrition" && (
@@ -1224,29 +1431,49 @@ function PlanTabs({ plan }) {
             <Card>
               <SectionTitle icon={Flame} action={<ProBadge />}>{T.needsToday}</SectionTitle>
               <div className="grid grid-cols-4 gap-2 text-center">
-                <div><p style={{ ...fontMono, color: C.primary, fontSize: 17 }}>{plan.nutrients.kcal}</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.kcal}</p></div>
-                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.protein}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.protein}</p></div>
-                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.carbs}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.carbs}</p></div>
-                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.fat}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.fat}</p></div>
+                <div><p style={{ ...fontMono, color: C.primary, fontSize: 17 }}>{plan.nutrients.kcal}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.kcal}</p></div>
+                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.protein}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.protein}</p></div>
+                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.carbs}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.carbs}</p></div>
+                <div><p style={{ ...fontMono, color: C.text, fontSize: 17 }}>{plan.nutrients.fat}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.fat}</p></div>
               </div>
-              <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.estimateNote}</p>
+              <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.estimateNote}</p>
             </Card>
           </ProLock>
           {plan.restDay ? (
             <>
-              <Card><SectionTitle icon={Clock}>{T.mealMain}</SectionTitle><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.pre}</p><p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.spreadDay}</p></Card>
+              <Card><SectionTitle icon={Clock}>{T.mealMain}</SectionTitle><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.pre}</p><p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.spreadDay}</p></Card>
               <Card><SectionTitle icon={TrendingUp}>{T.mealSnack}</SectionTitle><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.post}</p></Card>
             </>
           ) : (
             <>
-              <Card><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.pre}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(timing.pre)}</p></Card>
-              <Card><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.post}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(timing.post)}</p></Card>
+              <Card><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.pre}</p><p className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(timing.pre)}</p></Card>
+              <Card><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{plan.meals.post}</p><p className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(timing.post)}</p></Card>
             </>
           )}
           <Card><SectionTitle icon={Droplet}>{T.hydration}</SectionTitle><div className="flex items-center gap-3"><span style={{ ...fontMono, color: C.primary, fontSize: 26 }}>{plan.hydratation}L</span><span className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.recommendedDay}</span></div></Card>
         </div>
       )}
-      {tab === "produits" && <div className="flex flex-col gap-3">{plan.produits.map((p, i) => <Card key={i}><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{p}</p></Card>)}</div>}
+      {tab === "produits" && (
+        <div className="flex flex-col gap-3">
+          {plan.produits.length > 0 && <p className="text-xs font-semibold uppercase tracking-wider mt-1" style={{ color: C.textMuted, ...fontBody }}>{T.withYourGear}</p>}
+          {plan.produits.map((p, i) => <Card key={i}><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{p}</p></Card>)}
+          {plan.conseils && (<>
+            <p className="text-xs font-semibold uppercase tracking-wider mt-3" style={{ color: C.textMuted, ...fontBody }}>{T.toConsider}</p>
+            {plan.conseils.hasAll && <Card><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.gearOk}</p></Card>}
+            {plan.conseils.buy.map((b, i) => (
+              <Card key={i}>
+                <div className="flex items-start justify-between gap-3 mb-1.5"><p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{b.t}</p><span className="text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ background: C.primarySoft, color: C.primary, ...fontMono }}>{b.price}</span></div>
+                <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{b.d}</p>
+              </Card>
+            ))}
+            <p className="text-xs font-semibold uppercase tracking-wider mt-3" style={{ color: C.textMuted, ...fontBody }}>{T.freeTips}</p>
+            {plan.conseils.tips.map((b, i) => (
+              <Card key={i}><p className="text-sm font-bold mb-1.5" style={{ color: C.text, ...fontDisplay }}>{b.t}</p><p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{b.d}</p></Card>
+            ))}
+            <p className="text-[11px] leading-relaxed text-center px-3" style={{ color: C.textFaint, ...fontBody }}>{T.adviceNote}</p>
+          </>)}
+        </div>
+      )}
     </div>
   );
 }
@@ -1318,7 +1545,7 @@ function ResetPasswordScreen({ token, onDone }) {
               return (
                 <div key={i} className="flex items-center gap-2 py-0.5">
                   <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: ok ? C.primary : "transparent", border: `1px solid ${ok ? C.primary : C.border}` }}>{ok && <Check size={9} color="#052821" />}</div>
-                  <span className="text-[11px]" style={{ color: ok ? C.text : C.textFaint, ...fontBody }}>{r.label}</span>
+                  <span className="text-xs" style={{ color: ok ? C.text : C.textFaint, ...fontBody }}>{r.label}</span>
                 </div>
               );
             })}
@@ -1456,7 +1683,7 @@ function AuthScreen({ onAuth }) {
           </div>
           <Field label={T.username}>
             <TextInput value={username} onChange={(e) => setUsername(e.target.value)} placeholder="ex: alex_92" autoComplete="username" name="username" />
-            <p className="text-[10px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.usernameHint}</p>
+            <p className="text-[11px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.usernameHint}</p>
           </Field>
         </>
       )}
@@ -1475,7 +1702,7 @@ function AuthScreen({ onAuth }) {
             return (
               <div key={i} className="flex items-center gap-2 py-0.5">
                 <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: ok ? C.primary : "transparent", border: `1px solid ${ok ? C.primary : C.border}` }}>{ok && <Check size={9} color="#052821" />}</div>
-                <span className="text-[11px]" style={{ color: ok ? C.text : C.textFaint, ...fontBody }}>{r.label}</span>
+                <span className="text-xs" style={{ color: ok ? C.text : C.textFaint, ...fontBody }}>{r.label}</span>
               </div>
             );
           })}
@@ -1488,7 +1715,7 @@ function AuthScreen({ onAuth }) {
             <TextInput type={showPw2 ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" name="confirm-password" />
             <button onClick={() => setShowPw2(!showPw2)} className="absolute right-3 top-2.5" type="button">{showPw2 ? <EyeOff size={16} style={{ color: C.textMuted }} /> : <Eye size={16} style={{ color: C.textMuted }} />}</button>
           </div>
-          {confirmPassword && confirmPassword !== password && <p className="text-[10px] mt-1.5" style={{ color: C.danger, ...fontBody }}>{T.mismatch}</p>}
+          {confirmPassword && confirmPassword !== password && <p className="text-[11px] mt-1.5" style={{ color: C.danger, ...fontBody }}>{T.mismatch}</p>}
         </Field>
       )}
 
@@ -1502,11 +1729,11 @@ function AuthScreen({ onAuth }) {
       {error && <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl text-xs" style={{ background: C.dangerSoft, color: C.danger, backdropFilter: "blur(10px)", ...fontBody }}><AlertTriangle size={14} /> {error}</div>}
       <Btn type="submit" full disabled={loading}>{loading ? "..." : mode === "login" ? T.submitLogin : T.submitSignup}</Btn>
       {mode === "login" && (
-        <button type="button" onClick={() => { setForgotOpen(true); setForgotSent(false); }} className="w-full text-center mt-4 text-[11px]" style={{ color: C.primary, ...fontBody }}>{T.forgotLink}</button>
+        <button type="button" onClick={() => { setForgotOpen(true); setForgotSent(false); }} className="w-full text-center mt-4 text-xs" style={{ color: C.primary, ...fontBody }}>{T.forgotLink}</button>
       )}
       </form>
-      <p className="text-[10px] text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>{T.disclaimer}</p>
-      <p className="text-[10px] text-center mt-2" style={{ color: C.textFaint, ...fontBody }}>
+      <p className="text-[11px] text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>{T.disclaimer}</p>
+      <p className="text-[11px] text-center mt-2" style={{ color: C.textFaint, ...fontBody }}>
         <a href="/conditions.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
         {" · "}
         <a href="/confidentialite.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
@@ -1542,7 +1769,7 @@ function SportGrid({ selected, onToggle }) {
     <div className="grid grid-cols-3 gap-2">
       {Object.entries(SPORTS).filter(([k]) => k !== "autre").map(([key, s]) => (
         <button key={key} onClick={() => onToggle(key)} className="rounded-2xl p-3 flex flex-col items-center gap-1" style={{ background: selected.includes(key) ? C.primarySoft : C.surface, border: `1px solid ${selected.includes(key) ? C.primary : C.borderSoft}66` }}>
-          <span className="text-xl">{s.icon}</span><span className="text-[10px] text-center" style={{ color: selected.includes(key) ? C.primary : C.textMuted, ...fontBody }}>{sportLabel(key, lang)}</span>
+          <span className="text-xl">{s.icon}</span><span className="text-[11px] text-center" style={{ color: selected.includes(key) ? C.primary : C.textMuted, ...fontBody }}>{sportLabel(key, lang)}</span>
           {selected.includes(key) && <Check size={11} style={{ color: C.primary }} />}
         </button>
       ))}
@@ -1554,7 +1781,7 @@ function MuscuZonePicker({ selected, onToggle }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {Object.keys(MUSCU_ZONES).map((k) => (
-        <button key={k} onClick={() => onToggle(k)} className="px-2.5 py-1.5 rounded-full text-[11px] font-semibold" style={{ background: selected.includes(k) ? C.primary : C.glassSoft, color: selected.includes(k) ? "#052821" : C.textMuted, border: `1px solid ${selected.includes(k) ? C.primary : C.glassBorder}`, backdropFilter: "blur(8px)", ...fontBody }}>{MUSCU_ZONES[k].icon} {zoneLabel(k, lang)}</button>
+        <button key={k} onClick={() => onToggle(k)} className="px-2.5 py-1.5 rounded-full text-xs font-semibold" style={{ background: selected.includes(k) ? C.primary : C.glassSoft, color: selected.includes(k) ? "#052821" : C.textMuted, border: `1px solid ${selected.includes(k) ? C.primary : C.glassBorder}`, backdropFilter: "blur(8px)", ...fontBody }}>{MUSCU_ZONES[k].icon} {zoneLabel(k, lang)}</button>
       ))}
     </div>
   );
@@ -1563,6 +1790,70 @@ function MuscuZonePicker({ selected, onToggle }) {
 /* ============================================================
    ONBOARDING
    ============================================================ */
+/* ============================================================
+   TUTORIEL (affiché après l'inscription, ré-ouvrable depuis le profil)
+   ============================================================ */
+function TutorialScreen({ onDone }) {
+  const { lang } = useLang();
+  const [i, setI] = useState(0);
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const slides = [
+    { Icon: Sparkles, color: C.primary,
+      t: T4("Bienvenue sur REGEN", "Welcome to REGEN", "Bienvenido a REGEN", "Bem-vindo ao REGEN"),
+      d: T4("REGEN t'aide à mieux récupérer après le sport : plan personnalisé, planning, suivi des blessures et conseils. Voici l'essentiel en 1 minute.", "REGEN helps you recover better after sport: personalised plan, schedule, injury tracking and tips. Here's the essentials in 1 minute.", "REGEN te ayuda a recuperarte mejor tras el deporte: plan personalizado, calendario, seguimiento de lesiones y consejos. Lo esencial en 1 minuto.", "O REGEN ajuda você a recuperar melhor após o esporte: plano personalizado, agenda, acompanhamento de lesões e dicas. O essencial em 1 minuto."),
+      b: [] },
+    { Icon: Activity, color: C.primary,
+      t: T4("1. Une séance imprévue déjà faite", "1. An unplanned session you already did", "1. Una sesión imprevista ya hecha", "1. Uma sessão imprevista já feita"),
+      d: T4("Tu as fait du sport sans l'avoir prévu ? Ouvre l'onglet « Séance imprévue » : indique ton sport, l'intensité, ta fatigue et les zones sollicitées.", "Worked out without planning it? Open the \"Unplanned\" tab: enter your sport, intensity, fatigue and the areas you worked.", "¿Hiciste deporte sin planearlo? Abre la pestaña «Imprevista»: indica deporte, intensidad, fatiga y zonas trabajadas.", "Treinou sem ter planejado? Abra a aba «Imprevista»: informe esporte, intensidade, fadiga e áreas trabalhadas."),
+      b: [T4("Tu reçois un plan complet : étirements, massage, froid/chaud, sommeil, hydratation et repas.", "You get a full plan: stretching, massage, cold/heat, sleep, hydration and meals.", "Recibes un plan completo: estiramientos, masaje, frío/calor, sueño, hidratación y comidas.", "Você recebe um plano completo: alongamentos, massagem, frio/calor, sono, hidratação e refeições."), T4("Pour tes séances prévues, le plan de récup est dans chaque jour du Planning.", "For planned sessions, the recovery plan is in each day of the Schedule.", "Para las sesiones planificadas, el plan de recuperación está en cada día del Plan.", "Para as sessões planejadas, o plano de recuperação está em cada dia da Agenda.")] },
+    { Icon: Flame, color: C.warn,
+      t: T4("2. Le score de récupération", "2. The recovery score", "2. La puntuación de recuperación", "2. A pontuação de recuperação"),
+      d: T4("Chaque séance reçoit un score de 0 à 100 : plus il est haut, plus ton corps a besoin de temps pour récupérer.", "Each session gets a score from 0 to 100: the higher it is, the more time your body needs to recover.", "Cada sesión recibe una puntuación de 0 a 100: cuanto más alta, más tiempo necesita tu cuerpo.", "Cada sessão recebe uma pontuação de 0 a 100: quanto mais alta, mais tempo seu corpo precisa."),
+      b: [T4("Il dépend de l'intensité, de ta fatigue, de ton âge, de ton niveau et de tes séances récentes.", "It depends on intensity, fatigue, age, level and your recent sessions.", "Depende de intensidad, fatiga, edad, nivel y tus sesiones recientes.", "Depende da intensidade, fadiga, idade, nível e das suas sessões recentes."), T4("Il ne se « réinitialise » pas : chaque séance a le sien. La courbe de l'Accueil montre son évolution sur plusieurs semaines.", "It doesn't \"reset\": each session has its own. The curve on Home shows how it evolves over several weeks.", "No se «reinicia»: cada sesión tiene el suyo. La curva de Inicio muestra su evolución durante semanas.", "Não «reinicia»: cada sessão tem o seu. A curva da Página inicial mostra a evolução ao longo de semanas.")] },
+    { Icon: CalendarDays, color: C.primary,
+      t: T4("3. Ton planning", "3. Your schedule", "3. Tu calendario", "3. Sua agenda"),
+      d: T4("Dans « Planning », règle ta semaine type une fois pour toutes, puis touche un jour pour voir le détail.", "In \"Schedule\", set your typical week once, then tap a day to see the details.", "En «Plan», fija tu semana tipo una vez y toca un día para ver el detalle.", "Em «Plano», defina sua semana típica uma vez e toque num dia para ver os detalhes."),
+      b: [T4("« Ajouts » sert à prévoir à l'avance une séance exceptionnelle ou un rendez-vous.", "\"Additions\" lets you plan an exceptional session or an appointment in advance.", "«Añadidos» sirve para planificar una sesión excepcional o una cita.", "«Adições» serve para planejar uma sessão excepcional ou uma consulta."), T4("Dans l'onglet « Sommeil », indique tes heures de réveil : REGEN te rappelle d'aller dormir à temps, et de t'étirer après tes séances.", "In the \"Sleep\" tab, set your wake-up times: REGEN reminds you to go to bed on time, and to stretch after your sessions.", "En la pestaña «Sueño», indica tus horas de despertar: REGEN te recuerda acostarte a tiempo y estirar tras tus sesiones.", "Na aba «Sono», informe seus horários de despertar: o REGEN lembra você de dormir a tempo e de alongar após as sessões.")] },
+    { Icon: HeartPulse, color: C.danger,
+      t: T4("4. Blessures", "4. Injuries", "4. Lesiones", "4. Lesões"),
+      d: T4("Un petit pépin ? Choisis la zone et la gêne : REGEN t'oriente vers le bon spécialiste et te donne des conseils en attendant.", "A niggle? Pick the area and symptom: REGEN points you to the right specialist and gives advice meanwhile.", "¿Una molestia? Elige zona y síntoma: REGEN te orienta al especialista adecuado y te da consejos mientras tanto.", "Um incômodo? Escolha a área e o sintoma: o REGEN indica o especialista certo e dá dicas enquanto isso."),
+      b: [T4("Tu peux aussi déclarer un arrêt, suivre ta date de retour et ajouter tes rendez-vous.", "You can also report time off, track your return date and add appointments.", "También puedes declarar una baja, seguir tu fecha de vuelta y añadir citas.", "Você também pode declarar um afastamento, acompanhar a data de retorno e adicionar consultas."), T4("Ce sont des conseils généraux : ils ne remplacent jamais un avis médical.", "These are general tips: they never replace medical advice.", "Son consejos generales: nunca sustituyen la opinión médica.", "São dicas gerais: nunca substituem um parecer médico.")] },
+    { Icon: Utensils, color: C.warn,
+      t: T4("5. Nutrition et conseils", "5. Nutrition and tips", "5. Nutrición y consejos", "5. Nutrição e dicas"),
+      d: T4("Après chaque plan, retrouve les repas avant/après l'effort, l'hydratation, et l'onglet « Conseils » : matériel utile et astuces.", "After each plan, find meals before/after effort, hydration, and the \"Tips\" tab: useful gear and tricks.", "Tras cada plan, encuentra comidas antes/después, hidratación y la pestaña «Consejos»: material útil y trucos.", "Após cada plano, veja as refeições antes/depois, hidratação e a aba «Dicas»: equipamento útil e truques."),
+      b: [T4("Les repas respectent tes allergies et ton régime (renseignés dans ton profil).", "Meals respect your allergies and diet (set in your profile).", "Las comidas respetan tus alergias y dieta (indicadas en el perfil).", "As refeições respeitam suas alergias e dieta (definidas no perfil)."), T4("Accès rapide à la Nutrition depuis l'Accueil.", "Quick access to Nutrition from Home.", "Acceso rápido a Nutrición desde Inicio.", "Acesso rápido à Nutrição pela Página inicial.")] },
+    { Icon: Crown, color: C.primary,
+      t: T4("6. Ton profil et Pro", "6. Your profile and Pro", "6. Tu perfil y Pro", "6. Seu perfil e Pro"),
+      d: T4("Touche ta pastille en haut à droite pour modifier ton profil, ta langue, tes notifications, ou revoir ce tutoriel.", "Tap your circle at the top right to edit your profile, language, notifications, or replay this tutorial.", "Toca tu círculo arriba a la derecha para editar perfil, idioma, notificaciones o repetir este tutorial.", "Toque no seu círculo no canto superior direito para editar perfil, idioma, notificações ou rever este tutorial."),
+      b: [T4("Le gratuit couvre l'essentiel ; Pro débloque sports et séances illimités et la nutrition avancée.", "Free covers the essentials; Pro unlocks unlimited sports and sessions and advanced nutrition.", "Lo gratuito cubre lo esencial; Pro desbloquea deportes y sesiones ilimitados y nutrición avanzada.", "O grátis cobre o essencial; o Pro libera esportes e sessões ilimitados e nutrição avançada.")] },
+  ];
+  const last = i === slides.length - 1;
+  const sl = slides[i];
+  const L = { next: T4("Suivant", "Next", "Siguiente", "Próximo"), start: T4("C'est parti !", "Let's go!", "¡Vamos!", "Vamos lá!"), skip: T4("Passer", "Skip", "Saltar", "Pular"), back: T4("Retour", "Back", "Atrás", "Voltar") };
+  const Icon = sl.Icon;
+  return (
+    <div className="absolute inset-0 flex flex-col px-6 pt-8 pb-6" style={{ zIndex: 70, background: C.bg, paddingTop: "max(32px, env(safe-area-inset-top))" }}>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex gap-1.5 flex-1 mr-4">{slides.map((_, k) => <div key={k} className="flex-1 h-1 rounded-full" style={{ background: k <= i ? C.primary : C.border }} />)}</div>
+        {!last && <button onClick={onDone} className="text-xs font-semibold" style={{ color: C.textMuted, ...fontBody }}>{L.skip}</button>}
+      </div>
+      <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style={{ background: `${sl.color}22`, border: `1px solid ${sl.color}55` }}><Icon size={30} style={{ color: sl.color }} /></div>
+        <h2 className="text-2xl font-extrabold tracking-tight mb-3" style={{ color: C.text, ...fontDisplay }}>{sl.t}</h2>
+        <p className="text-sm leading-relaxed mb-5" style={{ color: C.textMuted, ...fontBody }}>{sl.d}</p>
+        {sl.b.length > 0 && <ul className="flex flex-col gap-3">{sl.b.map((x, k) => (
+          <li key={k} className="flex gap-3 items-start rounded-2xl p-3.5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+            <Check size={15} className="shrink-0 mt-0.5" style={{ color: C.primary }} /><span className="text-xs leading-relaxed" style={{ color: C.text, ...fontBody }}>{x}</span>
+          </li>))}</ul>}
+      </div>
+      <div className="flex gap-2 mt-4">
+        {i > 0 && <Btn variant="ghost" onClick={() => setI(i - 1)}>{L.back}</Btn>}
+        <Btn full onClick={() => (last ? onDone() : setI(i + 1))}>{last ? L.start : L.next}</Btn>
+      </div>
+    </div>
+  );
+}
+
 function Onboarding({ onComplete }) {
   const { lang } = useLang();
   const { isPro, isTrial, startTrial } = usePro();
@@ -1600,6 +1891,8 @@ function Onboarding({ onComplete }) {
     niveauLabel: tr(lang, { fr: "Niveau de pratique général", en: "General skill level", es: "Nivel de práctica general", pt: "Nível de prática geral" }),
     equipLabel: tr(lang, { fr: "Matériel disponible chez toi", en: "Equipment you have at home", es: "Equipo disponible en casa", pt: "Equipamento disponível em casa" }),
     allergiesLabel: tr(lang, { fr: "Allergies alimentaires", en: "Food allergies", es: "Alergias alimentarias", pt: "Alergias alimentares" }),
+    dietLabel: tr(lang, { fr: "Régime alimentaire", en: "Diet", es: "Régimen alimentario", pt: "Regime alimentar" }),
+    allergyNote: tr(lang, { fr: "Les repas proposés sont des suggestions générales : vérifie toujours les étiquettes des produits (traces possibles). En cas d'allergie grave, demande l'avis de ton médecin.", en: "Suggested meals are general ideas: always check product labels (traces possible). With a severe allergy, ask your doctor.", es: "Las comidas propuestas son sugerencias generales: revisa siempre las etiquetas (posibles trazas). Con una alergia grave, consulta a tu médico.", pt: "As refeições propostas são sugestões gerais: confira sempre os rótulos (possíveis traços). Em caso de alergia grave, consulte seu médico." }),
     allergiesHint: tr(lang, { fr: "Optionnel — modifiable à tout moment depuis ton profil.", en: "Optional — editable anytime from your profile.", es: "Opcional — editable en cualquier momento desde tu perfil.", pt: "Opcional — editável a qualquer momento pelo seu perfil." }),
     dislikedLabel: tr(lang, { fr: "Aliments à éviter", en: "Foods to avoid", es: "Alimentos a evitar", pt: "Alimentos a evitar" }),
     dislikedHint: tr(lang, { fr: "Ces aliments ne seront plus jamais proposés dans tes repas conseillés.", en: "These foods will never be suggested in your recommended meals again.", es: "Estos alimentos ya no se sugerirán en tus comidas recomendadas.", pt: "Esses alimentos não serão mais sugeridos nas suas refeições recomendadas." }),
@@ -1611,7 +1904,7 @@ function Onboarding({ onComplete }) {
     planQuestion: tr(lang, { fr: "Comment veux-tu commencer ?", en: "How do you want to start?", es: "¿Cómo quieres empezar?", pt: "Como você quer começar?" }),
     freeTitle: tr(lang, { fr: "Gratuit", en: "Free", es: "Gratis", pt: "Grátis" }),
     freeF1: tr(lang, { fr: "1 sport, 1 séance par jour", en: "1 sport, 1 session per day", es: "1 deporte, 1 sesión al día", pt: "1 esporte, 1 sessão por dia" }),
-    freeF2: tr(lang, { fr: "Récup après séance & conseils blessures", en: "Post-session recovery & injury guidance", es: "Recuperación tras la sesión y orientación de lesiones", pt: "Recuperação após a sessão e orientação de lesões" }),
+    freeF2: tr(lang, { fr: "Plans de récup & conseils blessures", en: "Recovery plans & injury guidance", es: "Planes de recuperación y orientación de lesiones", pt: "Planos de recuperação e orientação de lesões" }),
     freeF3: tr(lang, { fr: `${FREE_EXCEPTIONS_PER_MONTH} RDV/exceptions par mois`, en: `${FREE_EXCEPTIONS_PER_MONTH} appointments/exceptions per month`, es: `${FREE_EXCEPTIONS_PER_MONTH} citas/excepciones al mes`, pt: `${FREE_EXCEPTIONS_PER_MONTH} consultas/exceções por mês` }),
     proTitle: tr(lang, { fr: "Pro — 7 jours gratuits", en: "Pro — 7 days free", es: "Pro — 7 días gratis", pt: "Pro — 7 dias grátis" }),
     proF1: tr(lang, { fr: "Sports & séances illimités", en: "Unlimited sports & sessions", es: "Deportes y sesiones ilimitados", pt: "Esportes e sessões ilimitados" }),
@@ -1633,7 +1926,7 @@ function Onboarding({ onComplete }) {
       <div className="flex-1 overflow-y-auto">
         {step === 0 && (<>
           <Field label={T.sexe}><SegmentedControl options={SEXES.map((s) => ({ value: s.key, label: tr(lang, s) }))} value={p.sexe} onChange={(v) => setP({ ...p, sexe: v })} /></Field>
-          <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-[11px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageHint(computeAge(p.dateNaissance))}</p>}</Field>
+          <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-xs mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageHint(computeAge(p.dateNaissance))}</p>}</Field>
           <Field label={T.height}><TextInput type="number" value={p.taille} onChange={(e) => setP({ ...p, taille: e.target.value })} placeholder="178" /></Field>
           <Field label={T.weight}><TextInput type="number" value={p.poids} onChange={(e) => setP({ ...p, poids: e.target.value })} placeholder="72" /></Field>
         </>)}
@@ -1641,21 +1934,21 @@ function Onboarding({ onComplete }) {
           <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{T.planQuestion}</p>
           <button onClick={() => choosePlan("free")} className="w-full text-left rounded-2xl p-4 mb-3" style={{ background: planChoice === "free" ? C.primarySoft : C.surface, border: `1px solid ${planChoice === "free" ? C.primary : C.borderSoft}66` }}>
             <div className="flex items-center justify-between mb-2"><p className="font-bold text-sm" style={{ color: C.text, ...fontDisplay }}>{T.freeTitle}</p>{planChoice === "free" && <Check size={16} style={{ color: C.primary }} />}</div>
-            <ul className="text-[11px] leading-relaxed list-disc pl-4" style={{ color: C.textMuted, ...fontBody }}>
+            <ul className="text-xs leading-relaxed list-disc pl-4" style={{ color: C.textMuted, ...fontBody }}>
               <li>{T.freeF1}</li><li>{T.freeF2}</li><li>{T.freeF3}</li>
             </ul>
           </button>
           <button onClick={() => choosePlan("pro")} className="w-full text-left rounded-2xl p-4" style={{ background: planChoice === "pro" ? `linear-gradient(155deg, ${C.primary}26, ${C.surface})` : C.surface, border: `1px solid ${planChoice === "pro" ? C.primary : C.borderSoft}66` }}>
             <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-1.5"><Crown size={14} style={{ color: C.primary }} /><p className="font-bold text-sm" style={{ color: C.text, ...fontDisplay }}>{T.proTitle}</p></div>{planChoice === "pro" && <Check size={16} style={{ color: C.primary }} />}</div>
-            <ul className="text-[11px] leading-relaxed list-disc pl-4 mb-2" style={{ color: C.textMuted, ...fontBody }}>
+            <ul className="text-xs leading-relaxed list-disc pl-4 mb-2" style={{ color: C.textMuted, ...fontBody }}>
               <li>{T.proF1}</li><li>{T.proF2}</li><li>{T.proF3}</li>
             </ul>
-            <p className="text-[10px]" style={{ color: C.textFaint, ...fontBody }}>{T.proPrice}</p>
+            <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.proPrice}</p>
           </button>
-          {planChoice && <p className="text-[11px] mt-4 text-center" style={{ color: C.primary, ...fontBody }}>{planChoice === "pro" ? T.chosenPro : T.chosenFree}</p>}
+          {planChoice && <p className="text-xs mt-4 text-center" style={{ color: C.primary, ...fontBody }}>{planChoice === "pro" ? T.chosenPro : T.chosenFree}</p>}
         </>)}
         {step === 2 && (<>
-          <Field label={T.sportsLabel}><SportGrid selected={p.sports} onToggle={toggleSport} />{!isPro && <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}</Field>
+          <Field label={T.sportsLabel}><SportGrid selected={p.sports} onToggle={toggleSport} />{!isPro && <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}</Field>
           <Field label={T.niveauLabel}><div className="flex flex-wrap gap-2">{NIVEAUX.map((n) => <Pill key={n.key} active={p.niveau === n.key} onClick={() => setP({ ...p, niveau: n.key })}>{tr(lang, n)}</Pill>)}</div></Field>
         </>)}
         {step === 3 && (
@@ -1671,12 +1964,16 @@ function Onboarding({ onComplete }) {
           </Field>
         )}
         {step === 4 && (<>
-          <p className="text-[11px] mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.allergiesHint}</p>
+          <p className="text-xs mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.allergiesHint}</p>
           <Field label={T.allergiesLabel}>
-            <div className="flex flex-wrap gap-2">{ALLERGENS.map((a) => (<Pill key={a.key} active={p.allergies.includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
+            <div className="flex flex-wrap gap-2">{ALLERGENS.filter((a) => a.group === "allergy").map((a) => (<Pill key={a.key} active={p.allergies.includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
           </Field>
+          <Field label={T.dietLabel}>
+            <div className="flex flex-wrap gap-2">{ALLERGENS.filter((a) => a.group === "diet").map((a) => (<Pill key={a.key} active={p.allergies.includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
+          </Field>
+          <p className="text-xs leading-relaxed mb-5" style={{ color: C.textFaint, ...fontBody }}>{T.allergyNote}</p>
           <Field label={T.dislikedLabel}>
-            <p className="text-[11px] mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
+            <p className="text-xs mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
             <div className="flex gap-2 mb-2">
               <div className="flex-1"><TextInput value={dislikedInput} onChange={(e) => setDislikedInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDisliked(); } }} placeholder={T.dislikedPh} /></div>
               <Btn small onClick={addDisliked}>{T.add}</Btn>
@@ -1726,25 +2023,25 @@ function EntryEditor({ entry, onChange, onRemove }) {
     <div className="rounded-2xl p-3 mb-2" style={{ background: C.bgElevated, backdropFilter: "blur(14px)", border: `1px solid ${C.glassBorder}` }}>
       <div className="flex justify-between items-start mb-2 gap-2">
         <div className="flex-1"><SegmentedControl small options={[{ value: "entrainement", label: T.entrainement }, { value: "match", label: T.match }, { value: "loisir", label: T.loisir }]} value={entry.type} onChange={(v) => onChange({ type: v })} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></div>
-        <button onClick={onRemove} className="shrink-0 mt-1"><Trash2 size={13} style={{ color: C.textFaint }} /></button>
+        <button onClick={onRemove} className="shrink-0 mt-1 p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>
       </div>
-      <select value={entry.sport} onChange={(e) => onChange({ sport: e.target.value })} className="text-[11px] rounded-xl px-2 py-1.5 w-full mb-2" style={inputStyle}>{Object.entries(SPORTS).map(([k]) => <option key={k} value={k}>{sportIcon(k)} {sportLabel(k, lang)}</option>)}</select>
+      <select value={entry.sport} onChange={(e) => onChange({ sport: e.target.value })} className="text-xs rounded-xl px-2 py-1.5 w-full mb-2" style={inputStyle}>{Object.entries(SPORTS).map(([k]) => <option key={k} value={k}>{sportIcon(k)} {sportLabel(k, lang)}</option>)}</select>
       {entry.sport === "muscu" && (
         <div className="mb-2">
-          <p className="text-[9px] mb-1.5" style={{ color: C.textFaint }}>{T.zones}</p>
+          <p className="text-[11px] mb-1.5" style={{ color: C.textFaint }}>{T.zones}</p>
           <MuscuZonePicker selected={entry.muscuZones || []} onToggle={toggleZone} />
         </div>
       )}
       {(entry.type === "entrainement" || entry.type === "loisir") && <div className="mb-2"><SegmentedControl small options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={entry.intensity} onChange={(v) => onChange({ intensity: v })} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></div>}
       <div className="flex gap-2 mb-2">
-        <div className="flex-1"><p className="text-[9px] mb-1" style={{ color: C.textFaint }}>{T.heure}</p><TextInput type="time" value={entry.heure || ""} onChange={(e) => onChange({ heure: e.target.value })} /></div>
-        <div className="flex-1"><p className="text-[9px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
+        <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.heure}</p><TextInput type="time" value={entry.heure || ""} onChange={(e) => onChange({ heure: e.target.value })} /></div>
+        <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
       </div>
       <button onClick={() => onChange({ notify: !entry.notify })} className="flex items-center gap-2">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: entry.notify ? C.primary : "transparent", border: `1px solid ${entry.notify ? C.primary : C.border}` }}>{entry.notify && <Check size={11} color="#052821" />}</div>
-        <span className="text-[11px]" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
+        <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
       </button>
-      {entry.notify && <div className="mt-2"><p className="text-[9px] mb-1" style={{ color: C.textFaint }}>{T.reminderTime}</p><TextInput type="time" value={entry.notifyTime || "20:00"} onChange={(e) => onChange({ notifyTime: e.target.value })} /></div>}
+      {entry.notify && <div className="mt-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.reminderTime}</p><TextInput type="time" value={entry.notifyTime || "20:00"} onChange={(e) => onChange({ notifyTime: e.target.value })} /></div>}
     </div>
   );
 }
@@ -1769,7 +2066,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
         <Btn small onClick={add} icon={atLimit ? Lock : Plus}>{T.add}</Btn>
         {entries.length > 0 && <Btn small variant="ghost" onClick={() => onChange([])}>{T.removeAll}</Btn>}
       </div>
-      {!isPro && <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.freeLimitHint}</p>}
+      {!isPro && <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.freeLimitHint}</p>}
     </div>
   );
 }
@@ -1777,7 +2074,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
 /* ============================================================
    RÉCUP APRÈS SÉANCE (séance imprévue déjà faite)
    ============================================================ */
-function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
+function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessionsLog }) {
   const { lang } = useLang();
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
@@ -1794,11 +2091,11 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones }, lang); setResult(plan); onGenerate(plan); };
+  const submit = () => { const weekLoad = (sessionsLog || []).filter((x) => x.date && (Date.now() - new Date(x.date).getTime()) / 86400000 <= 7).length; const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, weekLoad }, lang); setResult(plan); onGenerate(plan); };
 
   const T = {
-    title: tr(lang, { fr: "Récup après séance", en: "Post-session recovery", es: "Recuperación tras la sesión", pt: "Recuperação após a sessão" }),
-    subtitle: tr(lang, { fr: "Pour une séance imprévue que tu viens de faire", en: "For an unplanned session you just did", es: "Para una sesión imprevista que acabas de hacer", pt: "Para uma sessão imprevista que você acabou de fazer" }),
+    title: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
+    subtitle: tr(lang, { fr: "Tu as fait une séance qui n'était pas au planning ? Reçois ta récup", en: "Did a session that wasn't in your schedule? Get your recovery", es: "¿Hiciste una sesión que no estaba en tu plan? Recibe tu recuperación", pt: "Fez uma sessão que não estava na agenda? Receba sua recuperação" }),
     how: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     howText: tr(lang, { fr: "Tu viens de faire une séance qui n'était pas prévue (un sport déclaré ou une activité pour le plaisir) ? Génère ton plan de récup juste après. Il est conservé : tu le retrouves dans l'historique de l'accueil, et la séance est ajoutée à ton planning pour aujourd'hui.", en: "Just did a session that wasn't planned (one of your sports or something for fun)? Generate your recovery plan right after. It's kept: you'll find it in the history on the home screen, and the session is added to your schedule for today.", es: "¿Acabas de hacer una sesión que no estaba prevista (uno de tus deportes o algo por diversión)? Genera tu plan de recuperación justo después. Se conserva: lo encuentras en el historial de inicio y la sesión se añade a tu planificación de hoy.", pt: "Acabou de fazer uma sessão que não estava prevista (um dos seus esportes ou algo por diversão)? Gere seu plano de recuperação logo depois. Ele fica guardado: você o encontra no histórico do início e a sessão é adicionada ao planejamento de hoje." }),
     futureLink: tr(lang, { fr: "Une séance que tu connais à l'avance ? Ajoute-la au planning →", en: "A session you know about in advance? Add it to your schedule →", es: "¿Una sesión que conoces de antemano? Añádela a la planificación →", pt: "Uma sessão que você já conhece? Adicione-a ao planejamento →" }),
@@ -1813,6 +2110,9 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
     heureLabel: tr(lang, { fr: "Heure de la séance (optionnel)", en: "Session time (optional)", es: "Hora de la sesión (opcional)", pt: "Horário da sessão (opcional)" }),
     generate: tr(lang, { fr: "Générer mon plan de récup", en: "Generate my recovery plan", es: "Generar mi plan de recuperación", pt: "Gerar meu plano de recuperação" }),
     newSession: tr(lang, { fr: "Nouvelle séance", en: "New session", es: "Nueva sesión", pt: "Nova sessão" }),
+    scoreExplain: tr(lang, { fr: "Score de 0 à 100 calculé pour cette séance : plus il est haut, plus ton corps a besoin de temps pour récupérer.", en: "Score from 0 to 100 calculated for this session: the higher it is, the more time your body needs to recover.", es: "Puntuación de 0 a 100 calculada para esta sesión: cuanto más alta, más tiempo necesita tu cuerpo para recuperarse.", pt: "Pontuação de 0 a 100 calculada para esta sessão: quanto mais alta, mais tempo seu corpo precisa para se recuperar." }),
+    generalDisclaimer: tr(lang, { fr: "Conseils généraux de récupération : ils ne remplacent pas l'avis d'un professionnel de santé. En cas de douleur persistante, consulte.", en: "General recovery advice: it doesn't replace a health professional's opinion. If pain persists, see someone.", es: "Consejos generales de recuperación: no sustituyen la opinión de un profesional sanitario. Si el dolor persiste, consulta.", pt: "Conselhos gerais de recuperação: não substituem a opinião de um profissional de saúde. Se a dor persistir, consulte." }),
+    loadNote: (n) => tr(lang, { fr: `Score majoré : tu as déjà fait ${n} séances ces 7 derniers jours.`, en: `Score increased: you already did ${n} sessions in the last 7 days.`, es: `Puntuación aumentada: ya hiciste ${n} sesiones en los últimos 7 días.`, pt: `Pontuação aumentada: você já fez ${n} sessões nos últimos 7 dias.` }),
     recoveryNeed: tr(lang, { fr: "Besoin de récupération", en: "Recovery need", es: "Necesidad de recuperación", pt: "Necessidade de recuperação" }),
     sleep: tr(lang, { fr: "Sommeil", en: "Sleep", es: "Sueño", pt: "Sono" }),
     hydration: tr(lang, { fr: "Hydratation", en: "Hydration", es: "Hidratación", pt: "Hidratação" }),
@@ -1836,9 +2136,12 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
         <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-6" style={{ paddingTop: 24, paddingBottom: 20 }}>
           <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{fmtDate(result.date, lang)}</Badge><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
           <RecoveryDial score={result.score} label={T.recoveryNeed} sub={result.duree} size={190} />
+          <p className="text-[11px] leading-relaxed text-center mt-3 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p>
+          <p className="text-[11px] leading-relaxed text-center mt-2 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.generalDisclaimer}</p>
+          {result.weekLoad >= 2 && <p className="text-xs leading-relaxed text-center mt-2 px-3 font-semibold" style={{ color: C.warn, ...fontBody }}>{T.loadNote(result.weekLoad)}</p>}
           <div className="flex gap-4 mt-4 text-center">
-            <div><Moon size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.sommeil}h</p><p className="text-[10px]" style={{ color: C.textMuted }}>{T.sleep}</p></div>
-            <div><Droplet size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.hydratation}L</p><p className="text-[10px]" style={{ color: C.textMuted }}>{T.hydration}</p></div>
+            <div><Moon size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.sommeil}h</p><p className="text-[11px]" style={{ color: C.textMuted }}>{T.sleep}</p></div>
+            <div><Droplet size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.hydratation}L</p><p className="text-[11px]" style={{ color: C.textMuted }}>{T.hydration}</p></div>
           </div>
         </HeroCard>
         <PlanTabs plan={result} />
@@ -1850,7 +2153,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
     <div className="px-5 pb-24 pt-4">
       <LargeHeader title={T.title} subtitle={T.subtitle} />
       <InfoToggle label={T.how}>{T.howText}</InfoToggle>
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step1}</p>
+      <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step1}</p>
       <Card className="mb-6">
         <Field label={T.sportLabel}><Select value={sport} onChange={(e) => setSport(e.target.value)} options={sportOptions} /></Field>
         {sport === "muscu" && <Field label={T.zonesLabel}><MuscuZonePicker selected={muscuZones} onToggle={toggleZone} /></Field>}
@@ -1858,7 +2161,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
         {eventType !== "match" && <Field label={T.intensityLabel}><SegmentedControl options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={intensity} onChange={setIntensity} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></Field>}
         <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
       </Card>
-      <p className="text-[10px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
+      <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
       <Card className="mb-7">
         <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
@@ -1872,7 +2175,14 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture }) {
 /* ============================================================
    NUTRITION TAB
    ============================================================ */
-function NutritionTab({ lastPlan }) {
+// Répartition indicative des besoins du jour (≈25 % avant / 30 % après ; jour de repos 35 % / 15 %).
+function mealRef(plan, which) {
+  const n = plan && plan.nutrients; if (!n || !n.kcal) return null;
+  const share = plan.restDay ? { pre: 0.35, post: 0.15 } : { pre: 0.25, post: 0.30 };
+  const f = share[which];
+  return [Math.round((n.kcal * f) / 10) * 10, Math.round(n.protein * f)];
+}
+function NutritionTab({ lastPlan, onBack }) {
   const { lang } = useLang();
   const { isPro } = usePro();
   const T = {
@@ -1886,27 +2196,33 @@ function NutritionTab({ lastPlan }) {
     toEatAt: (t) => tr(lang, { fr: `À prendre ${t}`, en: `Eat it ${t}`, es: `Tómalo ${t}`, pt: `Coma ${t}` }),
     hydration: tr(lang, { fr: "Hydratation", en: "Hydration", es: "Hidratación", pt: "Hidratação" }),
     recommendedDay: tr(lang, { fr: "recommandés sur la journée de récup", en: "recommended for your recovery day", es: "recomendados para el día de recuperación", pt: "recomendados para o dia de recuperação" }),
+    back: tr(lang, { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" }),
+    disclaimer: tr(lang, { fr: "Repères généraux, à adapter à ta faim et à tes besoins. Ils ne remplacent pas l'avis d'un médecin ou d'un diététicien. Vérifie toujours les étiquettes en cas d'allergie.", en: "General guidelines, adapt them to your hunger and needs. They don't replace a doctor's or dietitian's advice. Always check labels if you have an allergy.", es: "Pautas generales, adáptalas a tu hambre y necesidades. No sustituyen el consejo de un médico o dietista. Revisa siempre las etiquetas si tienes alergias.", pt: "Orientações gerais, adapte à sua fome e necessidades. Não substituem o conselho de um médico ou nutricionista. Verifique sempre os rótulos se tiver alergia." }),
+    perMeal: (k, pr) => tr(lang, { fr: `Repère : ≈ ${k} kcal · ≈ ${pr} g de protéines`, en: `Guide: ≈ ${k} kcal · ≈ ${pr} g protein`, es: `Referencia: ≈ ${k} kcal · ≈ ${pr} g de proteínas`, pt: `Referência: ≈ ${k} kcal · ≈ ${pr} g de proteínas` }),
     footer: tr(lang, { fr: "Repas ciblés selon ton sport, et variés d'une séance à l'autre.", en: "Meals tailored to your sport, and varied from one session to the next.", es: "Comidas adaptadas a tu deporte, variadas de una sesión a otra.", pt: "Refeições adaptadas ao seu esporte, variadas de uma sessão para outra." }),
   };
-  if (!lastPlan) return (<div className="px-5 pt-4 pb-24"><LargeHeader title={T.title} /><Card><p className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.empty}</p></Card></div>);
+  const backBtn = onBack ? <button onClick={onBack} className="text-xs mb-3 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button> : null;
+  if (!lastPlan) return (<div className="px-5 pt-4 pb-24">{backBtn}<LargeHeader title={T.title} /><Card><p className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.empty}</p></Card></div>);
   return (
     <div className="px-5 pt-4 pb-24">
+      {backBtn}
       <LargeHeader title={T.title} subtitle={`${sportIcon(lastPlan.sport)} ${sportLabel(lastPlan.sport, lang)} · ${T.lastSession}`} />
       <ProLock active={!isPro}>
         <Card className="mb-4">
           <SectionTitle icon={Flame} action={<ProBadge />}>{T.needs}</SectionTitle>
           <div className="grid grid-cols-4 gap-2 text-center mb-1">
-            <div><p style={{ ...fontMono, color: C.primary, fontSize: 18 }}>{lastPlan.nutrients.kcal}</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.kcal}</p></div>
-            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.protein}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.protein}</p></div>
-            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.carbs}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.carbs}</p></div>
-            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.fat}g</p><p className="text-[9px] uppercase" style={{ color: C.textFaint }}>{T.fat}</p></div>
+            <div><p style={{ ...fontMono, color: C.primary, fontSize: 18 }}>{lastPlan.nutrients.kcal}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.kcal}</p></div>
+            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.protein}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.protein}</p></div>
+            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.carbs}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.carbs}</p></div>
+            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{lastPlan.nutrients.fat}g</p><p className="text-[11px] uppercase" style={{ color: C.textFaint }}>{T.fat}</p></div>
           </div>
         </Card>
       </ProLock>
-      <Card className="mb-4"><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.pre}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).pre)}</p></Card>
-      <Card className="mb-4"><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.post}</p><p className="text-[10px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).post)}</p></Card>
+      <Card className="mb-4"><SectionTitle icon={Clock}>{T.mealBefore}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.pre}</p>{isPro && mealRef(lastPlan, "pre") && <p className="text-xs mb-2" style={{ color: C.textMuted, ...fontBody }}>{T.perMeal(...mealRef(lastPlan, "pre"))}</p>}<p className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).pre)}</p></Card>
+      <Card className="mb-4"><SectionTitle icon={TrendingUp}>{T.mealAfter}</SectionTitle><p className="text-xs leading-relaxed mb-2" style={{ color: C.textMuted, ...fontBody }}>{lastPlan.meals.post}</p>{isPro && mealRef(lastPlan, "post") && <p className="text-xs mb-2" style={{ color: C.textMuted, ...fontBody }}>{T.perMeal(...mealRef(lastPlan, "post"))}</p>}<p className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.toEatAt(mealTiming(lastPlan.eventType, lastPlan.intensity, lang).post)}</p></Card>
       <Card><SectionTitle icon={Droplet}>{T.hydration}</SectionTitle><div className="flex items-center gap-3 mb-2"><span style={{ ...fontMono, color: C.primary, fontSize: 28 }}>{lastPlan.hydratation}L</span><span className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.recommendedDay}</span></div></Card>
-      <p className="text-[10px] mt-3 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.footer}</p>
+      <p className="text-[11px] mt-3 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.footer}</p>
+      <p className="text-[11px] mt-2 text-center leading-relaxed" style={{ color: C.textFaint, ...fontBody }}>{T.disclaimer}</p>
     </div>
   );
 }
@@ -1986,7 +2302,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
       <LargeHeader title={T.title} subtitle={T.subtitle} />
       <div className="flex items-start gap-2 mb-6 px-3.5 py-3 rounded-2xl" style={{ background: C.warnSoft, border: `1px solid ${C.warn}33` }}>
         <AlertTriangle size={14} style={{ color: C.warn, marginTop: 1, flexShrink: 0 }} />
-        <p className="text-[11px] leading-relaxed" style={{ color: C.warn, ...fontBody }}>{T.disclaimer}</p>
+        <p className="text-xs leading-relaxed" style={{ color: C.warn, ...fontBody }}>{T.disclaimer}</p>
       </div>
 
       <div className="mb-6"><SegmentedControl options={[{ value: "conseil", label: T.tabAdvice }, { value: "arret", label: T.tabStop }, { value: "historique", label: `${T.history}${sorted.length ? ` (${sorted.length})` : ""}` }]} value={view} onChange={setView} /></div>
@@ -2012,7 +2328,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
       {view === "arret" && (
       <Card>
       <SectionTitle icon={Bell}>{T.declareStop}</SectionTitle>
-      <p className="text-[11px] mb-5" style={{ color: C.textFaint, ...fontBody }}>{T.declareStopHint}</p>
+      <p className="text-xs mb-5" style={{ color: C.textFaint, ...fontBody }}>{T.declareStopHint}</p>
       <Field label={T.zone}><Select value={aPart} onChange={(e) => setAPart(e.target.value)} options={BODY_PARTS.map((b) => ({ value: b.key, label: tr(lang, b) }))} placeholder={T.chooseZone} /></Field>
       <Field label={T.injuryType}><TextInput value={aLabel} onChange={(e) => setALabel(e.target.value)} placeholder={T.injuryTypePh} /></Field>
       <Field label={T.startDate}><TextInput type="date" value={aDebut} onChange={(e) => setADebut(e.target.value)} /></Field>
@@ -2020,7 +2336,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: aRetourConnu ? C.primary : "transparent", border: `1px solid ${aRetourConnu ? C.primary : C.border}` }}>{aRetourConnu && <Check size={11} color="#052821" />}</div>
         <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.knownReturn}</span>
       </button>
-      {aRetourConnu ? <Field label={T.plannedReturn}><TextInput type="date" value={aRetour} onChange={(e) => setARetour(e.target.value)} /></Field> : <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.laterHint}</p>}
+      {aRetourConnu ? <Field label={T.plannedReturn}><TextInput type="date" value={aRetour} onChange={(e) => setARetour(e.target.value)} /></Field> : <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.laterHint}</p>}
       <Btn full onClick={saveArret} disabled={!aPart || !aLabel} icon={Check}>{T.declareStopBtn}</Btn>
       </Card>
       )}
@@ -2033,39 +2349,39 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
             {sorted.map((inj) => (
               <Card key={inj.id}>
                 <div className="flex justify-between items-start mb-1.5">
-                  <div><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{bodyPartLabel(inj.part, lang)}</p><p className="text-[11px]" style={{ color: C.textMuted, ...fontBody }}>{inj.kind === "conseil" ? symptomLabel(inj.symptom, lang) : inj.symptom}</p></div>
+                  <div><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{bodyPartLabel(inj.part, lang)}</p><p className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{inj.kind === "conseil" ? symptomLabel(inj.symptom, lang) : inj.symptom}</p></div>
                   <div className="flex items-center gap-2">
                     <Badge color={inj.kind === "arret" ? C.danger : C.primary}>{inj.kind === "arret" ? T.stop : T.advice}</Badge>
                     {inj.urgent && <Badge color={C.danger}>{T.urgent}</Badge>}
-                    <button onClick={() => onDeleteInjury(inj.id)}><Trash2 size={13} style={{ color: C.textFaint }} /></button>
+                    <button onClick={() => onDeleteInjury(inj.id)} aria-label="Supprimer" className="p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>
                   </div>
                 </div>
                 {inj.kind === "arret" ? (
                   <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: C.dangerSoft }}>
-                    <p className="text-[11px]" style={{ color: C.danger, ...fontBody }}>{T.stoppedSince(fmtDate(inj.dateDebut, lang))} {T.returnLabel(inj.dateRetour ? T.onDate(fmtDate(inj.dateRetour, lang)) : T.tbd)}</p>
+                    <p className="text-xs" style={{ color: C.danger, ...fontBody }}>{T.stoppedSince(fmtDate(inj.dateDebut, lang))} {T.returnLabel(inj.dateRetour ? T.onDate(fmtDate(inj.dateRetour, lang)) : T.tbd)}</p>
                     {editingReturn === inj.id ? (
                       <div className="flex gap-2 mt-2"><TextInput type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} style={{ flex: 1 }} /><Btn small onClick={() => saveReturnDate(inj.id)}>{T.ok}</Btn></div>
                     ) : (
-                      <button onClick={() => { setEditingReturn(inj.id); setEditDate(inj.dateRetour || ""); }} className="flex items-center gap-1 mt-2 text-[11px]" style={{ color: C.danger, ...fontBody }}><Pencil size={11} /> {inj.dateRetour ? T.editReturn : T.setReturn}</button>
+                      <button onClick={() => { setEditingReturn(inj.id); setEditDate(inj.dateRetour || ""); }} className="flex items-center gap-1 mt-2 text-xs" style={{ color: C.danger, ...fontBody }}><Pencil size={11} /> {inj.dateRetour ? T.editReturn : T.setReturn}</button>
                     )}
                   </div>
                 ) : (
-                  <div className="mt-1 flex flex-wrap gap-1.5">{inj.specialistes.map((s, i) => <span key={i} className="text-[10px] px-2 py-1 rounded-full" style={{ background: C.primarySoft, color: C.primary }}>{s}</span>)}</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">{inj.specialistes.map((s, i) => <span key={i} className="text-[11px] px-2 py-1 rounded-full" style={{ background: C.primarySoft, color: C.primary }}>{s}</span>)}</div>
                 )}
 
                 <div className="mt-3 pt-3" style={{ borderTop: `1px dashed ${C.border}` }}>
                   {rdvFor === inj.id ? (
                     <>
-                      <p className="text-[11px] font-semibold mb-2 flex items-center gap-1.5" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.linkedRdv}</p>
+                      <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.linkedRdv}</p>
                       <Field label={T.rdvDate}><TextInput type="date" value={rdvDate} onChange={(e) => setRdvDate(e.target.value)} /></Field>
                       <RdvForm value={rdvVal} onChange={setRdvVal} />
                       <div className="flex gap-2"><Btn small full onClick={() => saveRdv(inj)} icon={Check}>{T.saveRdv}</Btn><Btn small variant="ghost" onClick={() => setRdvFor(null)}>{T.cancel}</Btn></div>
                     </>
                   ) : (
-                    <button onClick={() => { setRdvFor(inj.id); setRdvVal(newRdv()); }} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.addRdv}</button>
+                    <button onClick={() => { setRdvFor(inj.id); setRdvVal(newRdv()); }} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.addRdv}</button>
                   )}
                 </div>
-                <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.declaredOn(fmtDate(inj.declaredDate, lang))}</p>
+                <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.declaredOn(fmtDate(inj.declaredDate, lang))}</p>
               </Card>
             ))}
           </div>
@@ -2135,7 +2451,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
         <div className="w-9 h-1 rounded-full mx-auto mb-4" style={{ background: C.border }} />
         <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(date, lang, { weekday: "long", day: "numeric", month: "long" })}</p>
+            <p className="text-[11px] uppercase tracking-widest" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(date, lang, { weekday: "long", day: "numeric", month: "long" })}</p>
             <p className="font-bold text-lg mt-1 tracking-tight" style={{ color: C.text, ...fontDisplay }}>{entries.length === 0 ? T.dayOff : T.itemsPlanned(entries.length)}</p>
           </div>
           <button onClick={onClose}><X size={18} style={{ color: C.textMuted }} /></button>
@@ -2146,12 +2462,12 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
             {effectiveAuto?.level === "recup_active" ? (
               <Card className="mb-3" style={{ background: C.reposActifSoft, border: `1px solid ${C.reposActif}44` }}>
                 <div className="flex items-center gap-2 mb-2"><Leaf size={15} style={{ color: C.reposActif }} /><p className="font-bold text-sm" style={{ color: C.reposActif, ...fontBody }}>{T.autoActive}</p></div>
-                <p className="text-[11px]" style={{ color: C.reposActif, ...fontBody }}>{T.autoActiveNote}</p>
+                <p className="text-xs" style={{ color: C.reposActif, ...fontBody }}>{T.autoActiveNote}</p>
               </Card>
             ) : effectiveAuto?.level === "repos_complet" ? (
               <Card className="mb-3" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}33` }}>
                 <div className="flex items-center gap-2 mb-2"><Moon size={15} style={{ color: C.danger }} /><p className="font-bold text-sm" style={{ color: C.danger, ...fontBody }}>{T.fullRest}</p></div>
-                <p className="text-[11px] leading-relaxed" style={{ color: C.danger, ...fontBody }}>{T.fullRestNote}</p>
+                <p className="text-xs leading-relaxed" style={{ color: C.danger, ...fontBody }}>{T.fullRestNote}</p>
               </Card>
             ) : (
               <Card className="mb-3" style={{ background: C.glassSoft }}>
@@ -2159,7 +2475,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
                 {!isPro && auto?.level && (
                   <button onClick={openPro} className="flex items-center gap-1.5 mt-2">
                     <Lock size={11} style={{ color: C.textFaint }} />
-                    <span className="text-[10px]" style={{ color: C.textFaint, ...fontBody }}>{T.autoProHint}</span>
+                    <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.autoProHint}</span>
                   </button>
                 )}
               </Card>
@@ -2172,17 +2488,17 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
           if (e.type === "blessure") return (
             <Card key={e.id} className="mb-3" style={{ background: C.blessureSoft, border: `1px solid ${C.blessure}33` }}>
               <div className="flex items-center gap-2 mb-1"><HeartPulse size={15} style={{ color: C.blessure }} /><p className="font-bold text-sm" style={{ color: C.blessure, ...fontBody }}>{e.label}</p></div>
-              <button onClick={() => goTo && goTo("blessures")} className="text-[11px] font-semibold mt-1" style={{ color: C.blessure }}>{T.seeInInjuries}</button>
+              <button onClick={() => goTo && goTo("blessures")} className="text-xs font-semibold mt-1" style={{ color: C.blessure }}>{T.seeInInjuries}</button>
             </Card>
           );
           if (e.type === "rdv") return (
             <Card key={e.id} className="mb-3" style={{ background: C.rdvSoft, border: `1px solid ${C.rdv}33` }}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2"><Stethoscope size={15} style={{ color: C.rdv }} /><p className="font-bold text-sm" style={{ color: C.rdv, ...fontBody }}>{praticienLabel(e.praticien, lang)}</p></div>
-                <button onClick={() => onRemoveEntry(date, e.id)}><Trash2 size={13} style={{ color: C.textFaint }} /></button>
+                <button onClick={() => onRemoveEntry(date, e.id)} aria-label="Supprimer" className="p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>
               </div>
               {e.motif && <p className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{e.motif}</p>}
-              {e.heure && <p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.at} {e.heure}</p>}
+              {e.heure && <p className="text-xs mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.at} {e.heure}</p>}
             </Card>
           );
           return null;
@@ -2190,7 +2506,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 
         {sportEntries.length > 0 && (
           <>
-            <p className="text-[10px] uppercase tracking-widest mb-2 mt-1 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.sessionsOfDay}</p>
+            <p className="text-[11px] uppercase tracking-widest mb-2 mt-1 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.sessionsOfDay}</p>
             <GroupedList>
               {individualSportPlans.map(({ entry: e, plan }, i) => {
                 const Icon = EVENT_ICONS[e.type] || Activity;
@@ -2208,7 +2524,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
                     />
                     {isOpen && (
                       <div className="px-4 pb-3 flex flex-col gap-2" style={{ borderBottom: i === individualSportPlans.length - 1 ? "none" : `1px solid ${C.glassBorder}` }}>
-                        <p className="text-[10px] uppercase tracking-wide mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.thisSessionStretches}</p>
+                        <p className="text-[11px] uppercase tracking-wide mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.thisSessionStretches}</p>
                         {plan.stretches.map((s, si) => (
                           <div key={si} className="flex items-center justify-between text-xs" style={{ color: C.textMuted, ...fontBody }}>
                             <span>{s.label}</span><span style={{ ...fontMono, color: C.primary, fontSize: 10 }}>{s.duree}</span>
@@ -2224,7 +2540,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 
             <div className="mt-4 mb-2">
               <SectionTitle icon={Sparkles}>{T.recupProgram}</SectionTitle>
-              {combinedPlan.combined && <p className="text-[11px] -mt-2 mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.combinedNote(combinedPlan.sessionsCount)}</p>}
+              {combinedPlan.combined && <p className="text-xs -mt-2 mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.combinedNote(combinedPlan.sessionsCount)}</p>}
               <div className="flex justify-center mb-3"><RecoveryDial score={combinedPlan.score} label={T.recupProgram} sub={combinedPlan.duree} size={150} /></div>
               <PlanTabs plan={combinedPlan} />
             </div>
@@ -2259,7 +2575,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 /* ============================================================
    PLANNING TAB
    ============================================================ */
-function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup }) {
+function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup, settings, onSaveSettings }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
@@ -2300,6 +2616,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     tabCalendar: tr(lang, { fr: "Calendrier", en: "Calendar", es: "Calendario", pt: "Calendário" }),
     tabWeek: tr(lang, { fr: "Semaine type", en: "Weekly", es: "Semana tipo", pt: "Semana tipo" }),
     tabAdd: tr(lang, { fr: "Ajouts", en: "Add", es: "Añadir", pt: "Adicionar" }),
+    tabSleep: tr(lang, { fr: "Sommeil", en: "Sleep", es: "Sueño", pt: "Sono" }),
     howLabel: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     intro: tr(lang, { fr: "L'app choisit elle-même quand insérer de la récup active ou du repos complet, en plus de la récup, la nutrition et les rappels générés pour toute l'année.", en: "The app decides on its own when to insert active recovery or full rest, on top of the recovery, nutrition and reminders generated for the whole year.", es: "La app decide por sí sola cuándo insertar recuperación activa o descanso completo, además de la recuperación, la nutrición y los avisos generados para todo el año.", pt: "O app decide sozinho quando inserir recuperação ativa ou descanso completo, além da recuperação, nutrição e lembretes gerados para o ano inteiro." }),
     fixedDays: tr(lang, { fr: "Jours fixes de la semaine", en: "Fixed weekly days", es: "Días fijos de la semana", pt: "Dias fixos da semana" }),
@@ -2339,12 +2656,14 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
       {!isPro && (
         <button onClick={openPro} className="w-full flex items-center gap-2 mb-5 px-3.5 py-3 rounded-2xl" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}>
           <Lock size={13} style={{ color: C.textFaint }} />
-          <span className="text-[11px] flex-1 text-left" style={{ color: C.textMuted, ...fontBody }}>{T.quotaHint(monthlyUsed, FREE_EXCEPTIONS_PER_MONTH)}</span>
+          <span className="text-xs flex-1 text-left" style={{ color: C.textMuted, ...fontBody }}>{T.quotaHint(monthlyUsed, FREE_EXCEPTIONS_PER_MONTH)}</span>
           <ProBadge />
         </button>
       )}
 
-      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }]} value={view} onChange={setView} /></div>
+      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }, { value: "sommeil", label: T.tabSleep }]} value={view} onChange={setView} /></div>
+
+      {view === "sommeil" && settings && <SleepSettings settings={settings} onSave={onSaveSettings} />}
 
       {view === "semaine" && (
       <Card className="mb-4">
@@ -2354,7 +2673,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
             <button onClick={() => setExpandedDow(expandedDow === i ? null : i)} className="w-full flex items-center justify-between">
               <span className="text-xs font-semibold" style={{ color: C.text, ...fontBody }}>{d}</span>
               <div className="flex items-center gap-1.5">
-                {weeklyDays[i].length === 0 ? <span className="text-[10px]" style={{ color: C.textFaint, ...fontBody }}>{T.off}</span> : weeklyDays[i].map((e) => <span key={e.id} className="text-sm">{sportIcon(e.sport)}</span>)}
+                {weeklyDays[i].length === 0 ? <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.off}</span> : weeklyDays[i].map((e) => <span key={e.id} className="text-sm">{sportIcon(e.sport)}</span>)}
                 <ChevronDown size={14} style={{ color: C.textMuted, transform: expandedDow === i ? "rotate(180deg)" : "none" }} />
               </div>
             </button>
@@ -2367,7 +2686,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
       {view === "ajouts" && (<>
       <Card className="mb-5">
         <SectionTitle icon={Plus}>{T.addSession}</SectionTitle>
-        <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionHint}</p>
+        <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionHint}</p>
         <Field label={T.date}><TextInput type="date" value={excDate} onChange={(e) => setExcDate(e.target.value)} /></Field>
         {excDate && <EntryListEditor entries={excEntries} defaultSport={profile.sports?.[0] || "autre"} onChange={setExcEntries} />}
         <div className="mt-2"><Btn onClick={saveExcForm} full disabled={!excDate} icon={Check}>{T.saveDate}</Btn></div>
@@ -2376,8 +2695,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           <div className="flex flex-col gap-2 mt-4">
             {Object.entries(exceptions).sort(([a], [b]) => a.localeCompare(b)).map(([date, ents]) => (
               <div key={date} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: C.bgElevated }}>
-                <button onClick={() => loadExcForEdit(date)} className="text-left flex-1"><span className="text-[11px]" style={{ color: C.text, ...fontBody }}>{date} — {ents.length === 0 ? T.offException : ents.map((e) => e.type === "blessure" ? T.blessure : e.type === "rdv" ? T.rdv : eventLabel(e.type, lang)).join(", ")}</span></button>
-                <button onClick={() => onClearException(date)}><Trash2 size={13} style={{ color: C.textFaint }} /></button>
+                <button onClick={() => loadExcForEdit(date)} className="text-left flex-1"><span className="text-xs" style={{ color: C.text, ...fontBody }}>{date} — {ents.length === 0 ? T.offException : ents.map((e) => e.type === "blessure" ? T.blessure : e.type === "rdv" ? T.rdv : eventLabel(e.type, lang)).join(", ")}</span></button>
+                <button onClick={() => onClearException(date)} aria-label="Supprimer" className="p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>
               </div>
             ))}
           </div>
@@ -2386,7 +2705,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
 
       <Card className="mb-4" style={{ background: `linear-gradient(160deg, ${C.rdv}18 0%, ${C.surface} 55%)` }}>
         <SectionTitle icon={Stethoscope}>{T.medicalRdv}</SectionTitle>
-        <p className="text-[11px] mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.medicalRdvHint}</p>
+        <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.medicalRdvHint}</p>
         <Field label={T.date}><TextInput type="date" value={rdvDate} onChange={(e) => setRdvDate(e.target.value)} /></Field>
         <RdvForm value={rdvVal} onChange={setRdvVal} />
         <Btn full onClick={addRdv} disabled={!rdvVal.motif} icon={Plus}>{T.addToSchedule}</Btn>
@@ -2397,7 +2716,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
                 <ListRow key={r.entry.id} last={i === upcomingRdvs.length - 1}
                   left={<div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: C.rdvSoft }}><Stethoscope size={15} style={{ color: C.rdv }} /></div>}
                   title={praticienLabel(r.entry.praticien, lang)} subtitle={`${fmtDate(r.date, lang, { day: "2-digit", month: "short" })}${r.entry.heure ? " · " + r.entry.heure : ""}${r.entry.motif ? " · " + r.entry.motif : ""}`}
-                  right={<button onClick={() => onRemoveEntry(r.date, r.entry.id)}><Trash2 size={13} style={{ color: C.textFaint }} /></button>} />
+                  right={<button onClick={() => onRemoveEntry(r.date, r.entry.id)} aria-label="Supprimer" className="p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>} />
               ))}
             </GroupedList>
           </div>
@@ -2412,11 +2731,11 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           <span className="text-sm font-bold tracking-tight" style={{ color: C.text, ...fontDisplay }}>{MONTHS[lang][monthIdx]} {year}</span>
           <button onClick={() => setMonthIdx((m) => (m + 1) % 12)}><ChevronRight size={18} style={{ color: C.textMuted }} /></button>
         </div>
-        <div className="grid grid-cols-7 gap-1.5 mb-2">{DAYS[lang].map((d) => <span key={d} className="text-[9px] text-center" style={{ color: C.textFaint, ...fontBody }}>{d}</span>)}</div>
+        <div className="grid grid-cols-7 gap-1.5 mb-2">{DAYS[lang].map((d) => <span key={d} className="text-[11px] text-center" style={{ color: C.textFaint, ...fontBody }}>{d}</span>)}</div>
         <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: firstDow }).map((_, i) => <div key={"e" + i} />)}
           {monthDays.map((d) => (
-            <button key={d.date} onClick={() => setSelectedDate(d.date)} className="aspect-square rounded-xl flex items-center justify-center text-[10px] font-semibold relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), color: d.entries.length === 0 ? C.textFaint : "#0A1613", ...fontMono }}>
+            <button key={d.date} onClick={() => setSelectedDate(d.date)} className="aspect-square rounded-xl flex items-center justify-center text-[11px] font-semibold relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), color: d.entries.length === 0 ? C.textFaint : "#0A1613", ...fontMono }}>
               {Number(d.date.slice(-2))}
               {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px]" style={{ background: C.bgElevated, color: C.text, border: `1px solid ${C.border}` }}>{d.entries.length}</span>}
             </button>
@@ -2424,7 +2743,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         </div>
         <div className="flex flex-wrap gap-3 mt-4">
           {[[T.legendRest, C.border], [T.legendChill, C.primaryDim], [T.legendMedium, C.primary], [T.legendIntense, C.warn], [T.legendMatch, C.danger], [T.legendLoisir, C.loisir], [T.legendActive, C.reposActif], [T.legendRdv, C.rdv], [T.legendInjury, C.blessure]].map(([l, c]) => (
-            <div key={l} className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ background: c }} /><span className="text-[10px]" style={{ color: C.textMuted, ...fontBody }}>{l}</span></div>
+            <div key={l} className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full" style={{ background: c }} /><span className="text-[11px]" style={{ color: C.textMuted, ...fontBody }}>{l}</span></div>
           ))}
         </div>
       </Card>
@@ -2453,7 +2772,159 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
 /* ============================================================
    HOME TAB
    ============================================================ */
-function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo, onOpenPlan, onOpenPlanById, onDeleteSession, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
+function ToggleRow({ label, sub, on, onChange }) {
+  return (
+    <button type="button" onClick={() => onChange(!on)} className="w-full flex items-center gap-3 rounded-2xl px-3 py-3 text-left" style={{ background: on ? C.primarySoft : C.glassSoft, border: `1px solid ${on ? C.primary + "55" : C.border}` }}>
+      <div className="flex-1">
+        <p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{label}</p>
+        {sub && <p className="text-xs mt-0.5 leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{sub}</p>}
+      </div>
+      <div className="w-10 h-6 rounded-full relative shrink-0" style={{ background: on ? C.primary : C.border }}>
+        <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all" style={{ left: on ? 18 : 2 }} />
+      </div>
+    </button>
+  );
+}
+
+// Réveil par jour + rappels de coucher / d'étirements.
+function SleepSettings({ settings, onSave }) {
+  const { lang } = useLang();
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const wake = settings.wake || defaultSettings().wake;
+  const setWake = (i, v) => onSave({ wake: wake.map((w, k) => (k === i ? v : w)) });
+  const queue = (settings.queue || []).slice(0, 5);
+  const T = {
+    wakeTitle: T4("Heures de réveil", "Wake-up times", "Horas de despertar", "Horários de despertar"),
+    wakeHint: T4("À quelle heure te lèves-tu chaque jour ? REGEN en déduit l'heure de coucher idéale.", "What time do you get up each day? REGEN works out your ideal bedtime.", "¿A qué hora te levantas cada día? REGEN calcula tu hora ideal de acostarte.", "A que horas você acorda cada dia? O REGEN calcula seu horário ideal de dormir."),
+    same: T4("Même heure tous les jours (comme le lundi)", "Same time every day (like Monday)", "Misma hora todos los días (como el lunes)", "Mesmo horário todos os dias (como segunda)"),
+    sleepTitle: T4("Rappel de coucher", "Bedtime reminder", "Recordatorio de dormir", "Lembrete de dormir"),
+    sleepToggle: T4("Me rappeler d'aller dormir", "Remind me to go to bed", "Recordarme que me acueste", "Lembrar-me de dormir"),
+    sleepSub: T4("30 min avant l'heure conseillée : heure de réveil moins les heures de sommeil de ton plan de récup.", "30 min before the recommended time: wake-up time minus the sleep hours from your recovery plan.", "30 min antes de la hora recomendada: hora de despertar menos las horas de sueño de tu plan.", "30 min antes do horário recomendado: horário de despertar menos as horas de sono do seu plano."),
+    scopeSessions: T4("Soirs de séance", "Session evenings", "Noches de sesión", "Noites de sessão"),
+    scopeAll: T4("Tous les soirs", "Every evening", "Todas las noches", "Todas as noites"),
+    scopeHint: T4("Séance prévue, ajout exceptionnel ou séance imprévue : tous comptent.", "Planned session, extra session or unplanned session: all count.", "Sesión planificada, extra o imprevista: todas cuentan.", "Sessão planejada, extra ou imprevista: todas contam."),
+    stretchTitle: T4("Rappel d'étirements", "Stretching reminder", "Recordatorio de estiramientos", "Lembrete de alongamento"),
+    stretchToggle: T4("Me rappeler de m'étirer", "Remind me to stretch", "Recordarme estirar", "Lembrar-me de alongar"),
+    stretchSub: T4("Après chaque séance, avec les zones à étirer. Sans heure de séance, rappel à 19:00.", "After each session, with the areas to stretch. If the session has no time, reminder at 19:00.", "Tras cada sesión, con las zonas a estirar. Sin hora de sesión, recordatorio a las 19:00.", "Após cada sessão, com as áreas a alongar. Sem horário, lembrete às 19:00."),
+    delay: T4("Combien de temps après la séance ?", "How long after the session?", "¿Cuánto después de la sesión?", "Quanto tempo após a sessão?"),
+    upcoming: T4("Prochains rappels", "Upcoming reminders", "Próximos recordatorios", "Próximos lembretes"),
+    none: T4("Aucun rappel prévu pour l'instant. Ajoute une séance au planning ou active un rappel ci-dessus.", "No reminder planned yet. Add a session to your schedule or turn a reminder on above.", "Ningún recordatorio por ahora. Añade una sesión al plan o activa un recordatorio.", "Nenhum lembrete por enquanto. Adicione uma sessão à agenda ou ative um lembrete."),
+    note: T4("Les rappels sont préparés pour les 14 prochains jours et mis à jour à chaque ouverture de l'app. Pour les recevoir en notification, active-les dans Profil → Compte.", "Reminders are prepared for the next 14 days and refreshed each time you open the app. To get them as notifications, turn them on in Profile → Account.", "Los recordatorios se preparan para los próximos 14 días y se actualizan al abrir la app. Para recibirlos como notificación, actívalos en Perfil → Cuenta.", "Os lembretes são preparados para os próximos 14 dias e atualizados ao abrir o app. Para recebê-los como notificação, ative em Perfil → Conta."),
+    kindSleep: T4("Coucher", "Bedtime", "Dormir", "Dormir"), kindStretch: T4("Étirements", "Stretching", "Estiramientos", "Alongamento"),
+  };
+  return (
+    <>
+      <Card className="mb-4">
+        <SectionTitle icon={Moon}>{T.wakeTitle}</SectionTitle>
+        <p className="text-xs leading-relaxed mb-4" style={{ color: C.textMuted, ...fontBody }}>{T.wakeHint}</p>
+        <div className="flex flex-col gap-2">
+          {wake.map((w, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span className="text-sm font-semibold w-12" style={{ color: C.text, ...fontBody }}>{DAYS[lang][i]}</span>
+              <div className="flex-1"><TextInput type="time" value={w} onChange={(e) => e.target.value && setWake(i, e.target.value)} /></div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => onSave({ wake: wake.map(() => wake[0]) })} className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.same}</button>
+      </Card>
+
+      <Card className="mb-4">
+        <SectionTitle icon={Moon}>{T.sleepTitle}</SectionTitle>
+        <ToggleRow label={T.sleepToggle} sub={T.sleepSub} on={!!settings.sleepOn} onChange={(v) => onSave({ sleepOn: v })} />
+        {settings.sleepOn && (
+          <div className="mt-3">
+            <div className="flex gap-2 mb-2"><Pill active={settings.sleepScope !== "all"} onClick={() => onSave({ sleepScope: "sessions" })}>{T.scopeSessions}</Pill><Pill active={settings.sleepScope === "all"} onClick={() => onSave({ sleepScope: "all" })}>{T.scopeAll}</Pill></div>
+            <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.scopeHint}</p>
+          </div>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <SectionTitle icon={Activity}>{T.stretchTitle}</SectionTitle>
+        <ToggleRow label={T.stretchToggle} sub={T.stretchSub} on={!!settings.stretchOn} onChange={(v) => onSave({ stretchOn: v })} />
+        {settings.stretchOn && (
+          <div className="mt-3">
+            <p className="text-xs mb-2" style={{ color: C.textMuted, ...fontBody }}>{T.delay}</p>
+            <div className="flex gap-2">{[15, 30, 60].map((m) => <Pill key={m} active={Number(settings.stretchDelay) === m} onClick={() => onSave({ stretchDelay: m })}>{m} min</Pill>)}</div>
+          </div>
+        )}
+      </Card>
+
+      <Card className="mb-4">
+        <SectionTitle icon={Bell}>{T.upcoming}</SectionTitle>
+        {queue.length === 0 ? <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.none}</p> : (
+          <div className="flex flex-col gap-2.5">
+            {queue.map((q, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="text-xs font-semibold w-20 shrink-0" style={{ color: C.primary, ...fontMono }}>{DAYS[lang][dowOfIso(q.date)]} {q.date.slice(8)}/{q.date.slice(5, 7)}<br />{q.time}</span>
+                <span className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}><b style={{ color: C.text }}>{q.kind === "sleep" ? T.kindSleep : T.kindStretch}</b> — {q.body}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      <p className="text-[11px] leading-relaxed text-center px-3" style={{ color: C.textFaint, ...fontBody }}>{T.note}</p>
+    </>
+  );
+}
+
+// Courbe du score de récupération sur plusieurs semaines.
+function ScoreChart({ sessionsLog }) {
+  const { lang } = useLang();
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const [weeks, setWeeks] = useState(8);
+  const T = {
+    title: T4("Évolution de ton score", "Your score over time", "Evolución de tu puntuación", "Evolução da sua pontuação"),
+    empty: T4("Fais au moins 2 séances pour voir ta courbe apparaître.", "Do at least 2 sessions to see your curve appear.", "Haz al menos 2 sesiones para ver tu curva.", "Faça pelo menos 2 sessões para ver sua curva."),
+    emptyRange: T4("Pas assez de séances sur cette période : essaie une période plus longue.", "Not enough sessions in this period: try a longer one.", "No hay suficientes sesiones en este periodo: prueba uno más largo.", "Poucas sessões neste período: tente um mais longo."),
+    avg: T4("Moyenne", "Average", "Media", "Média"), last: T4("Dernière", "Latest", "Última", "Última"), count: T4("Séances", "Sessions", "Sesiones", "Sessões"),
+    w: (n) => T4(`${n} sem.`, `${n} wk`, `${n} sem.`, `${n} sem.`),
+    up: T4("Charge en hausse : pense à lever le pied si tu es fatigué.", "Load going up: ease off if you feel tired.", "Carga al alza: baja el ritmo si estás cansado.", "Carga em alta: reduza o ritmo se estiver cansado."),
+    down: T4("Charge en baisse : bonne phase de récupération.", "Load going down: good recovery phase.", "Carga a la baja: buena fase de recuperación.", "Carga em queda: boa fase de recuperação."),
+    flat: T4("Charge stable sur la période.", "Stable load over the period.", "Carga estable en el periodo.", "Carga estável no período."),
+    hint: T4("Plus le score est haut, plus la séance était exigeante pour ton corps.", "The higher the score, the more demanding the session was for your body.", "Cuanto más alta la puntuación, más exigente fue la sesión.", "Quanto mais alta a pontuação, mais exigente foi a sessão."),
+  };
+  const all = (sessionsLog || []).filter((x) => x.date && Number.isFinite(Number(x.score))).map((x) => ({ t: new Date(x.date).getTime(), v: Math.round(Number(x.score)) })).filter((x) => Number.isFinite(x.t)).sort((a, b) => a.t - b.t);
+  const end = Date.now(); const start = end - weeks * 7 * 86400000;
+  const pts = all.filter((x) => x.t >= start && x.t <= end + 86400000);
+  const W = 340, H = 150, L = 28, R = 10, Tp = 10, B = 22;
+  const X = (t) => L + ((t - start) / (end - start)) * (W - L - R);
+  const Y = (v) => Tp + (1 - v / 100) * (H - Tp - B);
+  const avg = pts.length ? Math.round(pts.reduce((a, x) => a + x.v, 0) / pts.length) : 0;
+  const half = Math.floor(pts.length / 2);
+  const mean = (arr) => (arr.length ? arr.reduce((a, x) => a + x.v, 0) / arr.length : 0);
+  const diff = pts.length >= 4 ? mean(pts.slice(half)) - mean(pts.slice(0, half)) : 0;
+  const trend = diff >= 5 ? T.up : diff <= -5 ? T.down : T.flat;
+  const dFmt = (t) => { const d = new Date(t); return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  return (
+    <Card className="mb-7">
+      <SectionTitle icon={TrendingUp}>{T.title}</SectionTitle>
+      {all.length < 2 ? <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.empty}</p> : (<>
+        <div className="mb-3"><SegmentedControl small options={[4, 8, 12].map((n) => ({ value: n, label: T.w(n) }))} value={weeks} onChange={setWeeks} /></div>
+        {pts.length < 2 ? <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.emptyRange}</p> : (<>
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`${T.title} : ${T.avg} ${avg}, ${pts.length} ${T.count}`}>
+            {[0, 50, 100].map((g) => (<g key={g}><line x1={L} x2={W - R} y1={Y(g)} y2={Y(g)} stroke={C.border} strokeWidth="1" strokeDasharray={g === 50 ? "3 4" : "0"} /><text x={L - 6} y={Y(g) + 3} textAnchor="end" fontSize="9" fill={C.textFaint}>{g}</text></g>))}
+            <line x1={L} x2={W - R} y1={Y(avg)} y2={Y(avg)} stroke={C.primary} strokeWidth="1" strokeDasharray="2 3" opacity="0.6" />
+            <polyline fill="none" stroke={C.primary} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={pts.map((x) => `${X(x.t).toFixed(1)},${Y(x.v).toFixed(1)}`).join(" ")} />
+            {pts.map((x, i) => <circle key={i} cx={X(x.t)} cy={Y(x.v)} r="3.5" fill={scoreColor(x.v)} stroke={C.bg} strokeWidth="1.5" />)}
+            <text x={L} y={H - 5} fontSize="9" fill={C.textFaint}>{dFmt(start)}</text>
+            <text x={W - R} y={H - 5} textAnchor="end" fontSize="9" fill={C.textFaint}>{dFmt(end)}</text>
+          </svg>
+          <div className="grid grid-cols-3 gap-2 text-center mt-3 mb-3">
+            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{avg}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint, ...fontBody }}>{T.avg}</p></div>
+            <div><p style={{ ...fontMono, color: scoreColor(pts[pts.length - 1].v), fontSize: 18 }}>{pts[pts.length - 1].v}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint, ...fontBody }}>{T.last}</p></div>
+            <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{pts.length}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint, ...fontBody }}>{T.count}</p></div>
+          </div>
+          <div className="flex justify-center gap-4 mb-3">{[[20, "0–39"], [50, "40–69"], [80, "70+"]].map(([v, r]) => (<span key={r} className="flex items-center gap-1.5 text-[11px]" style={{ color: C.textMuted, ...fontBody }}><span className="w-2 h-2 rounded-full" style={{ background: scoreColor(v) }} />{scoreWord(v, lang)} {r}</span>))}</div>
+          <p className="text-xs font-semibold leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{trend}</p>
+          <p className="text-[11px] leading-relaxed mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p>
+        </>)}
+      </>)}
+    </Card>
+  );
+}
+
+function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, lastPlan, goTo, onOpenPlan, onOpenPlanById, onDeleteSession, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
   const { lang } = useLang();
   const today = new Date(); const todayIso = isoLocal(today);
   const year = today.getFullYear();
@@ -2462,6 +2933,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
   const hasPlanner = weeklyDays.some((d) => d.length > 0) || Object.keys(exceptions).length > 0;
   const [selectedDate, setSelectedDate] = useState(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const tonight = (settings && settings.sleepOn && (settings.queue || []).find((q) => q.kind === "sleep" && q.date === todayIso)) || null;
 
   const schedule = useMemo(() => buildYearSchedule(weeklyDays, exceptions, year, profile), [plannerConfig, profile, year]);
   const activeInjury = useMemo(() => injuries.find((i) => i.arret && i.dateDebut && i.dateDebut.slice(0, 10) <= todayIso && (!i.dateRetour || i.dateRetour.slice(0, 10) >= todayIso)), [injuries]);
@@ -2515,7 +2987,9 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
     tapDay: tr(lang, { fr: "Touche un jour pour voir le détail complet.", en: "Tap a day to see the full detail.", es: "Toca un día para ver el detalle completo.", pt: "Toque em um dia para ver o detalhe completo." }),
-    quickRecup: tr(lang, { fr: "Après séance", en: "Post-session", es: "Tras sesión", pt: "Após sessão" }),
+    tonightTitle: (bed) => tr(lang, { fr: `Ce soir : au lit vers ${bed}`, en: `Tonight: in bed by ${bed}`, es: `Esta noche: a la cama a las ${bed}`, pt: `Hoje à noite: na cama às ${bed}` }),
+    tonightSub: (h, wake, t) => tr(lang, { fr: `${h} de sommeil pour te réveiller à ${wake} · rappel à ${t}`, en: `${h} of sleep to wake up at ${wake} · reminder at ${t}`, es: `${h} de sueño para despertar a las ${wake} · aviso a las ${t}`, pt: `${h} de sono para acordar às ${wake} · lembrete às ${t}` }),
+    quickRecup: tr(lang, { fr: "Séance imprévue", en: "Unplanned", es: "Imprevista", pt: "Imprevista" }),
     nutrition: tr(lang, { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" }),
     injuries: tr(lang, { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" }),
     planning: tr(lang, { fr: "Planning", en: "Schedule", es: "Planificación", pt: "Planejamento" }),
@@ -2525,6 +2999,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
     start: tr(lang, { fr: "Commencer", en: "Get started", es: "Empezar", pt: "Começar" }),
     deleteSession: tr(lang, { fr: "Supprimer cette séance", en: "Delete this session", es: "Eliminar esta sesión", pt: "Excluir esta sessão" }),
     deleteSessionConfirm: tr(lang, { fr: "Supprimer cette séance de l'historique ? Elle sera aussi retirée du planning.", en: "Delete this session from your history? It will also be removed from your schedule.", es: "¿Eliminar esta sesión del historial? También se quitará de la planificación.", pt: "Excluir esta sessão do histórico? Ela também será removida do planejamento." }),
+    scoreExplain: tr(lang, { fr: "Score de 0 à 100 calculé pour cette séance : plus il est haut, plus ton corps a besoin de temps pour récupérer.", en: "Score from 0 to 100 calculated for this session: the higher it is, the more time your body needs to recover.", es: "Puntuación de 0 a 100 calculada para esta sesión: cuanto más alta, más tiempo necesita tu cuerpo para recuperarse.", pt: "Pontuação de 0 a 100 calculada para esta sessão: quanto mais alta, mais tempo seu corpo precisa para se recuperar." }),
     viewPlan: tr(lang, { fr: "Voir le plan de récup", en: "View recovery plan", es: "Ver el plan de recuperación", pt: "Ver o plano de recuperação" }),
     seeMore: tr(lang, { fr: "Voir plus", en: "See more", es: "Ver más", pt: "Ver mais" }),
     seeLess: tr(lang, { fr: "Réduire", en: "Show less", es: "Reducir", pt: "Reduzir" }),
@@ -2542,21 +3017,21 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
       {activeInjury && (
         <button onClick={() => goTo("blessures")} className="w-full text-left mb-5 rounded-[22px] p-4 flex items-start gap-3" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}33` }}>
           <HeartPulse size={18} style={{ color: C.danger, flexShrink: 0, marginTop: 1 }} />
-          <div><p className="text-xs font-bold" style={{ color: C.danger, ...fontBody }}>{T.injuryOff(bodyPartLabel(activeInjury.part, lang))}</p><p className="text-[11px] mt-0.5" style={{ color: C.danger, ...fontBody }}>{T.since(fmtDate(activeInjury.dateDebut, lang))} {T.returnLabel(activeInjury.dateRetour ? T.onDate(fmtDate(activeInjury.dateRetour, lang)) : T.tbd)}</p></div>
+          <div><p className="text-xs font-bold" style={{ color: C.danger, ...fontBody }}>{T.injuryOff(bodyPartLabel(activeInjury.part, lang))}</p><p className="text-xs mt-0.5" style={{ color: C.danger, ...fontBody }}>{T.since(fmtDate(activeInjury.dateDebut, lang))} {T.returnLabel(activeInjury.dateRetour ? T.onDate(fmtDate(activeInjury.dateRetour, lang)) : T.tbd)}</p></div>
         </button>
       )}
 
       {reminders.length > 0 && (
         <Card className="mb-5" style={{ background: `linear-gradient(160deg, ${C.primary}22 0%, ${C.surface} 60%)` }}>
           <div className="flex items-center gap-2 mb-2"><Bell size={15} style={{ color: C.primary }} /><p className="font-bold text-sm tracking-tight" style={{ color: C.primary, ...fontDisplay }}>{T.reminderTomorrow}</p></div>
-          {reminders.map((r) => <p key={r.id} className="text-[11px] mb-1" style={{ color: C.primary, ...fontBody }}>{r.type === "rdv" ? `${praticienLabel(r.praticien, lang)}${r.motif ? " — " + r.motif : ""}` : `${eventLabel(r.type, lang)} ${sportIcon(r.sport)}`}{r.heure && ` ${r.heure}`} {T.reminderAt(r.notifyTime)}</p>)}
-          <p className="text-[9px] mt-1" style={{ color: C.primary, opacity: 0.7, ...fontBody }}>{T.reminderNote}</p>
+          {reminders.map((r) => <p key={r.id} className="text-xs mb-1" style={{ color: C.primary, ...fontBody }}>{r.type === "rdv" ? `${praticienLabel(r.praticien, lang)}${r.motif ? " — " + r.motif : ""}` : `${eventLabel(r.type, lang)} ${sportIcon(r.sport)}`}{r.heure && ` ${r.heure}`} {T.reminderAt(r.notifyTime)}</p>)}
+          <p className="text-[11px] mt-1" style={{ color: C.primary, opacity: 0.7, ...fontBody }}>{T.reminderNote}</p>
         </Card>
       )}
 
       {lastPlan ? (
         <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="block w-full text-left mb-5">
-          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
+          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}{lastPlan.date && isoLocal(new Date(lastPlan.date)) < todayIso ? ` · ${fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" })}` : ""}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p><p className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
         </button>
       ) : (
         <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
@@ -2567,7 +3042,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
           {[{ v: weekCount, l: T.sessionsWeek, c: C.primary }, { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint }, { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text }].map((s, i) => (
             <div key={i} className="flex flex-col items-center py-3.5" style={{ borderRight: i < 2 ? `1px solid ${C.borderSoft}66` : "none" }}>
               <p style={{ ...fontMono, color: s.c, fontSize: 20 }}>{s.v}</p>
-              <p className="text-[9px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{s.l}</p>
+              <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{s.l}</p>
             </div>
           ))}
         </div>
@@ -2580,13 +3055,25 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
         <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
       </div>
 
+      {tonight && (
+        <Card className="mb-4" style={{ background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` }}>
+          <div className="flex items-center gap-3">
+            <Moon size={20} style={{ color: C.primary }} className="shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{T.tonightTitle(tonight.bed)}</p>
+              <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{T.tonightSub(fmtHoursLabel(tonight.hours), tonight.wake, tonight.time)}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card className="mb-7">
-        <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[10px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
+        <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[11px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
         {hasPlanner ? (
           <div className="grid grid-cols-7 gap-1.5">
             {weekSchedule.map((d) => (
               <button key={d.date} onClick={() => setSelectedDate(d.date)} className="flex flex-col items-center gap-1">
-                <span className="text-[9px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
+                <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
                 <div className="w-full aspect-square rounded-xl flex items-center justify-center relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), border: d.isToday ? `1.5px solid ${C.text}` : "none" }}>
                   {d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>}
                   {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
@@ -2595,10 +3082,12 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
             ))}
           </div>
         ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
-        <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
+        <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
       </Card>
 
-      <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-[11px] font-semibold" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
+      <ScoreChart sessionsLog={sessionsLog} />
+
+      <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-xs font-semibold" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
       {sessionsLog.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.nothingYet}</p></Card> : (
         <GroupedList>
           {[...sessionsLog].reverse().slice(0, showAllHistory ? 30 : 3).map((s, i, arr) => (
@@ -2607,12 +3096,12 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, lastPlan, goTo
                 <span className="text-lg shrink-0">{sportIcon(s.sport)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: C.text, ...fontBody }}>{s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}</p>
-                  <p className="text-[11px] truncate" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(s.date, lang)}</p>
+                  <p className="text-xs truncate" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(s.date, lang)}</p>
                 </div>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: scoreColor(s.score) }} /><span style={{ ...fontMono, color: C.text, fontSize: 15 }}>{s.score}</span></div>
+                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: scoreColor(s.score) }} /><span style={{ ...fontMono, color: C.text, fontSize: 15 }}>{s.score}</span><span className="text-[11px] font-semibold" style={{ color: scoreColor(s.score), ...fontBody }}>{scoreWord(s.score, lang)}</span></div>
                 <ChevronRightIcon size={15} style={{ color: C.textFaint }} />
               </button>
-              <button type="button" aria-label={T.deleteSession} onClick={() => { if (onDeleteSession && window.confirm(T.deleteSessionConfirm)) onDeleteSession(s); }} className="px-4 py-3"><Trash2 size={14} style={{ color: C.textFaint }} /></button>
+              <button type="button" aria-label={T.deleteSession} onClick={() => { if (onDeleteSession && window.confirm(T.deleteSessionConfirm)) onDeleteSession(s); }} className="px-4 py-3"><Trash2 size={16} style={{ color: C.textFaint }} /></button>
             </div>
           ))}
         </GroupedList>
@@ -2701,11 +3190,11 @@ function ProTab() {
           <HeroCard accent={C.primary} className="mb-4 flex flex-col items-center text-center">
             <Crown size={22} style={{ color: C.primary, marginBottom: 6 }} />
             <p className="font-bold text-sm" style={{ color: C.primary, ...fontDisplay }}>{isTrial ? T.trialActive(trialDaysLeft) : T.youArePro}</p>
-            <p className="text-[11px] mt-2" style={{ color: C.textMuted, ...fontBody }}>{T.until(fmtDate(renewalDate, lang))}</p>
+            <p className="text-xs mt-2" style={{ color: C.textMuted, ...fontBody }}>{T.until(fmtDate(renewalDate, lang))}</p>
             {cancelled ? (
-              <p className="text-[11px] mt-1 px-3" style={{ color: C.warn, ...fontBody }}>{T.cancelledNote(fmtDate(renewalDate, lang))}</p>
+              <p className="text-xs mt-1 px-3" style={{ color: C.warn, ...fontBody }}>{T.cancelledNote(fmtDate(renewalDate, lang))}</p>
             ) : (
-              <p className="text-[11px] mt-1" style={{ color: C.textMuted, ...fontBody }}>{isTrial ? T.firstPayment(fmtDate(renewalDate, lang), priceLabel(cycle)) : T.nextPayment(fmtDate(renewalDate, lang), priceLabel(cycle))}</p>
+              <p className="text-xs mt-1" style={{ color: C.textMuted, ...fontBody }}>{isTrial ? T.firstPayment(fmtDate(renewalDate, lang), priceLabel(cycle)) : T.nextPayment(fmtDate(renewalDate, lang), priceLabel(cycle))}</p>
             )}
           </HeroCard>
 
@@ -2713,7 +3202,7 @@ function ProTab() {
           {confirmingCancel && (
             <Card className="mb-2" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}44` }}>
               <p className="font-bold text-sm mb-1" style={{ color: C.danger, ...fontBody }}>{T.confirmCancelTitle}</p>
-              <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.danger, ...fontBody }}>{T.confirmCancelNote(fmtDate(renewalDate, lang))}</p>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: C.danger, ...fontBody }}>{T.confirmCancelNote(fmtDate(renewalDate, lang))}</p>
               <div className="flex gap-2">
                 <Btn small full variant="danger" onClick={() => { cancelSub(); setConfirmingCancel(false); }}>{T.confirmCancelBtn}</Btn>
                 <Btn small full variant="ghost" onClick={() => setConfirmingCancel(false)}>{T.keepSub}</Btn>
@@ -2742,11 +3231,11 @@ function ProTab() {
         <Card className="mb-8" style={{ background: `linear-gradient(155deg, ${C.primary}22, ${C.surface})` }}>
           <div className="mb-4"><SegmentedControl options={[{ value: "monthly", label: T.monthly }, { value: "yearly", label: T.yearly }]} value={pickCycle} onChange={setPickCycle} /></div>
           <Btn full icon={Sparkles} onClick={() => startTrial(pickCycle)}>{T.startTrial}</Btn>
-          <p className="text-[11px] text-center mt-3" style={{ color: C.textMuted, ...fontBody }}>{pickCycle === "yearly" ? T.priceNoteYearly : T.priceNoteMonthly}</p>
-          <div className="mt-4 pt-4" style={{ borderTop: `1px dashed ${C.border}` }}>
-            <p className="text-[10px] leading-relaxed mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.demoNote}</p>
+          <p className="text-xs text-center mt-3" style={{ color: C.textMuted, ...fontBody }}>{pickCycle === "yearly" ? T.priceNoteYearly : T.priceNoteMonthly}</p>
+          {ENABLE_DEMO_PRO && <div className="mt-4 pt-4" style={{ borderTop: `1px dashed ${C.border}` }}>
+            <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.demoNote}</p>
             <Btn full small variant="ghost" onClick={() => activateDemo(pickCycle)}>{T.activateDemo}</Btn>
-          </div>
+          </div>}
         </Card>
       )}
 
@@ -2758,18 +3247,18 @@ function ProTab() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft }}><f.Icon size={17} style={{ color: C.primary }} /></div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2"><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{f.title}</p>{f.soon && <Badge color={C.textMuted}>{T.soon}</Badge>}</div>
-                <p className="text-[11px] leading-relaxed mt-1" style={{ color: C.textMuted, ...fontBody }}>{f.desc}</p>
+                <p className="text-xs leading-relaxed mt-1" style={{ color: C.textMuted, ...fontBody }}>{f.desc}</p>
               </div>
             </div>
           ))}
         </GroupedList>
       </div>
-      <p className="text-[10px] text-center leading-relaxed" style={{ color: C.textFaint, ...fontBody }}>{T.freeStaysFree}</p>
+      <p className="text-[11px] text-center leading-relaxed" style={{ color: C.textFaint, ...fontBody }}>{T.freeStaysFree}</p>
     </div>
   );
 }
 
-function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout, onDeleteAccount, onOpenPro }) {
+function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout, onDeleteAccount, onOpenPro, onTutorial }) {
   const { lang } = useLang();
   const { isPro, isTrial, trialDaysLeft } = usePro();
   const [p, setP] = useState(profile);
@@ -2839,6 +3328,8 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     if (result && !result.ok) { setDeleteError(result.error); setDeleting(false); }
   };
   const T = {
+    tutorial: tr(lang, { fr: "Tutoriel", en: "Tutorial", es: "Tutorial", pt: "Tutorial" }),
+    replayTutorial: tr(lang, { fr: "Revoir le tutoriel", en: "Replay the tutorial", es: "Ver el tutorial otra vez", pt: "Rever o tutorial" }),
     title: tr(lang, { fr: "Mon profil", en: "My profile", es: "Mi perfil", pt: "Meu perfil" }),
     save: tr(lang, { fr: "Enregistrer", en: "Save", es: "Guardar", pt: "Guardar" }),
     tabProfile: tr(lang, { fr: "Profil", en: "Profile", es: "Perfil", pt: "Perfil" }),
@@ -2863,6 +3354,8 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     level: tr(lang, { fr: "Niveau", en: "Level", es: "Nivel", pt: "Nível" }),
     equipment: tr(lang, { fr: "Matériel disponible", en: "Available equipment", es: "Equipo disponible", pt: "Equipamento disponível" }),
     allergiesLabel: tr(lang, { fr: "Allergies alimentaires", en: "Food allergies", es: "Alergias alimentarias", pt: "Alergias alimentares" }),
+    dietLabel: tr(lang, { fr: "Régime alimentaire", en: "Diet", es: "Régimen alimentario", pt: "Regime alimentar" }),
+    allergyNote: tr(lang, { fr: "Les repas proposés sont des suggestions générales : vérifie toujours les étiquettes des produits (traces possibles). En cas d'allergie grave, demande l'avis de ton médecin.", en: "Suggested meals are general ideas: always check product labels (traces possible). With a severe allergy, ask your doctor.", es: "Las comidas propuestas son sugerencias generales: revisa siempre las etiquetas (posibles trazas). Con una alergia grave, consulta a tu médico.", pt: "As refeições propostas são sugestões gerais: confira sempre os rótulos (possíveis traços). Em caso de alergia grave, consulte seu médico." }),
     dislikedLabel: tr(lang, { fr: "Aliments à éviter", en: "Foods to avoid", es: "Alimentos a evitar", pt: "Alimentos a evitar" }),
     dislikedHint: tr(lang, { fr: "Ces aliments ne seront plus jamais proposés dans tes repas conseillés.", en: "These foods will never be suggested in your recommended meals again.", es: "Estos alimentos ya no se sugerirán en tus comidas recomendadas.", pt: "Esses alimentos não serão mais sugeridos nas suas refeições recomendadas." }),
     dislikedPh: tr(lang, { fr: "ex : brocolis, thon...", en: "e.g. broccoli, tuna...", es: "ej. brócoli, atún...", pt: "ex: brócolis, atum..." }),
@@ -2887,26 +3380,26 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   };
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
-      <div className="flex items-center justify-between px-5 py-4" style={{ background: "rgba(10,20,18,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose}><X size={20} style={{ color: C.textMuted }} /></button></div>
-      <div className="px-5 pt-3 pb-1 shrink-0" style={{ background: "rgba(10,20,18,0.40)", borderBottom: `1px solid ${C.glassBorder}` }}>
+      <div className="flex items-center justify-between px-5 py-4" style={{ background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose}><X size={20} style={{ color: C.textMuted }} /></button></div>
+      <div className="px-5 pt-3 pb-1 shrink-0" style={{ background: "rgba(10,22,19,0.40)", borderBottom: `1px solid ${C.glassBorder}` }}>
         <SegmentedControl small options={[{ value: "profil", label: T.tabProfile }, { value: "sport", label: T.tabSport }, { value: "nutrition", label: T.tabFood }, { value: "compte", label: T.tabAccount }]} value={ptab} onChange={setPtab} />
         <div className="h-3" />
       </div>
       <div className="flex-1 overflow-y-auto px-5 py-6">
         {ptab === "profil" && (<>
         <div className="mb-6 px-4 py-3 rounded-2xl" style={{ background: `linear-gradient(155deg, ${C.primary}26, ${C.primaryAlt}12)`, border: `1px solid ${C.primary}33`, backdropFilter: "blur(14px)" }}>
-          <p className="text-[11px] leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.note}</p>
+          <p className="text-xs leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.note}</p>
         </div>
         <Field label={T.firstNameShown}><TextInput value={p.name} onChange={(e) => setP({ ...p, name: e.target.value })} /></Field>
         <Field label={T.sexe}><SegmentedControl options={SEXES.map((s) => ({ value: s.key, label: tr(lang, s) }))} value={p.sexe} onChange={(v) => setP({ ...p, sexe: v })} /></Field>
-        <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-[11px] mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageToday(computeAge(p.dateNaissance))}</p>}</Field>
+        <Field label={T.birth}><TextInput type="date" value={p.dateNaissance} onChange={(e) => setP({ ...p, dateNaissance: e.target.value })} />{p.dateNaissance && <p className="text-xs mt-1.5" style={{ color: C.textFaint, ...fontBody }}>{T.ageToday(computeAge(p.dateNaissance))}</p>}</Field>
         <Field label={T.height}><TextInput type="number" value={p.taille} onChange={(e) => setP({ ...p, taille: e.target.value })} /></Field>
         <Field label={T.weight}><TextInput type="number" value={p.poids} onChange={(e) => setP({ ...p, poids: e.target.value })} /></Field>
         </>)}
         {ptab === "sport" && (<>
         <Field label={<span>{T.sports}{!isPro && <span className="ml-1.5"><ProBadge /></span>}</span>}>
           <SportGrid selected={p.sports} onToggle={toggleSport} />
-          {!isPro && <p className="text-[10px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}
+          {!isPro && <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}
         </Field>
         <Field label={T.level}><div className="flex flex-wrap gap-2">{NIVEAUX.map((n) => <Pill key={n.key} active={p.niveau === n.key} onClick={() => setP({ ...p, niveau: n.key })}>{tr(lang, n)}</Pill>)}</div></Field>
         <Field label={T.equipment}>
@@ -2915,10 +3408,14 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
         </>)}
         {ptab === "nutrition" && (<>
         <Field label={T.allergiesLabel}>
-          <div className="flex flex-wrap gap-2">{ALLERGENS.map((a) => (<Pill key={a.key} active={(p.allergies || []).includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
+          <div className="flex flex-wrap gap-2">{ALLERGENS.filter((a) => a.group === "allergy").map((a) => (<Pill key={a.key} active={(p.allergies || []).includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
         </Field>
+        <Field label={T.dietLabel}>
+          <div className="flex flex-wrap gap-2">{ALLERGENS.filter((a) => a.group === "diet").map((a) => (<Pill key={a.key} active={(p.allergies || []).includes(a.key)} onClick={() => toggleAllergy(a.key)}>{tr(lang, a)}</Pill>))}</div>
+        </Field>
+        <p className="text-xs leading-relaxed mb-5" style={{ color: C.textFaint, ...fontBody }}>{T.allergyNote}</p>
         <Field label={T.dislikedLabel}>
-          <p className="text-[11px] mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
+          <p className="text-xs mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.dislikedHint}</p>
           <div className="flex gap-2 mb-2">
             <div className="flex-1"><TextInput value={dislikedInput} onChange={(e) => setDislikedInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDisliked(); } }} placeholder={T.dislikedPh} /></div>
             <Btn small onClick={addDisliked}>{T.add}</Btn>
@@ -2940,16 +3437,17 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
           <Crown size={20} color="#052821" />
           <div className="flex-1">
             <p className="text-sm font-bold" style={{ color: "#052821", ...fontDisplay }}>{T.proCardTitle}{isPro && <span className="ml-1.5">{isTrial ? `· ${trialDaysLeft}j` : "· actif"}</span>}</p>
-            {!isPro && <p className="text-[11px]" style={{ color: "#052821", ...fontBody }}>{T.proCardFree}</p>}
+            {!isPro && <p className="text-xs" style={{ color: "#052821", ...fontBody }}>{T.proCardFree}</p>}
           </div>
           <ChevronRightIcon size={16} color="#052821" />
         </button>
         <Field label={T.language}><LanguageSwitcher /></Field>
+        {onTutorial && <Field label={T.tutorial}><Btn full small variant="ghost" onClick={onTutorial}>{T.replayTutorial}</Btn></Field>}
         <Field label={T.notifications}>
           {notifStatus === "unsupported" ? (
-            <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.notifUnsupported}</p>
+            <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.notifUnsupported}</p>
           ) : notifStatus === "denied" ? (
-            <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.notifBlocked}</p>
+            <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.notifBlocked}</p>
           ) : (
             <button onClick={toggleNotif} disabled={notifLoading} className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{ background: notifStatus === "granted" ? C.primarySoft : C.surface, border: `1px solid ${notifStatus === "granted" ? C.primary : C.borderSoft}66` }}>
               <Bell size={16} style={{ color: notifStatus === "granted" ? C.primary : C.textMuted }} />
@@ -2965,23 +3463,23 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
             <div className="flex-1"><TextInput type="email" value={newEmail} onChange={(e) => { setNewEmail(e.target.value); setEmailChangeStatus(""); }} placeholder={T.emailPh} autoComplete="email" /></div>
             <Btn small onClick={submitEmailChange} disabled={emailChangeStatus === "sending" || !newEmail}>{emailChangeStatus === "sending" ? T.emailSending : T.emailChangeBtn}</Btn>
           </div>
-          {emailChangeStatus === "sent" && <p className="text-[11px] mt-2" style={{ color: C.primary, ...fontBody }}>{T.emailSent}</p>}
-          {emailChangeStatus === "error" && <p className="text-[11px] mt-2" style={{ color: C.danger, ...fontBody }}>{emailChangeError}</p>}
+          {emailChangeStatus === "sent" && <p className="text-xs mt-2" style={{ color: C.primary, ...fontBody }}>{T.emailSent}</p>}
+          {emailChangeStatus === "error" && <p className="text-xs mt-2" style={{ color: C.danger, ...fontBody }}>{emailChangeError}</p>}
         </Field>
           <div className="mt-8">
         <div className="mt-2"><Btn full variant="danger" onClick={onLogout} icon={LogOut}>{T.logout}</Btn></div>
-        <p className="text-[11px] text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>
+        <p className="text-xs text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>
           <a href="/conditions.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
           {" · "}
           <a href="/confidentialite.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
         </p>
         {!confirmingDelete ? (
-          <button onClick={() => setConfirmingDelete(true)} className="w-full text-center mt-4 pb-2 text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.deleteAccount}</button>
+          <button onClick={() => setConfirmingDelete(true)} className="w-full text-center mt-4 pb-2 text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.deleteAccount}</button>
         ) : (
           <div className="mt-4 mb-1 p-4 rounded-2xl" style={{ background: C.dangerSoft, border: `1px solid ${C.danger}44` }}>
             <p className="font-bold text-xs mb-1" style={{ color: C.danger, ...fontBody }}>{T.confirmDeleteTitle}</p>
-            <p className="text-[11px] leading-relaxed mb-3" style={{ color: C.danger, ...fontBody }}>{T.confirmDeleteNote}</p>
-            {deleteError && <p className="text-[11px] leading-relaxed mb-3 font-semibold" style={{ color: C.danger, ...fontBody }}>⚠️ {deleteError}</p>}
+            <p className="text-xs leading-relaxed mb-3" style={{ color: C.danger, ...fontBody }}>{T.confirmDeleteNote}</p>
+            {deleteError && <p className="text-xs leading-relaxed mb-3 font-semibold" style={{ color: C.danger, ...fontBody }}>⚠️ {deleteError}</p>}
             <div className="flex gap-2">
               <Btn small full variant="danger" onClick={confirmDelete} disabled={deleting}>{deleting ? T.deleting : T.confirmDeleteBtn}</Btn>
               <Btn small full variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={deleting}>{T.cancelDelete}</Btn>
@@ -2991,7 +3489,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
           </div>
         </>)}
       </div>
-      <div className="px-5 pt-3 shrink-0" style={{ background: "rgba(10,20,18,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="px-5 pt-3 shrink-0" style={{ background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
         <Btn full onClick={() => onSave(p)} disabled={p.sports.length === 0} icon={Check}>{T.save}</Btn>
       </div>
     </div>
@@ -3011,9 +3509,30 @@ export default function App() {
   const [recupResult, setRecupResult] = useState(null);
   const [planningView, setPlanningView] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); };
   const [lang, setLangState] = useState("fr");
   const [recoveryToken, setRecoveryToken] = useState(null);
 
+  const curSettings = userData?.settings || defaultSettings();
+  const settingsKey = JSON.stringify({ ...curSettings, queue: undefined });
+  const handleSaveSettings = async (patch) => {
+    const next = { ...(userData?.settings || defaultSettings()), ...patch };
+    setUserData((prev) => ({ ...prev, settings: next }));
+    await sbUpsert("user_settings", { user_id: authUser.id, data: next }, accessToken);
+  };
+  // Recalcule la liste des rappels (coucher / étirements) quand le planning, les séances ou les réglages changent.
+  useEffect(() => {
+    if (screen !== "main" || !userData?.profile || !authUser) return;
+    const st = userData.settings || defaultSettings();
+    const queue = buildReminderQueue(userData.plannerConfig, st, userData.profile, userData.sessionsLog || [], lang);
+    if (JSON.stringify(queue) === JSON.stringify(st.queue || [])) return;
+    const next = { ...st, queue };
+    setUserData((prev) => ({ ...prev, settings: next }));
+    sbUpsert("user_settings", { user_id: authUser.id, data: next }, accessToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen, userData?.plannerConfig, userData?.sessionsLog, userData?.profile, settingsKey, lang]);
   useEffect(() => {
     // Lien "mot de passe oublié" cliqué depuis l'email : Supabase redirige ici
     // avec un token dans le hash de l'URL, ce qui prime sur le flux normal.
@@ -3094,7 +3613,7 @@ export default function App() {
     const sports = proStatus.isPro ? profileData.sports : profileData.sports.slice(0, FREE_SPORTS_MAX);
     const profile = { ...profileData, sports, name: userData.prenom };
     await saveProfileRow(profile);
-    setUserData((prev) => ({ ...prev, profile })); setScreen("main");
+    setUserData((prev) => ({ ...prev, profile })); setScreen("main"); setShowTutorial(true);
   };
   const handleGeneratePlan = async (plan) => {
     const row = await sbInsert("sessions_log", { user_id: authUser.id, data: plan }, accessToken);
@@ -3107,7 +3626,7 @@ export default function App() {
     const already = entries.some((e) => SPORT_TYPES.includes(e.type) && e.sport === plan.sport && e.type === plan.eventType);
     let newCfg = null;
     if (!already) {
-      const entry = { id: Date.now() + Math.random(), type: plan.eventType, sport: plan.sport, intensity: plan.intensity, label: tr(lang, { fr: "Récup après séance", en: "Post-session recovery", es: "Recuperación tras la sesión", pt: "Recuperação após a sessão" }), heure: plan.heure || "", notify: false, notifyTime: "20:00", muscuZones: plan.muscuZones || [], sessionId: saved.id };
+      const entry = { id: Date.now() + Math.random(), type: plan.eventType, sport: plan.sport, intensity: plan.intensity, label: tr(lang, { fr: "Séance imprévue (déjà faite)", en: "Unplanned session (done)", es: "Sesión imprevista (hecha)", pt: "Sessão imprevista (feita)" }), heure: plan.heure || "", notify: false, notifyTime: "20:00", muscuZones: plan.muscuZones || [], sessionId: saved.id };
       newCfg = { ...cfg, exceptions: { ...cfg.exceptions, [dateIso]: [...entries, entry] } };
     }
     setUserData((prev) => ({ ...prev, sessionsLog: [...(prev.sessionsLog || []), saved], ...(newCfg ? { plannerConfig: newCfg } : {}) }));
@@ -3126,6 +3645,7 @@ export default function App() {
     const newCfg = changed ? { ...cfg, exceptions } : cfg;
     setUserData((prev) => ({ ...prev, sessionsLog: (prev.sessionsLog || []).filter((x) => x.id !== session.id), plannerConfig: changed ? newCfg : prev.plannerConfig }));
     setRecupResult((cur) => (cur && cur.id === session.id ? null : cur));
+    showToast(tr(lang, { fr: "Séance supprimée", en: "Session deleted", es: "Sesión eliminada", pt: "Sessão excluída" }));
     if (changed) await savePlanner(newCfg);
   };
   const goToTab = (k) => { setPlanningView(null); setTab(k); };
@@ -3138,6 +3658,7 @@ export default function App() {
     const profile = { ...p, sports };
     await saveProfileRow(profile);
     setUserData((prev) => ({ ...prev, profile })); setShowProfile(false);
+    showToast(tr(lang, { fr: "Profil enregistré ✓", en: "Profile saved ✓", es: "Perfil guardado ✓", pt: "Perfil salvo ✓" }));
   };
 
   const ensurePlanner = () => userData.plannerConfig || { weeklyDays: emptyWeekly(), exceptions: {} };
@@ -3246,13 +3767,14 @@ export default function App() {
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
-    recup: { fr: "Après séance", en: "Post-session", es: "Tras sesión", pt: "Após sessão" },
+    recup: { fr: "Séance imprévue", en: "Unplanned", es: "Imprevista", pt: "Imprevista" },
     nutrition: { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" },
     blessures: { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" },
     planning: { fr: "Planning", en: "Schedule", es: "Plan", pt: "Plano" },
     pro: { fr: "Pro", en: "Pro", es: "Pro", pt: "Pro" },
   };
-  const NAV = [["home", Home], ["recup", Activity], ["nutrition", Utensils], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
+  const NAV = [["home", Home], ["recup", Activity], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
+  const navActive = tab === "nutrition" ? "home" : tab;
 
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
@@ -3266,25 +3788,27 @@ export default function App() {
             {!booting && !recoveryToken && screen === "onboarding" && <Onboarding onComplete={handleOnboardingComplete} />}
             {!booting && !recoveryToken && screen === "main" && userData?.profile && (
               <>
-                <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ background: "rgba(10,20,18,0.55)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}>
+                <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}>
                   <div className="flex items-center gap-2"><img src={APP_LOGO} alt="REGEN" className="w-6 h-6 rounded-lg object-cover" /><span className="font-bold text-sm tracking-tight" style={{ color: C.text, ...fontDisplay }}>REGEN</span>{proStatus.isPro && <Crown size={13} style={{ color: C.primary }} />}</div>
                   <button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
-                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} />}
-                  {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} />}
+                  {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
+                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} sessionsLog={userData.sessionsLog || []} />}
+                  {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} settings={curSettings} onSaveSettings={handleSaveSettings} />}
                   {tab === "pro" && <ProTab />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
                   <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
-                  <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,20,18,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
-                    {NAV.map(([key, Icon]) => (<button key={key} onClick={() => goToTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: tab === key ? C.primary : C.textFaint }} /><span className="text-[9px] font-semibold text-center" style={{ color: tab === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
+                  <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
+                    {NAV.map(([key, Icon]) => (<button key={key} onClick={() => goToTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: navActive === key ? C.primary : C.textFaint }} /><span className="text-[10px] font-semibold text-center" style={{ color: navActive === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
                   </div>
                 </div>
-                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} />}
+                {showTutorial && <TutorialScreen onDone={() => setShowTutorial(false)} />}
+                {toast && <div className="fixed left-1/2 px-4 py-2.5 rounded-full text-xs font-semibold" style={{ top: "calc(env(safe-area-inset-top) + 64px)", transform: "translateX(-50%)", zIndex: 60, background: C.surface, color: C.text, border: `1px solid ${C.primary}66`, boxShadow: "0 8px 24px rgba(0,0,0,.4)", ...fontBody }}>{toast}</div>}
+                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={() => { setShowProfile(false); setShowTutorial(true); }} />}
               </>
             )}
           </div>

@@ -14,6 +14,9 @@ function headers() {
 function currentHHMM() {
   return new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
 }
+function todayISOParis() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
 function tomorrowISOParis() {
   const now = new Date(Date.now() + 86400000);
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
@@ -112,5 +115,51 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, sent, nowHHMM }), { headers: { "Content-Type": "application/json" } });
+  // ---- Rappels préparés par l'app (coucher, étirements) ----
+  // L'app range dans user_settings.data.queue la liste des rappels des 14 prochains jours
+  // ({ date, time, kind, body }). Ici on envoie seulement ceux dont l'heure est arrivée.
+  let sentQueue = 0;
+  if (!force) {
+    const settingsRes = await fetch(`${SUPABASE_URL}/rest/v1/user_settings?select=*`, { headers: headers() });
+    const settingsRows = await settingsRes.json();
+    const todayISO = todayISOParis();
+    if (Array.isArray(settingsRows)) {
+      for (const row of settingsRows) {
+        const queue = row?.data?.queue;
+        if (!Array.isArray(queue)) continue;
+        const due = queue.filter((q: any) => q && q.date === todayISO && q.time === nowHHMM && q.body);
+        if (due.length === 0) continue;
+        const userSubs = subs.filter((x: any) => x.user_id === row.user_id);
+        const userNative = Array.isArray(nativeTokens) ? nativeTokens.filter((t: any) => t.user_id === row.user_id) : [];
+        if (userSubs.length === 0 && userNative.length === 0) continue;
+        for (const q of due) {
+          const entryKey = `q-${q.date}-${q.kind}-${q.time}`;
+          const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/notification_log?user_id=eq.${row.user_id}&entry_key=eq.${encodeURIComponent(entryKey)}&select=id`, { headers: headers() });
+          const already = await checkRes.json();
+          if (Array.isArray(already) && already.length > 0) continue;
+          for (const sub of userSubs) {
+            try {
+              await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: "REGEN", body: q.body, url: "/" }));
+              sentQueue++;
+            } catch (err: any) {
+              if (err?.statusCode === 410 || err?.statusCode === 404) {
+                await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${sub.id}`, { method: "DELETE", headers: headers() });
+              }
+            }
+          }
+          for (const nt of userNative) {
+            const result = await sendFcmMessage(nt.token, "REGEN", q.body);
+            if (result.ok) {
+              sentQueue++;
+            } else if (result.status === 404 || result.status === 400) {
+              await fetch(`${SUPABASE_URL}/rest/v1/push_tokens_native?id=eq.${nt.id}`, { method: "DELETE", headers: headers() });
+            }
+          }
+          await fetch(`${SUPABASE_URL}/rest/v1/notification_log`, { method: "POST", headers: headers(), body: JSON.stringify({ user_id: row.user_id, entry_key: entryKey }) });
+        }
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ ok: true, sent, sentQueue, nowHHMM }), { headers: { "Content-Type": "application/json" } });
 });
