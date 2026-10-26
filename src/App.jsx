@@ -1813,7 +1813,7 @@ function TutorialScreen({ onDone }) {
     { Icon: CalendarDays, color: C.primary,
       t: T4("3. Ton planning", "3. Your schedule", "3. Tu calendario", "3. Sua agenda"),
       d: T4("Dans « Planning », règle ta semaine type une fois pour toutes, puis touche un jour pour voir le détail.", "In \"Schedule\", set your typical week once, then tap a day to see the details.", "En «Plan», fija tu semana tipo una vez y toca un día para ver el detalle.", "Em «Plano», defina sua semana típica uma vez e toque num dia para ver os detalhes."),
-      b: [T4("« Ajouts » sert à prévoir à l'avance une séance exceptionnelle ou un rendez-vous.", "\"Additions\" lets you plan an exceptional session or an appointment in advance.", "«Añadidos» sirve para planificar una sesión excepcional o una cita.", "«Adições» serve para planejar uma sessão excepcional ou uma consulta."), T4("Dans l'onglet « Sommeil », indique tes heures de réveil : REGEN te rappelle d'aller dormir à temps, et de t'étirer après tes séances.", "In the \"Sleep\" tab, set your wake-up times: REGEN reminds you to go to bed on time, and to stretch after your sessions.", "En la pestaña «Sueño», indica tus horas de despertar: REGEN te recuerda acostarte a tiempo y estirar tras tus sesiones.", "Na aba «Sono», informe seus horários de despertar: o REGEN lembra você de dormir a tempo e de alongar após as sessões.")] },
+      b: [T4("« Ajouts » sert à prévoir à l'avance une séance exceptionnelle ou un rendez-vous.", "\"Additions\" lets you plan an exceptional session or an appointment in advance.", "«Añadidos» sirve para planificar una sesión excepcional o una cita.", "«Adições» serve para planejar uma sessão excepcional ou uma consulta."), T4("Sur l'Accueil, la carte « Sommeil & rappels » te permet d'indiquer tes heures de réveil : REGEN te rappelle d'aller dormir à temps, et de t'étirer après tes séances.", "On Home, the \"Sleep & reminders\" card lets you set your wake-up times: REGEN reminds you to go to bed on time, and to stretch after your sessions.", "En Inicio, la tarjeta «Sueño y recordatorios» te permite indicar tus horas de despertar: REGEN te recuerda acostarte a tiempo y estirar tras tus sesiones.", "Na Página inicial, o cartão «Sono e lembretes» permite informar seus horários de despertar: o REGEN lembra você de dormir a tempo e de alongar após as sessões.")] },
     { Icon: HeartPulse, color: C.danger,
       t: T4("4. Blessures", "4. Injuries", "4. Lesiones", "4. Lesões"),
       d: T4("Un petit pépin ? Choisis la zone et la gêne : REGEN t'oriente vers le bon spécialiste et te donne des conseils en attendant.", "A niggle? Pick the area and symptom: REGEN points you to the right specialist and gives advice meanwhile.", "¿Una molestia? Elige zona y síntoma: REGEN te orienta al especialista adecuado y te da consejos mientras tanto.", "Um incômodo? Escolha a área e o sintoma: o REGEN indica o especialista certo e dá dicas enquanto isso."),
@@ -2575,7 +2575,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 /* ============================================================
    PLANNING TAB
    ============================================================ */
-function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup, settings, onSaveSettings }) {
+function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
@@ -2616,7 +2616,6 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     tabCalendar: tr(lang, { fr: "Calendrier", en: "Calendar", es: "Calendario", pt: "Calendário" }),
     tabWeek: tr(lang, { fr: "Semaine type", en: "Weekly", es: "Semana tipo", pt: "Semana tipo" }),
     tabAdd: tr(lang, { fr: "Ajouts", en: "Add", es: "Añadir", pt: "Adicionar" }),
-    tabSleep: tr(lang, { fr: "Sommeil", en: "Sleep", es: "Sueño", pt: "Sono" }),
     howLabel: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     intro: tr(lang, { fr: "L'app choisit elle-même quand insérer de la récup active ou du repos complet, en plus de la récup, la nutrition et les rappels générés pour toute l'année.", en: "The app decides on its own when to insert active recovery or full rest, on top of the recovery, nutrition and reminders generated for the whole year.", es: "La app decide por sí sola cuándo insertar recuperación activa o descanso completo, además de la recuperación, la nutrición y los avisos generados para todo el año.", pt: "O app decide sozinho quando inserir recuperação ativa ou descanso completo, além da recuperação, nutrição e lembretes gerados para o ano inteiro." }),
     fixedDays: tr(lang, { fr: "Jours fixes de la semaine", en: "Fixed weekly days", es: "Días fijos de la semana", pt: "Dias fixos da semana" }),
@@ -2661,9 +2660,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         </button>
       )}
 
-      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }, { value: "sommeil", label: T.tabSleep }]} value={view} onChange={setView} /></div>
-
-      {view === "sommeil" && settings && <SleepSettings settings={settings} onSave={onSaveSettings} />}
+      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }]} value={view} onChange={setView} /></div>
 
       {view === "semaine" && (
       <Card className="mb-4">
@@ -2786,14 +2783,19 @@ function ToggleRow({ label, sub, on, onChange }) {
   );
 }
 
-// Réveil par jour + rappels de coucher / d'étirements.
-function SleepSettings({ settings, onSave }) {
+// Page dédiée « Sommeil & rappels » : deux sections séparées (Sommeil / Rappels).
+function RemindersScreen({ settings, onSave, onBack, initialView }) {
   const { lang } = useLang();
   const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  const [view, setView] = useState(initialView || "sommeil");
   const wake = settings.wake || defaultSettings().wake;
   const setWake = (i, v) => onSave({ wake: wake.map((w, k) => (k === i ? v : w)) });
-  const queue = (settings.queue || []).slice(0, 5);
+  const all = settings.queue || [];
   const T = {
+    back: T4("Accueil", "Home", "Inicio", "Início"),
+    title: T4("Sommeil & rappels", "Sleep & reminders", "Sueño y recordatorios", "Sono e lembretes"),
+    subtitle: T4("Dors assez, étire-toi à temps", "Sleep enough, stretch on time", "Duerme lo suficiente, estira a tiempo", "Durma o suficiente, alongue a tempo"),
+    tabSleep: T4("Sommeil", "Sleep", "Sueño", "Sono"), tabRem: T4("Rappels", "Reminders", "Recordatorios", "Lembretes"),
     wakeTitle: T4("Heures de réveil", "Wake-up times", "Horas de despertar", "Horários de despertar"),
     wakeHint: T4("À quelle heure te lèves-tu chaque jour ? REGEN en déduit l'heure de coucher idéale.", "What time do you get up each day? REGEN works out your ideal bedtime.", "¿A qué hora te levantas cada día? REGEN calcula tu hora ideal de acostarte.", "A que horas você acorda cada dia? O REGEN calcula seu horário ideal de dormir."),
     same: T4("Même heure tous les jours (comme le lundi)", "Same time every day (like Monday)", "Misma hora todos los días (como el lunes)", "Mesmo horário todos os dias (como segunda)"),
@@ -2803,7 +2805,7 @@ function SleepSettings({ settings, onSave }) {
     scopeSessions: T4("Soirs de séance", "Session evenings", "Noches de sesión", "Noites de sessão"),
     scopeAll: T4("Tous les soirs", "Every evening", "Todas las noches", "Todas as noites"),
     scopeHint: T4("Séance prévue, ajout exceptionnel ou séance imprévue : tous comptent.", "Planned session, extra session or unplanned session: all count.", "Sesión planificada, extra o imprevista: todas cuentan.", "Sessão planejada, extra ou imprevista: todas contam."),
-    stretchTitle: T4("Rappel d'étirements", "Stretching reminder", "Recordatorio de estiramientos", "Lembrete de alongamento"),
+    stretchTitle: T4("Étirements", "Stretching", "Estiramientos", "Alongamento"),
     stretchToggle: T4("Me rappeler de m'étirer", "Remind me to stretch", "Recordarme estirar", "Lembrar-me de alongar"),
     stretchSub: T4("Après chaque séance, avec les zones à étirer. Sans heure de séance, rappel à 19:00.", "After each session, with the areas to stretch. If the session has no time, reminder at 19:00.", "Tras cada sesión, con las zonas a estirar. Sin hora de sesión, recordatorio a las 19:00.", "Após cada sessão, com as áreas a alongar. Sem horário, lembrete às 19:00."),
     delay: T4("Combien de temps après la séance ?", "How long after the session?", "¿Cuánto después de la sesión?", "Quanto tempo após a sessão?"),
@@ -2812,59 +2814,72 @@ function SleepSettings({ settings, onSave }) {
     note: T4("Les rappels sont préparés pour les 14 prochains jours et mis à jour à chaque ouverture de l'app. Pour les recevoir en notification, active-les dans Profil → Compte.", "Reminders are prepared for the next 14 days and refreshed each time you open the app. To get them as notifications, turn them on in Profile → Account.", "Los recordatorios se preparan para los próximos 14 días y se actualizan al abrir la app. Para recibirlos como notificación, actívalos en Perfil → Cuenta.", "Os lembretes são preparados para os próximos 14 dias e atualizados ao abrir o app. Para recebê-los como notificação, ative em Perfil → Conta."),
     kindSleep: T4("Coucher", "Bedtime", "Dormir", "Dormir"), kindStretch: T4("Étirements", "Stretching", "Estiramientos", "Alongamento"),
   };
-  return (
-    <>
-      <Card className="mb-4">
-        <SectionTitle icon={Moon}>{T.wakeTitle}</SectionTitle>
-        <p className="text-xs leading-relaxed mb-4" style={{ color: C.textMuted, ...fontBody }}>{T.wakeHint}</p>
-        <div className="flex flex-col gap-2">
-          {wake.map((w, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="text-sm font-semibold w-12" style={{ color: C.text, ...fontBody }}>{DAYS[lang][i]}</span>
-              <div className="flex-1"><TextInput type="time" value={w} onChange={(e) => e.target.value && setWake(i, e.target.value)} /></div>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => onSave({ wake: wake.map(() => wake[0]) })} className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.same}</button>
-      </Card>
-
-      <Card className="mb-4">
-        <SectionTitle icon={Moon}>{T.sleepTitle}</SectionTitle>
-        <ToggleRow label={T.sleepToggle} sub={T.sleepSub} on={!!settings.sleepOn} onChange={(v) => onSave({ sleepOn: v })} />
-        {settings.sleepOn && (
-          <div className="mt-3">
-            <div className="flex gap-2 mb-2"><Pill active={settings.sleepScope !== "all"} onClick={() => onSave({ sleepScope: "sessions" })}>{T.scopeSessions}</Pill><Pill active={settings.sleepScope === "all"} onClick={() => onSave({ sleepScope: "all" })}>{T.scopeAll}</Pill></div>
-            <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.scopeHint}</p>
-          </div>
-        )}
-      </Card>
-
-      <Card className="mb-4">
-        <SectionTitle icon={Activity}>{T.stretchTitle}</SectionTitle>
-        <ToggleRow label={T.stretchToggle} sub={T.stretchSub} on={!!settings.stretchOn} onChange={(v) => onSave({ stretchOn: v })} />
-        {settings.stretchOn && (
-          <div className="mt-3">
-            <p className="text-xs mb-2" style={{ color: C.textMuted, ...fontBody }}>{T.delay}</p>
-            <div className="flex gap-2">{[15, 30, 60].map((m) => <Pill key={m} active={Number(settings.stretchDelay) === m} onClick={() => onSave({ stretchDelay: m })}>{m} min</Pill>)}</div>
-          </div>
-        )}
-      </Card>
-
+  const UpcomingList = ({ kind }) => {
+    const items = all.filter((q) => q.kind === kind).slice(0, 5);
+    return (
       <Card className="mb-4">
         <SectionTitle icon={Bell}>{T.upcoming}</SectionTitle>
-        {queue.length === 0 ? <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.none}</p> : (
+        {items.length === 0 ? <p className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{T.none}</p> : (
           <div className="flex flex-col gap-2.5">
-            {queue.map((q, i) => (
+            {items.map((q, i) => (
               <div key={i} className="flex items-start gap-3">
                 <span className="text-xs font-semibold w-20 shrink-0" style={{ color: C.primary, ...fontMono }}>{DAYS[lang][dowOfIso(q.date)]} {q.date.slice(8)}/{q.date.slice(5, 7)}<br />{q.time}</span>
-                <span className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}><b style={{ color: C.text }}>{q.kind === "sleep" ? T.kindSleep : T.kindStretch}</b> — {q.body}</span>
+                <span className="text-xs leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{q.body}</span>
               </div>
             ))}
           </div>
         )}
       </Card>
+    );
+  };
+  return (
+    <div className="px-5 pt-4 pb-24">
+      <button onClick={onBack} className="text-xs mb-3 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button>
+      <LargeHeader title={T.title} subtitle={T.subtitle} />
+      <div className="mb-6"><SegmentedControl options={[{ value: "sommeil", label: T.tabSleep }, { value: "rappels", label: T.tabRem }]} value={view} onChange={setView} /></div>
+
+      {view === "sommeil" && (<>
+        <Card className="mb-4">
+          <SectionTitle icon={Moon}>{T.wakeTitle}</SectionTitle>
+          <p className="text-xs leading-relaxed mb-4" style={{ color: C.textMuted, ...fontBody }}>{T.wakeHint}</p>
+          <div className="flex flex-col gap-2">
+            {wake.map((w, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm font-semibold w-12" style={{ color: C.text, ...fontBody }}>{DAYS[lang][i]}</span>
+                <div className="flex-1"><TextInput type="time" value={w} onChange={(e) => e.target.value && setWake(i, e.target.value)} /></div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onSave({ wake: wake.map(() => wake[0]) })} className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.same}</button>
+        </Card>
+        <Card className="mb-4">
+          <SectionTitle icon={Moon}>{T.sleepTitle}</SectionTitle>
+          <ToggleRow label={T.sleepToggle} sub={T.sleepSub} on={!!settings.sleepOn} onChange={(v) => onSave({ sleepOn: v })} />
+          {settings.sleepOn && (
+            <div className="mt-3">
+              <div className="flex gap-2 mb-2"><Pill active={settings.sleepScope !== "all"} onClick={() => onSave({ sleepScope: "sessions" })}>{T.scopeSessions}</Pill><Pill active={settings.sleepScope === "all"} onClick={() => onSave({ sleepScope: "all" })}>{T.scopeAll}</Pill></div>
+              <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.scopeHint}</p>
+            </div>
+          )}
+        </Card>
+        <UpcomingList kind="sleep" />
+      </>)}
+
+      {view === "rappels" && (<>
+        <Card className="mb-4">
+          <SectionTitle icon={Activity}>{T.stretchTitle}</SectionTitle>
+          <ToggleRow label={T.stretchToggle} sub={T.stretchSub} on={!!settings.stretchOn} onChange={(v) => onSave({ stretchOn: v })} />
+          {settings.stretchOn && (
+            <div className="mt-3">
+              <p className="text-xs mb-2" style={{ color: C.textMuted, ...fontBody }}>{T.delay}</p>
+              <div className="flex gap-2">{[15, 30, 60].map((m) => <Pill key={m} active={Number(settings.stretchDelay) === m} onClick={() => onSave({ stretchDelay: m })}>{m} min</Pill>)}</div>
+            </div>
+          )}
+        </Card>
+        <UpcomingList kind="stretch" />
+      </>)}
       <p className="text-[11px] leading-relaxed text-center px-3" style={{ color: C.textFaint, ...fontBody }}>{T.note}</p>
-    </>
+    </div>
   );
 }
 
@@ -2987,6 +3002,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
     tapDay: tr(lang, { fr: "Touche un jour pour voir le détail complet.", en: "Tap a day to see the full detail.", es: "Toca un día para ver el detalle completo.", pt: "Toque em um dia para ver o detalhe completo." }),
+    remindersCard: tr(lang, { fr: "Sommeil & rappels", en: "Sleep & reminders", es: "Sueño y recordatorios", pt: "Sono e lembretes" }),
+    remindersCardSub: tr(lang, { fr: "Règle ton réveil, ton heure de coucher et tes rappels d'étirements", en: "Set your wake-up, bedtime and stretching reminders", es: "Ajusta tu despertar, hora de dormir y recordatorios de estiramientos", pt: "Ajuste seu despertar, hora de dormir e lembretes de alongamento" }),
     tonightTitle: (bed) => tr(lang, { fr: `Ce soir : au lit vers ${bed}`, en: `Tonight: in bed by ${bed}`, es: `Esta noche: a la cama a las ${bed}`, pt: `Hoje à noite: na cama às ${bed}` }),
     tonightSub: (h, wake, t) => tr(lang, { fr: `${h} de sommeil pour te réveiller à ${wake} · rappel à ${t}`, en: `${h} of sleep to wake up at ${wake} · reminder at ${t}`, es: `${h} de sueño para despertar a las ${wake} · aviso a las ${t}`, pt: `${h} de sono para acordar às ${wake} · lembrete às ${t}` }),
     quickRecup: tr(lang, { fr: "Séance imprévue", en: "Unplanned", es: "Imprevista", pt: "Imprevista" }),
@@ -3055,17 +3072,18 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
       </div>
 
-      {tonight && (
-        <Card className="mb-4" style={{ background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` }}>
+      <button onClick={() => goTo("rappels")} className="w-full text-left mb-4">
+        <Card style={tonight ? { background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` } : undefined}>
           <div className="flex items-center gap-3">
             <Moon size={20} style={{ color: C.primary }} className="shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{T.tonightTitle(tonight.bed)}</p>
-              <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{T.tonightSub(fmtHoursLabel(tonight.hours), tonight.wake, tonight.time)}</p>
+              <p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{tonight ? T.tonightTitle(tonight.bed) : T.remindersCard}</p>
+              <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{tonight ? T.tonightSub(fmtHoursLabel(tonight.hours), tonight.wake, tonight.time) : T.remindersCardSub}</p>
             </div>
+            <ChevronRightIcon size={16} style={{ color: C.textFaint }} className="shrink-0" />
           </div>
         </Card>
-      )}
+      </button>
 
       <Card className="mb-7">
         <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[11px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
@@ -3258,7 +3276,7 @@ function ProTab() {
   );
 }
 
-function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout, onDeleteAccount, onOpenPro, onTutorial }) {
+function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout, onDeleteAccount, onOpenPro, onTutorial, onOpenReminders }) {
   const { lang } = useLang();
   const { isPro, isTrial, trialDaysLeft } = usePro();
   const [p, setP] = useState(profile);
@@ -3328,6 +3346,8 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     if (result && !result.ok) { setDeleteError(result.error); setDeleting(false); }
   };
   const T = {
+    remindersLabel: tr(lang, { fr: "Sommeil & rappels", en: "Sleep & reminders", es: "Sueño y recordatorios", pt: "Sono e lembretes" }),
+    remindersBtn: tr(lang, { fr: "Régler mes rappels", en: "Set my reminders", es: "Ajustar mis recordatorios", pt: "Ajustar meus lembretes" }),
     tutorial: tr(lang, { fr: "Tutoriel", en: "Tutorial", es: "Tutorial", pt: "Tutorial" }),
     replayTutorial: tr(lang, { fr: "Revoir le tutoriel", en: "Replay the tutorial", es: "Ver el tutorial otra vez", pt: "Rever o tutorial" }),
     title: tr(lang, { fr: "Mon profil", en: "My profile", es: "Mi perfil", pt: "Meu perfil" }),
@@ -3442,6 +3462,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
           <ChevronRightIcon size={16} color="#052821" />
         </button>
         <Field label={T.language}><LanguageSwitcher /></Field>
+        {onOpenReminders && <Field label={T.remindersLabel}><Btn full small variant="ghost" onClick={onOpenReminders}>{T.remindersBtn}</Btn></Field>}
         {onTutorial && <Field label={T.tutorial}><Btn full small variant="ghost" onClick={onTutorial}>{T.replayTutorial}</Btn></Field>}
         <Field label={T.notifications}>
           {notifStatus === "unsupported" ? (
@@ -3774,7 +3795,7 @@ export default function App() {
     pro: { fr: "Pro", en: "Pro", es: "Pro", pt: "Pro" },
   };
   const NAV = [["home", Home], ["recup", Activity], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
-  const navActive = tab === "nutrition" ? "home" : tab;
+  const navActive = (tab === "nutrition" || tab === "rappels") ? "home" : tab;
 
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
@@ -3797,8 +3818,9 @@ export default function App() {
                   {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} sessionsLog={userData.sessionsLog || []} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} settings={curSettings} onSaveSettings={handleSaveSettings} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} />}
                   {tab === "pro" && <ProTab />}
+                  {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} onBack={() => goToTab("home")} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
                   <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
@@ -3808,7 +3830,7 @@ export default function App() {
                 </div>
                 {showTutorial && <TutorialScreen onDone={() => setShowTutorial(false)} />}
                 {toast && <div className="fixed left-1/2 px-4 py-2.5 rounded-full text-xs font-semibold" style={{ top: "calc(env(safe-area-inset-top) + 64px)", transform: "translateX(-50%)", zIndex: 60, background: C.surface, color: C.text, border: `1px solid ${C.primary}66`, boxShadow: "0 8px 24px rgba(0,0,0,.4)", ...fontBody }}>{toast}</div>}
-                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={() => { setShowProfile(false); setShowTutorial(true); }} />}
+                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={() => { setShowProfile(false); setShowTutorial(true); }} onOpenReminders={() => { setShowProfile(false); goToTab("rappels"); }} />}
               </>
             )}
           </div>
