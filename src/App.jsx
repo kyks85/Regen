@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useContext, createContext } from "react";
+import React, { useState, useEffect, useMemo, useContext, createContext, useRef } from "react";
 import {
   Activity, Home, Utensils, HeartPulse, CalendarDays, User, LogOut,
   ChevronLeft, ChevronRight, Droplet, Moon, Snowflake, Flame, ShoppingBag,
@@ -3632,8 +3632,11 @@ export default function App() {
   const [userData, setUserData] = useState(null);
   const [screen, setScreen] = useState("auth");
   const [tab, setTab] = useState("home");
+  const mainScrollRef = useRef(null);
   const [recupResult, setRecupResult] = useState(null);
   const [planningView, setPlanningView] = useState(null);
+  // Quand on change de page (ou qu'un plan s'affiche), on repart toujours en haut
+  useEffect(() => { const el = mainScrollRef.current; if (el) el.scrollTop = 0; }, [tab, planningView, recupResult]);
   const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -3939,7 +3942,7 @@ export default function App() {
                   <div className="flex items-center gap-2"><img src={APP_LOGO} alt="REGEN" className="w-6 h-6 rounded-lg object-cover" /><span className="font-bold text-sm tracking-tight" style={{ color: C.text, ...fontDisplay }}>REGEN</span>{proStatus.isPro && <Crown size={13} style={{ color: C.primary }} />}</div>
                   <div className="flex items-center gap-2"><button onClick={() => setGuide(guideKey)} aria-label={tr(lang, { fr: "Aide sur cette page", en: "Help on this page", es: "Ayuda sobre esta página", pt: "Ajuda sobre esta página" })} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}><HelpCircle size={16} style={{ color: C.textMuted }} /></button><button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button></div>
                 </div>
-                <div className="flex-1 overflow-y-auto">
+                <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
                   {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
                   {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} sessionsLog={userData.sessionsLog || []} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
