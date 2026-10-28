@@ -3386,6 +3386,8 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   const { isPro, isTrial, trialDaysLeft } = usePro();
   const [p, setP] = useState(profile);
   const [ptab, setPtab] = useState("profil");
+  const profScrollRef = useRef(null);
+  useEffect(() => { const el = profScrollRef.current; if (el) el.scrollTop = 0; }, [ptab]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [notifStatus, setNotifStatus] = useState(
@@ -3510,7 +3512,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
         <SegmentedControl small options={[{ value: "profil", label: T.tabProfile }, { value: "sport", label: T.tabSport }, { value: "nutrition", label: T.tabFood }, { value: "compte", label: T.tabAccount }]} value={ptab} onChange={setPtab} />
         <div className="h-3" />
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-6">
+      <div ref={profScrollRef} className="flex-1 overflow-y-auto px-5 py-6">
         {ptab === "profil" && (<>
         <div className="mb-6 px-4 py-3 rounded-2xl" style={{ background: `linear-gradient(155deg, ${C.primary}26, ${C.primaryAlt}12)`, border: `1px solid ${C.primary}33`, backdropFilter: "blur(14px)" }}>
           <p className="text-xs leading-relaxed" style={{ color: C.primary, ...fontBody }}>{T.note}</p>
