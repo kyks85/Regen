@@ -1191,7 +1191,7 @@ function Btn({ children, onClick, variant = "primary", full, disabled, type = "b
 }
 function Field({ label, children }) { return <div className="mb-5"><label className="block text-xs font-semibold mb-1.5 tracking-wide uppercase" style={{ color: C.textMuted, ...fontBody }}>{label}</label>{children}</div>; }
 const inputStyle = { background: C.glassSoft, border: `1px solid ${C.glassBorder}`, color: C.text, backdropFilter: "blur(10px)", ...fontBody };
-function TextInput(props) { return <input {...props} className="w-full rounded-xl px-3 py-2.5 outline-none" style={{ ...inputStyle, fontSize: 16, ...props.style }} />; }
+function TextInput(props) { return <input {...props} className="w-full rounded-xl px-3 py-2.5 outline-none" style={{ ...inputStyle, fontSize: 16, minWidth: 0, maxWidth: "100%", boxSizing: "border-box", ...(["date", "time", "datetime-local", "month"].includes(props.type) ? { WebkitAppearance: "none", appearance: "none", textAlign: "left", minHeight: 46, display: "block", width: "100%" } : {}), ...props.style }} />; }
 function Select({ value, onChange, options, placeholder }) {
   return (
     <div className="relative">
@@ -1677,7 +1677,7 @@ function AuthScreen({ onAuth }) {
   };
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col justify-center px-6 py-10">
+    <div ref={(el) => { if (el) el.scrollTop = 0; }} key={mode} className="flex-1 min-h-0 overflow-y-auto flex flex-col [&>:first-child]:mt-auto [&>:last-child]:mb-auto px-6 py-10">
       <div className="flex justify-center mb-4"><LanguageSwitcher compact /></div>
       <div className="flex flex-col items-center mb-8">
         <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-4 overflow-hidden" style={{ background: `linear-gradient(155deg, ${C.primary}33, ${C.primaryAlt}1A)`, border: `1px solid ${C.primary}40`, backdropFilter: "blur(12px)" }}><img src={APP_LOGO} alt="REGEN" className="w-full h-full object-cover" /></div>
@@ -3505,7 +3505,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
   };
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
-      <div className="flex items-center justify-between px-5 py-4" style={{ background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose}><X size={20} style={{ color: C.textMuted }} /></button></div>
+      <div className="flex items-center justify-between px-5 pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)", background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose} aria-label="Fermer" className="flex items-center justify-center" style={{ width: 44, height: 44, marginRight: -10 }}><X size={22} style={{ color: C.textMuted }} /></button></div>
       <div className="px-5 pt-3 pb-1 shrink-0" style={{ background: "rgba(10,22,19,0.40)", borderBottom: `1px solid ${C.glassBorder}` }}>
         <SegmentedControl small options={[{ value: "profil", label: T.tabProfile }, { value: "sport", label: T.tabSport }, { value: "nutrition", label: T.tabFood }, { value: "compte", label: T.tabAccount }]} value={ptab} onChange={setPtab} />
         <div className="h-3" />
