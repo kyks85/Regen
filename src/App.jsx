@@ -3,7 +3,7 @@ import {
   Activity, Home, Utensils, HeartPulse, CalendarDays, User, LogOut,
   ChevronLeft, ChevronRight, Droplet, Moon, Snowflake, Flame, ShoppingBag,
   AlertTriangle, Check, X, Plus, Trash2, Zap, Eye, EyeOff,
-  Sparkles, Clock, TrendingUp, ChevronDown, Pencil, Flag, Coffee, Bell, Leaf, Stethoscope, ChevronRight as ChevronRightIcon, Globe, Lock, Crown, Infinity as InfinityIcon, Cloud, Zap as ZapIcon
+  Sparkles, Clock, TrendingUp, ChevronDown, Pencil, Flag, Coffee, Bell, Leaf, Stethoscope, ChevronRight as ChevronRightIcon, Globe, Lock, Crown, Infinity as InfinityIcon, Cloud, Zap as ZapIcon, HelpCircle
 } from "lucide-react";
 
 /* ============================================================
@@ -137,6 +137,8 @@ const C = {
 };
 const gradPrimary = `linear-gradient(135deg, ${C.primary} 0%, ${C.primaryAlt} 100%)`;
 const APP_LOGO = "data:image/png;base64,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";
+// Dans l'app mobile (Capacitor), un lien relatif ne marcherait pas : on utilise l'adresse du site.
+const LEGAL_BASE = (typeof window !== "undefined" && window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform()) ? "https://regen-mu.vercel.app" : "";
 const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap');`;
 const fontDisplay = { fontFamily: "'Inter', sans-serif", letterSpacing: "-0.02em" };
 const fontBody = { fontFamily: "'Inter', sans-serif" };
@@ -261,7 +263,7 @@ const fmtDate = (iso, lang, opts) => new Date(iso).toLocaleDateString(LOCALES[la
 const EVENT_LABELS_DATA = {
   entrainement: { fr: "Entraînement", en: "Training", es: "Entrenamiento", pt: "Treino" },
   match: { fr: "Match / Combat", en: "Match / Fight", es: "Partido / Combate", pt: "Jogo / Luta" },
-  loisir: { fr: "Session loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" },
+  loisir: { fr: "Séance loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" },
   blessure: { fr: "Blessure (repos imposé)", en: "Injury (forced rest)", es: "Lesión (descanso forzado)", pt: "Lesão (descanso forçado)" },
   rdv: { fr: "RDV médical", en: "Medical appointment", es: "Cita médica", pt: "Consulta médica" },
 };
@@ -1218,7 +1220,7 @@ function SegmentedControl({ options, value, onChange, small, colorMap }) {
     <div className={`relative flex rounded-2xl ${small ? "p-0.5" : "p-1"}`} style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}`, backdropFilter: "blur(10px)" }}>
       <div className="absolute top-0.5 bottom-0.5 rounded-xl transition-all duration-300 ease-out" style={{ left: `calc(${100 / options.length}% * ${idx} + 2px)`, width: `calc(${100 / options.length}% - 4px)`, background: activeColor === C.primary ? gradPrimary : activeColor, boxShadow: `0 4px 12px -4px ${activeColor}77` }} />
       {options.map((opt) => (
-        <button key={opt.value} type="button" onClick={() => onChange(opt.value)} className={`relative z-10 flex-1 font-semibold rounded-xl transition-colors ${small ? "py-1.5 text-[11px]" : "py-2.5 text-xs"}`} style={{ color: value === opt.value ? "#052821" : C.textMuted, ...fontBody }}>{opt.label}</button>
+        <button key={opt.value} type="button" onClick={() => onChange(opt.value)} className={`relative z-10 flex-1 font-semibold rounded-xl transition-colors ${small ? "py-2 text-[11px]" : "py-2.5 text-xs"}`} style={{ color: value === opt.value ? "#052821" : C.textMuted, ...fontBody }}>{opt.label}</button>
       ))}
     </div>
   );
@@ -1259,7 +1261,7 @@ function InfoToggle({ label, children }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-6">
-      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.primary, ...fontBody }}>
+      <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1.5 text-xs font-semibold py-2" style={{ color: C.primary, ...fontBody }}>
         <Sparkles size={12} /> {label} <ChevronDown size={12} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
       </button>
       {open && <p className="text-xs leading-relaxed mt-2" style={{ color: C.textMuted, ...fontBody }}>{children}</p>}
@@ -1273,20 +1275,31 @@ function ListRow({ onClick, left, title, subtitle, right, last, chevron }) {
     <Comp onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3 text-left" style={{ borderBottom: last ? "none" : `1px solid ${C.glassBorder}` }}>
       {left}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: C.text, ...fontBody }}>{title}</p>
-        {subtitle && <p className="text-xs truncate" style={{ color: C.textFaint, ...fontBody }}>{subtitle}</p>}
+        <p className="text-sm font-semibold break-words" style={{ color: C.text, ...fontBody }}>{title}</p>
+        {subtitle && <p className="text-xs break-words" style={{ color: C.textFaint, ...fontBody }}>{subtitle}</p>}
       </div>
       {right}
       {chevron && <ChevronRightIcon size={15} style={{ color: C.textFaint }} />}
     </Comp>
   );
 }
+function LegalFooter({ className = "" }) {
+  const { lang } = useLang();
+  const a = { color: C.textMuted, textDecoration: "underline" };
+  return (
+    <p className={`text-[11px] text-center leading-relaxed ${className}`} style={{ color: C.textFaint, ...fontBody }}>
+      <a href={`${LEGAL_BASE}/conditions.html`} target="_blank" rel="noopener noreferrer" style={a}>{tr(lang, { fr: "Conditions d'utilisation", en: "Terms of use", es: "Condiciones de uso", pt: "Termos de uso" })}</a>
+      {" · "}
+      <a href={`${LEGAL_BASE}/confidentialite.html`} target="_blank" rel="noopener noreferrer" style={a}>{tr(lang, { fr: "Confidentialité", en: "Privacy", es: "Privacidad", pt: "Privacidade" })}</a>
+    </p>
+  );
+}
 function IconTile({ icon: Icon, label, onClick, color }) {
   const c = color || C.primary;
   return (
-    <button onClick={onClick} className="flex flex-col items-center gap-2 shrink-0" style={{ width: 76 }}>
+    <button onClick={onClick} className="flex flex-col items-center gap-2 flex-1 min-w-0">
       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: `linear-gradient(155deg, ${c}33 0%, ${c}14 100%)`, border: `1px solid ${c}40`, backdropFilter: "blur(12px)", boxShadow: `0 8px 16px -8px ${c}55` }}><Icon size={22} style={{ color: c }} /></div>
-      <span className="text-[11px] font-semibold text-center leading-tight" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
+      <span className="text-[11px] font-semibold text-center leading-tight break-words w-full" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
     </button>
   );
 }
@@ -1304,6 +1317,7 @@ function LanguageSwitcher({ compact }) {
 }
 
 function RecoveryDial({ score, label, sub, size = 200 }) {
+  const compact = size < 175; // petit cadran : le libellé passe sous le cercle pour ne pas toucher l'anneau
   const r = 80, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100), col = scoreColor(score);
   return (
     <div className="flex flex-col items-center">
@@ -1313,10 +1327,11 @@ function RecoveryDial({ score, label, sub, size = 200 }) {
           <circle cx="100" cy="100" r={r} fill="none" stroke={col} strokeWidth="14" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.8s ease", filter: `drop-shadow(0 0 18px ${col}99)` }} />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span style={{ ...fontMono, color: col, fontSize: 40, fontWeight: 600, lineHeight: 1 }}>{score}</span>
-          <span className="text-[11px] uppercase tracking-widest mt-1 text-center px-4" style={{ color: C.textMuted, ...fontBody }}>{label}</span>
+          <span style={{ ...fontMono, color: col, fontSize: compact ? 38 : 40, fontWeight: 600, lineHeight: 1 }}>{score}</span>
+          {!compact && <span className="text-[11px] uppercase tracking-widest mt-1 text-center px-4" style={{ color: C.textMuted, ...fontBody }}>{label}</span>}
         </div>
       </div>
+      {compact && <span className="text-[11px] uppercase tracking-widest mt-2 text-center px-2" style={{ color: C.textMuted, ...fontBody }}>{label}</span>}
       {sub && <span className="text-[12px] mt-3 font-semibold text-center px-2" style={{ color: col, ...fontBody }}>{sub}</span>}
     </div>
   );
@@ -1339,7 +1354,7 @@ function RdvForm({ value, onChange }) {
       <Field label={T.praticien}><Select value={value.praticien} onChange={(e) => onChange({ ...value, praticien: e.target.value })} options={PRATICIENS.map((p) => ({ value: p.key, label: tr(lang, p) }))} /></Field>
       <Field label={T.motif}><TextInput value={value.motif} onChange={(e) => onChange({ ...value, motif: e.target.value })} placeholder={T.motifPh} /></Field>
       <Field label={T.heure}><TextInput type="time" value={value.heure} onChange={(e) => onChange({ ...value, heure: e.target.value })} /></Field>
-      <button onClick={() => onChange({ ...value, notify: !value.notify })} className="flex items-center gap-2 mb-3">
+      <button onClick={() => onChange({ ...value, notify: !value.notify })} className="flex items-center gap-2 mb-1 py-2">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: value.notify ? C.rdv : "transparent", border: `1px solid ${value.notify ? C.rdv : C.border}` }}>{value.notify && <Check size={11} color="#052821" />}</div>
         <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
       </button>
@@ -1389,7 +1404,7 @@ function PlanTabs({ plan }) {
   const programPlan = isPro ? plan : { ...plan, heure: null };
   return (
     <div>
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ WebkitMaskImage: "linear-gradient(to right, #000 calc(100% - 28px), transparent)", maskImage: "linear-gradient(to right, #000 calc(100% - 28px), transparent)", paddingRight: 28 }}>
         {tabs.map(([k, label, Icon]) => (
           <button key={k} onClick={() => setTab(k)} className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold" style={{ background: tab === k ? C.primary : C.surface, color: tab === k ? "#052821" : C.textMuted, border: `1px solid ${tab === k ? C.primary : C.borderSoft}66` }}><Icon size={13} /> {label}</button>
         ))}
@@ -1734,9 +1749,9 @@ function AuthScreen({ onAuth }) {
       </form>
       <p className="text-[11px] text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>{T.disclaimer}</p>
       <p className="text-[11px] text-center mt-2" style={{ color: C.textFaint, ...fontBody }}>
-        <a href="/conditions.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
+        <a href={`${LEGAL_BASE}/conditions.html`} target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
         {" · "}
-        <a href="/confidentialite.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
+        <a href={`${LEGAL_BASE}/confidentialite.html`} target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
       </p>
 
       {forgotOpen && (
@@ -1791,7 +1806,8 @@ function MuscuZonePicker({ selected, onToggle }) {
    ONBOARDING
    ============================================================ */
 /* ============================================================
-   TUTORIEL (affiché après l'inscription, ré-ouvrable depuis le profil)
+   TUTORIEL : un court accueil (3 écrans) après l'inscription, puis un petit
+   guide propre à CHAQUE page, affiché la 1re fois et rouvrable avec le « ? ».
    ============================================================ */
 function TutorialScreen({ onDone }) {
   const { lang } = useLang();
@@ -1800,32 +1816,16 @@ function TutorialScreen({ onDone }) {
   const slides = [
     { Icon: Sparkles, color: C.primary,
       t: T4("Bienvenue sur REGEN", "Welcome to REGEN", "Bienvenido a REGEN", "Bem-vindo ao REGEN"),
-      d: T4("REGEN t'aide à mieux récupérer après le sport : plan personnalisé, planning, suivi des blessures et conseils. Voici l'essentiel en 1 minute.", "REGEN helps you recover better after sport: personalised plan, schedule, injury tracking and tips. Here's the essentials in 1 minute.", "REGEN te ayuda a recuperarte mejor tras el deporte: plan personalizado, calendario, seguimiento de lesiones y consejos. Lo esencial en 1 minuto.", "O REGEN ajuda você a recuperar melhor após o esporte: plano personalizado, agenda, acompanhamento de lesões e dicas. O essencial em 1 minuto."),
+      d: T4("REGEN t'aide à mieux récupérer après le sport : plan personnalisé, planning, suivi des blessures, nutrition et rappels.", "REGEN helps you recover better after sport: personalised plan, schedule, injury tracking, nutrition and reminders.", "REGEN te ayuda a recuperarte mejor tras el deporte: plan personalizado, calendario, seguimiento de lesiones, nutrición y recordatorios.", "O REGEN ajuda você a recuperar melhor após o esporte: plano personalizado, agenda, acompanhamento de lesões, nutrição e lembretes."),
       b: [] },
     { Icon: Activity, color: C.primary,
-      t: T4("1. Une séance imprévue déjà faite", "1. An unplanned session you already did", "1. Una sesión imprevista ya hecha", "1. Uma sessão imprevista já feita"),
-      d: T4("Tu as fait du sport sans l'avoir prévu ? Ouvre l'onglet « Séance imprévue » : indique ton sport, l'intensité, ta fatigue et les zones sollicitées.", "Worked out without planning it? Open the \"Unplanned\" tab: enter your sport, intensity, fatigue and the areas you worked.", "¿Hiciste deporte sin planearlo? Abre la pestaña «Imprevista»: indica deporte, intensidad, fatiga y zonas trabajadas.", "Treinou sem ter planejado? Abra a aba «Imprevista»: informe esporte, intensidade, fadiga e áreas trabalhadas."),
-      b: [T4("Tu reçois un plan complet : étirements, massage, froid/chaud, sommeil, hydratation et repas.", "You get a full plan: stretching, massage, cold/heat, sleep, hydration and meals.", "Recibes un plan completo: estiramientos, masaje, frío/calor, sueño, hidratación y comidas.", "Você recebe um plano completo: alongamentos, massagem, frio/calor, sono, hidratação e refeições."), T4("Pour tes séances prévues, le plan de récup est dans chaque jour du Planning.", "For planned sessions, the recovery plan is in each day of the Schedule.", "Para las sesiones planificadas, el plan de recuperación está en cada día del Plan.", "Para as sessões planejadas, o plano de recuperação está em cada dia da Agenda.")] },
-    { Icon: Flame, color: C.warn,
-      t: T4("2. Le score de récupération", "2. The recovery score", "2. La puntuación de recuperación", "2. A pontuação de recuperação"),
-      d: T4("Chaque séance reçoit un score de 0 à 100 : plus il est haut, plus ton corps a besoin de temps pour récupérer.", "Each session gets a score from 0 to 100: the higher it is, the more time your body needs to recover.", "Cada sesión recibe una puntuación de 0 a 100: cuanto más alta, más tiempo necesita tu cuerpo.", "Cada sessão recebe uma pontuação de 0 a 100: quanto mais alta, mais tempo seu corpo precisa."),
-      b: [T4("Il dépend de l'intensité, de ta fatigue, de ton âge, de ton niveau et de tes séances récentes.", "It depends on intensity, fatigue, age, level and your recent sessions.", "Depende de intensidad, fatiga, edad, nivel y tus sesiones recientes.", "Depende da intensidade, fadiga, idade, nível e das suas sessões recentes."), T4("Il ne se « réinitialise » pas : chaque séance a le sien. La courbe de l'Accueil montre son évolution sur plusieurs semaines.", "It doesn't \"reset\": each session has its own. The curve on Home shows how it evolves over several weeks.", "No se «reinicia»: cada sesión tiene el suyo. La curva de Inicio muestra su evolución durante semanas.", "Não «reinicia»: cada sessão tem o seu. A curva da Página inicial mostra a evolução ao longo de semanas.")] },
-    { Icon: CalendarDays, color: C.primary,
-      t: T4("3. Ton planning", "3. Your schedule", "3. Tu calendario", "3. Sua agenda"),
-      d: T4("Dans « Planning », règle ta semaine type une fois pour toutes, puis touche un jour pour voir le détail.", "In \"Schedule\", set your typical week once, then tap a day to see the details.", "En «Plan», fija tu semana tipo una vez y toca un día para ver el detalle.", "Em «Plano», defina sua semana típica uma vez e toque num dia para ver os detalhes."),
-      b: [T4("« Ajouts » sert à prévoir à l'avance une séance exceptionnelle ou un rendez-vous.", "\"Additions\" lets you plan an exceptional session or an appointment in advance.", "«Añadidos» sirve para planificar una sesión excepcional o una cita.", "«Adições» serve para planejar uma sessão excepcional ou uma consulta."), T4("Sur l'Accueil, la carte « Sommeil & rappels » te permet d'indiquer tes heures de réveil : REGEN te rappelle d'aller dormir à temps, et de t'étirer après tes séances.", "On Home, the \"Sleep & reminders\" card lets you set your wake-up times: REGEN reminds you to go to bed on time, and to stretch after your sessions.", "En Inicio, la tarjeta «Sueño y recordatorios» te permite indicar tus horas de despertar: REGEN te recuerda acostarte a tiempo y estirar tras tus sesiones.", "Na Página inicial, o cartão «Sono e lembretes» permite informar seus horários de despertar: o REGEN lembra você de dormir a tempo e de alongar após as sessões.")] },
-    { Icon: HeartPulse, color: C.danger,
-      t: T4("4. Blessures", "4. Injuries", "4. Lesiones", "4. Lesões"),
-      d: T4("Un petit pépin ? Choisis la zone et la gêne : REGEN t'oriente vers le bon spécialiste et te donne des conseils en attendant.", "A niggle? Pick the area and symptom: REGEN points you to the right specialist and gives advice meanwhile.", "¿Una molestia? Elige zona y síntoma: REGEN te orienta al especialista adecuado y te da consejos mientras tanto.", "Um incômodo? Escolha a área e o sintoma: o REGEN indica o especialista certo e dá dicas enquanto isso."),
-      b: [T4("Tu peux aussi déclarer un arrêt, suivre ta date de retour et ajouter tes rendez-vous.", "You can also report time off, track your return date and add appointments.", "También puedes declarar una baja, seguir tu fecha de vuelta y añadir citas.", "Você também pode declarar um afastamento, acompanhar a data de retorno e adicionar consultas."), T4("Ce sont des conseils généraux : ils ne remplacent jamais un avis médical.", "These are general tips: they never replace medical advice.", "Son consejos generales: nunca sustituyen la opinión médica.", "São dicas gerais: nunca substituem um parecer médico.")] },
-    { Icon: Utensils, color: C.warn,
-      t: T4("5. Nutrition et conseils", "5. Nutrition and tips", "5. Nutrición y consejos", "5. Nutrição e dicas"),
-      d: T4("Après chaque plan, retrouve les repas avant/après l'effort, l'hydratation, et l'onglet « Conseils » : matériel utile et astuces.", "After each plan, find meals before/after effort, hydration, and the \"Tips\" tab: useful gear and tricks.", "Tras cada plan, encuentra comidas antes/después, hidratación y la pestaña «Consejos»: material útil y trucos.", "Após cada plano, veja as refeições antes/depois, hidratação e a aba «Dicas»: equipamento útil e truques."),
-      b: [T4("Les repas respectent tes allergies et ton régime (renseignés dans ton profil).", "Meals respect your allergies and diet (set in your profile).", "Las comidas respetan tus alergias y dieta (indicadas en el perfil).", "As refeições respeitam suas alergias e dieta (definidas no perfil)."), T4("Accès rapide à la Nutrition depuis l'Accueil.", "Quick access to Nutrition from Home.", "Acceso rápido a Nutrición desde Inicio.", "Acesso rápido à Nutrição pela Página inicial.")] },
-    { Icon: Crown, color: C.primary,
-      t: T4("6. Ton profil et Pro", "6. Your profile and Pro", "6. Tu perfil y Pro", "6. Seu perfil e Pro"),
-      d: T4("Touche ta pastille en haut à droite pour modifier ton profil, ta langue, tes notifications, ou revoir ce tutoriel.", "Tap your circle at the top right to edit your profile, language, notifications, or replay this tutorial.", "Toca tu círculo arriba a la derecha para editar perfil, idioma, notificaciones o repetir este tutorial.", "Toque no seu círculo no canto superior direito para editar perfil, idioma, notificações ou rever este tutorial."),
-      b: [T4("Le gratuit couvre l'essentiel ; Pro débloque sports et séances illimités et la nutrition avancée.", "Free covers the essentials; Pro unlocks unlimited sports and sessions and advanced nutrition.", "Lo gratuito cubre lo esencial; Pro desbloquea deportes y sesiones ilimitados y nutrición avanzada.", "O grátis cobre o essencial; o Pro libera esportes e sessões ilimitados e nutrição avançada.")] },
+      t: T4("Comment ça marche", "How it works", "Cómo funciona", "Como funciona"),
+      d: T4("Trois gestes suffisent.", "Three simple steps.", "Tres pasos sencillos.", "Três passos simples."),
+      b: [T4("Dis ce que tu as fait (séance imprévue) ou prépare ta semaine dans le Planning.", "Tell us what you did (unplanned session) or set up your week in the Schedule.", "Cuenta lo que hiciste (sesión imprevista) o prepara tu semana en el Plan.", "Conte o que você fez (sessão imprevista) ou prepare sua semana na Agenda."), T4("Reçois ton plan de récup : étirements, massage, froid/chaud, sommeil, nutrition.", "Get your recovery plan: stretching, massage, cold/heat, sleep, nutrition.", "Recibe tu plan de recuperación: estiramientos, masaje, frío/calor, sueño, nutrición.", "Receba seu plano de recuperação: alongamentos, massagem, frio/calor, sono, nutrição."), T4("Suis ton score, tes rappels et tes progrès sur l'Accueil.", "Follow your score, reminders and progress on Home.", "Sigue tu puntuación, recordatorios y progreso en Inicio.", "Acompanhe sua pontuação, lembretes e progresso na Página inicial.")] },
+    { Icon: HelpCircle, color: C.primary,
+      t: T4("Un guide sur chaque page", "A guide on every page", "Una guía en cada página", "Um guia em cada página"),
+      d: T4("Pas besoin de tout retenir maintenant.", "No need to remember everything now.", "No hace falta recordar todo ahora.", "Não precisa lembrar de tudo agora."),
+      b: [T4("La première fois que tu ouvres une page, un petit guide t'explique à quoi elle sert.", "The first time you open a page, a short guide explains what it's for.", "La primera vez que abres una página, una guía breve te explica para qué sirve.", "Na primeira vez que abre uma página, um guia curto explica para que ela serve."), T4("Touche le bouton « ? » en haut de l'écran pour le revoir quand tu veux.", "Tap the \"?\" button at the top of the screen to see it again anytime.", "Toca el botón «?» en la parte superior para verla cuando quieras.", "Toque no botão «?» no topo da tela para rever quando quiser."), T4("Tout commence gratuitement : Pro est optionnel.", "Everything starts free: Pro is optional.", "Todo empieza gratis: Pro es opcional.", "Tudo começa grátis: o Pro é opcional.")] },
   ];
   const last = i === slides.length - 1;
   const sl = slides[i];
@@ -1835,7 +1835,7 @@ function TutorialScreen({ onDone }) {
     <div className="absolute inset-0 flex flex-col px-6 pt-8 pb-6" style={{ zIndex: 70, background: C.bg, paddingTop: "max(32px, env(safe-area-inset-top))" }}>
       <div className="flex items-center justify-between mb-8">
         <div className="flex gap-1.5 flex-1 mr-4">{slides.map((_, k) => <div key={k} className="flex-1 h-1 rounded-full" style={{ background: k <= i ? C.primary : C.border }} />)}</div>
-        {!last && <button onClick={onDone} className="text-xs font-semibold" style={{ color: C.textMuted, ...fontBody }}>{L.skip}</button>}
+        {!last && <button onClick={onDone} className="text-xs font-semibold py-2 pl-3" style={{ color: C.textMuted, ...fontBody }}>{L.skip}</button>}
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6" style={{ background: `${sl.color}22`, border: `1px solid ${sl.color}55` }}><Icon size={30} style={{ color: sl.color }} /></div>
@@ -1849,6 +1849,106 @@ function TutorialScreen({ onDone }) {
       <div className="flex gap-2 mt-4">
         {i > 0 && <Btn variant="ghost" onClick={() => setI(i - 1)}>{L.back}</Btn>}
         <Btn full onClick={() => (last ? onDone() : setI(i + 1))}>{last ? L.start : L.next}</Btn>
+      </div>
+    </div>
+  );
+}
+
+// Contenu des guides : une entrée par page (clé = page).
+function getGuides(lang) {
+  const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
+  return {
+    home: { Icon: Home,
+      t: T4("Ton accueil", "Your home", "Tu inicio", "Sua página inicial"),
+      d: T4("Tout ton suivi en un coup d'œil.", "Everything you track, at a glance.", "Todo tu seguimiento de un vistazo.", "Todo o seu acompanhamento num relance."),
+      b: [T4("La grande carte montre le score de ta dernière séance : plus il est haut, plus ton corps a besoin de récupérer. Touche-la pour rouvrir le plan.", "The big card shows your last session's score: the higher it is, the more your body needs to recover. Tap it to reopen the plan.", "La tarjeta grande muestra la puntuación de tu última sesión: cuanto más alta, más necesita recuperarse tu cuerpo. Tócala para reabrir el plan.", "O cartão grande mostra a pontuação da última sessão: quanto mais alta, mais seu corpo precisa recuperar. Toque para reabrir o plano."),
+          T4("Les raccourcis mènent à la Séance imprévue, la Nutrition, les Blessures et le Planning.", "The shortcuts lead to Unplanned session, Nutrition, Injuries and Schedule.", "Los accesos llevan a Sesión imprevista, Nutrición, Lesiones y Plan.", "Os atalhos levam a Sessão imprevista, Nutrição, Lesões e Agenda."),
+          T4("La carte « Sommeil & rappels » règle tes heures de réveil et tes rappels de coucher et d'étirements.", "The \"Sleep & reminders\" card sets your wake-up times and your bedtime and stretching reminders.", "La tarjeta «Sueño y recordatorios» ajusta tus horas de despertar y tus recordatorios de dormir y estirar.", "O cartão «Sono e lembretes» define seus horários de despertar e lembretes de dormir e alongar."),
+          T4("« Cette semaine » résume ton planning : touche un jour pour voir son détail.", "\"This week\" sums up your schedule: tap a day to see its details.", "«Esta semana» resume tu plan: toca un día para ver su detalle.", "«Esta semana» resume sua agenda: toque num dia para ver os detalhes."),
+          T4("La courbe suit ton score sur 4, 8 ou 12 semaines. Dans l'historique, touche une séance pour rouvrir son plan, ou la poubelle pour la supprimer.", "The curve tracks your score over 4, 8 or 12 weeks. In the history, tap a session to reopen its plan, or the bin to delete it.", "La curva sigue tu puntuación en 4, 8 o 12 semanas. En el historial, toca una sesión para reabrir su plan, o la papelera para borrarla.", "A curva acompanha sua pontuação em 4, 8 ou 12 semanas. No histórico, toque numa sessão para reabrir o plano, ou na lixeira para excluir.")] },
+    recup: { Icon: Activity,
+      t: T4("Séance imprévue déjà faite", "Unplanned session, already done", "Sesión imprevista ya hecha", "Sessão imprevista já feita"),
+      d: T4("Utilise cette page quand tu as fait du sport sans l'avoir prévu.", "Use this page when you worked out without planning it.", "Usa esta página cuando hayas hecho deporte sin planearlo.", "Use esta página quando treinou sem ter planejado."),
+      b: [T4("Indique le sport, le type de séance, l'intensité, l'heure et ta fatigue.", "Enter the sport, session type, intensity, time and how tired you are.", "Indica el deporte, el tipo de sesión, la intensidad, la hora y tu fatiga.", "Informe o esporte, o tipo de sessão, a intensidade, o horário e sua fadiga."),
+          T4("Tu reçois un plan de récup complet : programme minuté, étirements, massage, froid/chaud, nutrition et conseils.", "You get a full recovery plan: timed programme, stretching, massage, cold/heat, nutrition and tips.", "Recibes un plan de recuperación completo: programa con horarios, estiramientos, masaje, frío/calor, nutrición y consejos.", "Você recebe um plano de recuperação completo: programa com horários, alongamentos, massagem, frio/calor, nutrição e dicas."),
+          T4("Le plan est gardé dans l'historique de l'Accueil, et la séance s'ajoute au planning d'aujourd'hui.", "The plan is kept in the Home history, and the session is added to today's schedule.", "El plan se guarda en el historial de Inicio y la sesión se añade al plan de hoy.", "O plano fica no histórico da Página inicial e a sessão é adicionada à agenda de hoje."),
+          T4("Une séance que tu connais à l'avance ? Ajoute-la plutôt dans Planning → Ajouts.", "A session you know about in advance? Add it in Schedule → Add instead.", "¿Una sesión que conoces de antemano? Añádela en Plan → Añadir.", "Uma sessão que você já conhece? Adicione em Agenda → Adicionar.")] },
+    recup_result: { Icon: Flame,
+      t: T4("Ton plan de récup", "Your recovery plan", "Tu plan de recuperación", "Seu plano de recuperação"),
+      d: T4("Voilà ce dont ton corps a besoin après cette séance.", "Here's what your body needs after this session.", "Esto es lo que tu cuerpo necesita tras esta sesión.", "Isto é o que seu corpo precisa após esta sessão."),
+      b: [T4("Le cercle donne ton score de 0 à 100 et la durée de récup conseillée. Il est majoré si tu as enchaîné plusieurs séances cette semaine.", "The circle gives your score from 0 to 100 and the recommended recovery time. It goes up if you've done several sessions this week.", "El círculo da tu puntuación de 0 a 100 y el tiempo de recuperación recomendado. Sube si encadenaste varias sesiones esta semana.", "O círculo mostra sua pontuação de 0 a 100 e o tempo de recuperação recomendado. Aumenta se você fez várias sessões esta semana."),
+          T4("Fais défiler les onglets : Programme (les étapes dans l'ordre), Avant, Étirements, Massage, Froid / Chaud, Nutrition et Conseils.", "Scroll through the tabs: Programme (steps in order), Before, Stretching, Massage, Cold / Heat, Nutrition and Tips.", "Desplaza las pestañas: Programa (pasos en orden), Antes, Estiramientos, Masaje, Frío / Calor, Nutrición y Consejos.", "Role pelas abas: Programa (etapas em ordem), Antes, Alongamentos, Massagem, Frio / Calor, Nutrição e Dicas."),
+          T4("Dans Conseils : du matériel à envisager selon ce que tu possèdes, et des astuces gratuites.", "In Tips: gear to consider based on what you own, and free tricks.", "En Consejos: material a considerar según lo que tienes y trucos gratuitos.", "Em Dicas: equipamentos a considerar conforme o que você tem e truques gratuitos."),
+          T4("Ce sont des conseils généraux : ils ne remplacent pas un avis médical.", "These are general tips: they don't replace medical advice.", "Son consejos generales: no sustituyen la opinión médica.", "São dicas gerais: não substituem um parecer médico.")] },
+    nutrition: { Icon: Utensils,
+      t: T4("Nutrition", "Nutrition", "Nutrición", "Nutrição"),
+      d: T4("Quoi manger et boire autour de ta séance.", "What to eat and drink around your session.", "Qué comer y beber alrededor de tu sesión.", "O que comer e beber em torno da sessão."),
+      b: [T4("Tes besoins estimés (calories, protéines, glucides, lipides) sont calculés d'après ton profil et ta séance (Pro).", "Your estimated needs (calories, protein, carbs, fat) are calculated from your profile and session (Pro).", "Tus necesidades estimadas (calorías, proteínas, carbohidratos, grasas) se calculan según tu perfil y sesión (Pro).", "Suas necessidades estimadas (calorias, proteínas, carboidratos, gorduras) são calculadas conforme seu perfil e sessão (Pro)."),
+          T4("Les repas avant et après l'effort respectent tes allergies et ton régime, renseignés dans ton profil.", "Meals before and after effort respect your allergies and diet, set in your profile.", "Las comidas antes y después del esfuerzo respetan tus alergias y dieta, indicadas en tu perfil.", "As refeições antes e depois do esforço respeitam suas alergias e dieta, definidas no perfil."),
+          T4("L'hydratation indique combien boire sur la journée.", "Hydration shows how much to drink over the day.", "La hidratación indica cuánto beber durante el día.", "A hidratação indica quanto beber ao longo do dia."),
+          T4("Les repas changent d'une séance à l'autre. Modifie tes aliments à éviter dans Profil → Aliments.", "Meals change from one session to the next. Edit foods to avoid in Profile → Food.", "Las comidas cambian de una sesión a otra. Cambia los alimentos a evitar en Perfil → Alimentos.", "As refeições mudam de uma sessão para outra. Edite os alimentos a evitar em Perfil → Alimentos.")] },
+    blessures: { Icon: HeartPulse,
+      t: T4("Blessures", "Injuries", "Lesiones", "Lesões"),
+      d: T4("Un pépin ? Fais le point calmement.", "A niggle? Take stock calmly.", "¿Una molestia? Haz balance con calma.", "Um incômodo? Faça um balanço com calma."),
+      b: [T4("Conseil : choisis la zone et la gêne, REGEN t'oriente vers le bon spécialiste et te donne des conseils en attendant.", "Advice: pick the area and symptom, REGEN points you to the right specialist and gives tips meanwhile.", "Consejo: elige zona y molestia, REGEN te orienta al especialista adecuado y te da consejos mientras tanto.", "Conselho: escolha a área e o incômodo, o REGEN indica o especialista certo e dá dicas enquanto isso."),
+          T4("Arrêt : déclare une blessure qui t'arrête, avec ou sans date de retour, et suis-la.", "Time off: report an injury that stops you, with or without a return date, and track it.", "Baja: declara una lesión que te para, con o sin fecha de vuelta, y haz su seguimiento.", "Afastamento: declare uma lesão que o impede, com ou sem data de retorno, e acompanhe."),
+          T4("Historique : retrouve tes gênes et arrêts, renseigne la date de retour, ajoute un rendez-vous médical lié.", "History: find your niggles and time off, set the return date, add a linked medical appointment.", "Historial: encuentra tus molestias y bajas, indica la fecha de vuelta, añade una cita médica vinculada.", "Histórico: veja seus incômodos e afastamentos, informe a data de retorno, adicione uma consulta ligada."),
+          T4("Les arrêts apparaissent dans ton planning. Ces conseils ne remplacent jamais un médecin.", "Time off shows up in your schedule. This advice never replaces a doctor.", "Las bajas aparecen en tu plan. Estos consejos nunca sustituyen a un médico.", "Os afastamentos aparecem na sua agenda. Estas dicas nunca substituem um médico.")] },
+    planning: { Icon: CalendarDays,
+      t: T4("Planning", "Schedule", "Plan", "Agenda"),
+      d: T4("Organise ta semaine et tes séances.", "Organise your week and sessions.", "Organiza tu semana y tus sesiones.", "Organize sua semana e suas sessões."),
+      b: [T4("Calendrier : touche un jour pour voir son détail et son plan de récup. Les couleurs indiquent le type de journée.", "Calendar: tap a day to see its details and recovery plan. Colours show the type of day.", "Calendario: toca un día para ver su detalle y plan de recuperación. Los colores indican el tipo de día.", "Calendário: toque num dia para ver detalhes e plano de recuperação. As cores indicam o tipo de dia."),
+          T4("Semaine type : règle une fois pour toutes tes jours fixes (sport, intensité, heure).", "Weekly: set your fixed days once and for all (sport, intensity, time).", "Semana tipo: fija una vez tus días fijos (deporte, intensidad, hora).", "Semana tipo: defina uma vez seus dias fixos (esporte, intensidade, horário)."),
+          T4("Ajouts : prévois à l'avance une séance exceptionnelle ou un rendez-vous médical, avec rappel possible la veille.", "Add: plan an extra session or a medical appointment in advance, with an optional reminder the day before.", "Añadir: planifica una sesión extra o una cita médica, con recordatorio opcional la víspera.", "Adicionar: planeje uma sessão extra ou uma consulta médica, com lembrete opcional na véspera."),
+          T4("L'app insère elle-même de la récup active ou du repos selon ta charge. Le gratuit permet 3 ajouts par mois.", "The app adds active recovery or rest on its own based on your load. Free allows 3 additions per month.", "La app añade sola recuperación activa o descanso según tu carga. Lo gratuito permite 3 añadidos al mes.", "O app insere sozinho recuperação ativa ou descanso conforme sua carga. O grátis permite 3 adições por mês.")] },
+    pro: { Icon: Crown,
+      t: T4("REGEN Pro", "REGEN Pro", "REGEN Pro", "REGEN Pro"),
+      d: T4("Va plus loin quand tu en as besoin.", "Go further when you need it.", "Ve más lejos cuando lo necesites.", "Vá além quando precisar."),
+      b: [T4("Gratuit : 1 sport, 1 séance par jour, plans de récup, conseils blessures et planning de base.", "Free: 1 sport, 1 session per day, recovery plans, injury guidance and basic schedule.", "Gratis: 1 deporte, 1 sesión al día, planes de recuperación, orientación de lesiones y plan básico.", "Grátis: 1 esporte, 1 sessão por dia, planos de recuperação, orientação de lesões e agenda básica."),
+          T4("Pro : sports et séances illimités, nutrition détaillée, programme chronométré, récup automatique, ajouts illimités.", "Pro: unlimited sports and sessions, detailed nutrition, timed programme, automatic recovery, unlimited additions.", "Pro: deportes y sesiones ilimitados, nutrición detallada, programa con horarios, recuperación automática, añadidos ilimitados.", "Pro: esportes e sessões ilimitados, nutrição detalhada, programa cronometrado, recuperação automática, adições ilimitadas."),
+          T4("L'essai Pro dure 7 jours. Tu peux résilier à tout moment depuis cette page.", "The Pro trial lasts 7 days. You can cancel anytime from this page.", "La prueba Pro dura 7 días. Puedes cancelar en cualquier momento desde esta página.", "O teste Pro dura 7 dias. Você pode cancelar a qualquer momento nesta página.")] },
+    rappels: { Icon: Moon,
+      t: T4("Sommeil & rappels", "Sleep & reminders", "Sueño y recordatorios", "Sono e lembretes"),
+      d: T4("Dors assez et étire-toi à temps.", "Sleep enough and stretch on time.", "Duerme lo suficiente y estira a tiempo.", "Durma o suficiente e alongue a tempo."),
+      b: [T4("Sommeil : indique ton heure de réveil pour chaque jour. REGEN calcule ton heure de coucher idéale.", "Sleep: set your wake-up time for each day. REGEN works out your ideal bedtime.", "Sueño: indica tu hora de despertar cada día. REGEN calcula tu hora ideal de acostarte.", "Sono: informe seu horário de despertar em cada dia. O REGEN calcula seu horário ideal de dormir."),
+          T4("Active le rappel de coucher : tu es prévenu 30 minutes avant, les soirs de séance ou tous les soirs.", "Turn on the bedtime reminder: you're alerted 30 minutes before, on session evenings or every evening.", "Activa el recordatorio de dormir: te avisa 30 minutos antes, las noches de sesión o todas las noches.", "Ative o lembrete de dormir: você é avisado 30 minutos antes, nas noites de sessão ou todas as noites."),
+          T4("Rappels : active le rappel d'étirements après chaque séance, avec les zones à étirer.", "Reminders: turn on the stretching reminder after each session, with the areas to stretch.", "Recordatorios: activa el aviso de estiramientos tras cada sesión, con las zonas a estirar.", "Lembretes: ative o aviso de alongamento após cada sessão, com as áreas a alongar."),
+          T4("Pour recevoir de vraies notifications, active-les dans Profil → Compte.", "To get real notifications, turn them on in Profile → Account.", "Para recibir notificaciones reales, actívalas en Perfil → Cuenta.", "Para receber notificações de verdade, ative em Perfil → Conta.")] },
+    profile: { Icon: User,
+      t: T4("Ton profil", "Your profile", "Tu perfil", "Seu perfil"),
+      d: T4("Plus il est précis, plus les conseils le sont.", "The more accurate it is, the more accurate the advice.", "Cuanto más preciso, más precisos los consejos.", "Quanto mais preciso, mais precisos os conselhos."),
+      b: [T4("Mets à jour ton poids, ton niveau, tes sports et ton matériel : les plans se recalculent. Pense à Enregistrer.", "Update your weight, level, sports and equipment: plans are recalculated. Remember to Save.", "Actualiza tu peso, nivel, deportes y equipo: los planes se recalculan. No olvides Guardar.", "Atualize peso, nível, esportes e equipamento: os planos são recalculados. Lembre-se de Salvar."),
+          T4("Aliments : gère tes allergies, ton régime et les aliments à éviter.", "Food: manage your allergies, diet and foods to avoid.", "Alimentos: gestiona tus alergias, dieta y alimentos a evitar.", "Alimentos: gerencie alergias, dieta e alimentos a evitar."),
+          T4("Compte : langue, notifications, Sommeil & rappels, abonnement, tutoriel et déconnexion.", "Account: language, notifications, Sleep & reminders, subscription, tutorial and log out.", "Cuenta: idioma, notificaciones, Sueño y recordatorios, suscripción, tutorial y cerrar sesión.", "Conta: idioma, notificações, Sono e lembretes, assinatura, tutorial e sair.")] },
+  };
+}
+
+// Petite fenêtre en bas de l'écran : le guide de la page courante.
+function GuideSheet({ guideKey, onClose }) {
+  const { lang } = useLang();
+  const g = getGuides(lang)[guideKey];
+  if (!g) return null;
+  const Icon = g.Icon;
+  const ok = tr(lang, { fr: "Compris", en: "Got it", es: "Entendido", pt: "Entendi" });
+  return (
+    <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 80, background: "rgba(0,0,0,0.62)" }} onClick={onClose}>
+      <div role="dialog" aria-label={g.t} onClick={(e) => e.stopPropagation()} className="rounded-t-[28px] px-5 pt-5 flex flex-col" style={{ background: C.bg, border: `1px solid ${C.glassBorder}`, borderBottom: "none", maxHeight: "82%", paddingBottom: "max(20px, env(safe-area-inset-bottom))", boxShadow: "0 -20px 50px rgba(0,0,0,.5)" }}>
+        <div className="w-10 h-1 rounded-full mx-auto mb-4 shrink-0" style={{ background: C.border }} />
+        <div className="flex items-center gap-3 mb-2 shrink-0">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft, border: `1px solid ${C.primary}55` }}><Icon size={22} style={{ color: C.primary }} /></div>
+          <h2 className="text-lg font-extrabold tracking-tight leading-tight" style={{ color: C.text, ...fontDisplay }}>{g.t}</h2>
+        </div>
+        <div className="overflow-y-auto min-h-0 flex-1" style={{ WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)", maskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)", paddingBottom: 14 }}>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: C.textMuted, ...fontBody }}>{g.d}</p>
+          <ul className="flex flex-col gap-2.5 mb-4">
+            {g.b.map((x, k) => (
+              <li key={k} className="flex gap-3 items-start rounded-2xl p-3" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+                <Check size={15} className="shrink-0 mt-0.5" style={{ color: C.primary }} /><span className="text-xs leading-relaxed" style={{ color: C.text, ...fontBody }}>{x}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="shrink-0 pt-1"><Btn full onClick={onClose}>{ok}</Btn></div>
       </div>
     </div>
   );
@@ -1946,6 +2046,7 @@ function Onboarding({ onComplete }) {
             <p className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.proPrice}</p>
           </button>
           {planChoice && <p className="text-xs mt-4 text-center" style={{ color: C.primary, ...fontBody }}>{planChoice === "pro" ? T.chosenPro : T.chosenFree}</p>}
+          <LegalFooter className="mt-4" />
         </>)}
         {step === 2 && (<>
           <Field label={T.sportsLabel}><SportGrid selected={p.sports} onToggle={toggleSport} />{!isPro && <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.sportsFreeHint}</p>}</Field>
@@ -1989,6 +2090,7 @@ function Onboarding({ onComplete }) {
               </div>
             )}
           </Field>
+          <LegalFooter className="mt-2 mb-2" />
         </>)}
       </div>
       <div className="flex gap-2 mt-4">
@@ -2098,7 +2200,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     subtitle: tr(lang, { fr: "Tu as fait une séance qui n'était pas au planning ? Reçois ta récup", en: "Did a session that wasn't in your schedule? Get your recovery", es: "¿Hiciste una sesión que no estaba en tu plan? Recibe tu recuperación", pt: "Fez uma sessão que não estava na agenda? Receba sua recuperação" }),
     how: tr(lang, { fr: "Comment ça marche", en: "How it works", es: "Cómo funciona", pt: "Como funciona" }),
     howText: tr(lang, { fr: "Tu viens de faire une séance qui n'était pas prévue (un sport déclaré ou une activité pour le plaisir) ? Génère ton plan de récup juste après. Il est conservé : tu le retrouves dans l'historique de l'accueil, et la séance est ajoutée à ton planning pour aujourd'hui.", en: "Just did a session that wasn't planned (one of your sports or something for fun)? Generate your recovery plan right after. It's kept: you'll find it in the history on the home screen, and the session is added to your schedule for today.", es: "¿Acabas de hacer una sesión que no estaba prevista (uno de tus deportes o algo por diversión)? Genera tu plan de recuperación justo después. Se conserva: lo encuentras en el historial de inicio y la sesión se añade a tu planificación de hoy.", pt: "Acabou de fazer uma sessão que não estava prevista (um dos seus esportes ou algo por diversão)? Gere seu plano de recuperação logo depois. Ele fica guardado: você o encontra no histórico do início e a sessão é adicionada ao planejamento de hoje." }),
-    futureLink: tr(lang, { fr: "Une séance que tu connais à l'avance ? Ajoute-la au planning →", en: "A session you know about in advance? Add it to your schedule →", es: "¿Una sesión que conoces de antemano? Añádela a la planificación →", pt: "Uma sessão que você já conhece? Adicione-a ao planejamento →" }),
+    futureLink: tr(lang, { fr: "Une séance que tu connais à l'avance ? Ajoute-la au planning →", en: "A session you know about in advance? Add it to your schedule →", es: "¿Una sesión que conoces de antemano? Añádela a la planificación →", pt: "Uma sessão que você já conhece? Adicione-a ao planejamento →" }),
     step1: tr(lang, { fr: "1 · La séance", en: "1 · The session", es: "1 · La sesión", pt: "1 · A sessão" }),
     step2: tr(lang, { fr: "2 · Ton état", en: "2 · How you feel", es: "2 · Tu estado", pt: "2 · Seu estado" }),
     sportLabel: tr(lang, { fr: "Sport de la séance", en: "Session sport", es: "Deporte de la sesión", pt: "Esporte da sessão" }),
@@ -2132,7 +2234,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   if (result) {
     return (
       <div className="px-5 pb-24 pt-4">
-        <button onClick={() => setResult(null)} className="text-xs mb-5 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
+        <button onClick={() => setResult(null)} className="text-xs mb-3 flex items-center gap-1 py-2" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
         <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-6" style={{ paddingTop: 24, paddingBottom: 20 }}>
           <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{fmtDate(result.date, lang)}</Badge><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
           <RecoveryDial score={result.score} label={T.recoveryNeed} sub={result.duree} size={190} />
@@ -2187,7 +2289,7 @@ function NutritionTab({ lastPlan, onBack }) {
   const { isPro } = usePro();
   const T = {
     title: tr(lang, { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" }),
-    empty: tr(lang, { fr: "Génère d'abord une récup après séance pour obtenir des conseils repas et hydratation.", en: "Generate a post-session recovery first to get meal and hydration advice.", es: "Genera primero una recuperación tras la sesión para obtener consejos de comida e hidratación.", pt: "Gere primeiro uma recuperação após a sessão para obter dicas de refeição e hidratação." }),
+    empty: tr(lang, { fr: "Génère d'abord un plan de récup pour obtenir des conseils repas et hydratation.", en: "Generate a recovery plan first to get meal and hydration advice.", es: "Genera primero un plan de recuperación para obtener consejos de comida e hidratación.", pt: "Gere primeiro um plano de recuperação para obter dicas de refeição e hidratação." }),
     lastSession: tr(lang, { fr: "dernière séance", en: "last session", es: "última sesión", pt: "última sessão" }),
     needs: tr(lang, { fr: "Besoins estimés", en: "Estimated needs", es: "Necesidades estimadas", pt: "Necessidades estimadas" }),
     kcal: "kcal", protein: tr(lang, { fr: "Protéines", en: "Protein", es: "Proteínas", pt: "Proteínas" }), carbs: tr(lang, { fr: "Glucides", en: "Carbs", es: "Carbohidratos", pt: "Carboidratos" }), fat: tr(lang, { fr: "Lipides", en: "Fat", es: "Grasas", pt: "Gorduras" }),
@@ -2201,7 +2303,7 @@ function NutritionTab({ lastPlan, onBack }) {
     perMeal: (k, pr) => tr(lang, { fr: `Repère : ≈ ${k} kcal · ≈ ${pr} g de protéines`, en: `Guide: ≈ ${k} kcal · ≈ ${pr} g protein`, es: `Referencia: ≈ ${k} kcal · ≈ ${pr} g de proteínas`, pt: `Referência: ≈ ${k} kcal · ≈ ${pr} g de proteínas` }),
     footer: tr(lang, { fr: "Repas ciblés selon ton sport, et variés d'une séance à l'autre.", en: "Meals tailored to your sport, and varied from one session to the next.", es: "Comidas adaptadas a tu deporte, variadas de una sesión a otra.", pt: "Refeições adaptadas ao seu esporte, variadas de uma sessão para outra." }),
   };
-  const backBtn = onBack ? <button onClick={onBack} className="text-xs mb-3 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button> : null;
+  const backBtn = onBack ? <button onClick={onBack} className="text-xs mb-1 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button> : null;
   if (!lastPlan) return (<div className="px-5 pt-4 pb-24">{backBtn}<LargeHeader title={T.title} /><Card><p className="text-xs" style={{ color: C.textMuted, ...fontBody }}>{T.empty}</p></Card></div>);
   return (
     <div className="px-5 pt-4 pb-24">
@@ -2332,7 +2434,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
       <Field label={T.zone}><Select value={aPart} onChange={(e) => setAPart(e.target.value)} options={BODY_PARTS.map((b) => ({ value: b.key, label: tr(lang, b) }))} placeholder={T.chooseZone} /></Field>
       <Field label={T.injuryType}><TextInput value={aLabel} onChange={(e) => setALabel(e.target.value)} placeholder={T.injuryTypePh} /></Field>
       <Field label={T.startDate}><TextInput type="date" value={aDebut} onChange={(e) => setADebut(e.target.value)} /></Field>
-      <button onClick={() => setARetourConnu(!aRetourConnu)} className="flex items-center gap-3 mb-3">
+      <button onClick={() => setARetourConnu(!aRetourConnu)} className="flex items-center gap-3 mb-1 py-2">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: aRetourConnu ? C.primary : "transparent", border: `1px solid ${aRetourConnu ? C.primary : C.border}` }}>{aRetourConnu && <Check size={11} color="#052821" />}</div>
         <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.knownReturn}</span>
       </button>
@@ -2362,7 +2464,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
                     {editingReturn === inj.id ? (
                       <div className="flex gap-2 mt-2"><TextInput type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} style={{ flex: 1 }} /><Btn small onClick={() => saveReturnDate(inj.id)}>{T.ok}</Btn></div>
                     ) : (
-                      <button onClick={() => { setEditingReturn(inj.id); setEditDate(inj.dateRetour || ""); }} className="flex items-center gap-1 mt-2 text-xs" style={{ color: C.danger, ...fontBody }}><Pencil size={11} /> {inj.dateRetour ? T.editReturn : T.setReturn}</button>
+                      <button onClick={() => { setEditingReturn(inj.id); setEditDate(inj.dateRetour || ""); }} className="flex items-center gap-1 mt-1 py-2 text-xs" style={{ color: C.danger, ...fontBody }}><Pencil size={11} /> {inj.dateRetour ? T.editReturn : T.setReturn}</button>
                     )}
                   </div>
                 ) : (
@@ -2378,7 +2480,7 @@ function BlessuresTab({ injuries, onAddInjury, onUpdateInjury, onDeleteInjury, o
                       <div className="flex gap-2"><Btn small full onClick={() => saveRdv(inj)} icon={Check}>{T.saveRdv}</Btn><Btn small variant="ghost" onClick={() => setRdvFor(null)}>{T.cancel}</Btn></div>
                     </>
                   ) : (
-                    <button onClick={() => { setRdvFor(inj.id); setRdvVal(newRdv()); }} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.addRdv}</button>
+                    <button onClick={() => { setRdvFor(inj.id); setRdvVal(newRdv()); }} className="flex items-center gap-1.5 text-xs font-semibold py-2" style={{ color: C.rdv }}><Stethoscope size={12} /> {T.addRdv}</button>
                   )}
                 </div>
                 <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.declaredOn(fmtDate(inj.declaredDate, lang))}</p>
@@ -2423,10 +2525,10 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
     fullRest: tr(lang, { fr: "Repos complet recommandé", en: "Full rest recommended", es: "Descanso completo recomendado", pt: "Descanso completo recomendado" }),
     fullRestNote: tr(lang, { fr: "Deux jours de charge élevée d'affilée : l'app recommande de ne prévoir aucune activité supplémentaire aujourd'hui.", en: "Two days of high load in a row: the app recommends no additional activity today.", es: "Dos días seguidos de carga alta: la app recomienda no planear ninguna actividad adicional hoy.", pt: "Dois dias seguidos de carga alta: o app recomenda não planejar nenhuma atividade extra hoje." }),
     restDay: tr(lang, { fr: "Jour de repos — pas de séance prévue.", en: "Rest day — no session planned.", es: "Día de descanso — sin sesión prevista.", pt: "Dia de descanso — sem sessão prevista." }),
-    seeInInjuries: tr(lang, { fr: "Voir dans Blessures →", en: "See in Injuries →", es: "Ver en Lesiones →", pt: "Ver em Lesões →" }),
+    seeInInjuries: tr(lang, { fr: "Voir dans Blessures →", en: "See in Injuries →", es: "Ver en Lesiones →", pt: "Ver em Lesões →" }),
     at: tr(lang, { fr: "Prévu à", en: "Scheduled at", es: "Previsto a las", pt: "Previsto às" }),
     match: tr(lang, { fr: "Match / Combat", en: "Match / Fight", es: "Partido / Combate", pt: "Jogo / Luta" }),
-    loisir: tr(lang, { fr: "Session loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" }),
+    loisir: tr(lang, { fr: "Séance loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" }),
     entrainement: tr(lang, { fr: "Entraînement", en: "Training", es: "Entrenamiento", pt: "Treino" }),
     editSport: tr(lang, { fr: "Modifier les séances sportives", en: "Edit sports sessions", es: "Editar sesiones deportivas", pt: "Editar sessões esportivas" }),
     save: tr(lang, { fr: "Enregistrer", en: "Save", es: "Guardar", pt: "Salvar" }),
@@ -2548,7 +2650,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
         )}
 
         <div className="flex flex-col gap-2 mt-2">
-          <button onClick={() => setEditingSport(!editingSport)} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.primary, ...fontBody }}><Pencil size={13} /> {T.editSport}</button>
+          <button onClick={() => setEditingSport(!editingSport)} className="flex items-center gap-1.5 text-xs font-semibold py-2" style={{ color: C.primary, ...fontBody }}><Pencil size={13} /> {T.editSport}</button>
           {editingSport && (
             <div className="mb-2">
               <EntryListEditor entries={localSport} defaultSport={profile.sports?.[0] || "autre"} onChange={setLocalSport} />
@@ -2559,7 +2661,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
             </div>
           )}
 
-          <button onClick={() => setAddingRdv(!addingRdv)} className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.rdv, ...fontBody }}><Stethoscope size={13} /> {T.addRdv}</button>
+          <button onClick={() => setAddingRdv(!addingRdv)} className="flex items-center gap-1.5 text-xs font-semibold py-2" style={{ color: C.rdv, ...fontBody }}><Stethoscope size={13} /> {T.addRdv}</button>
           {addingRdv && (
             <div className="rounded-2xl p-3" style={{ background: C.bgElevated, backdropFilter: "blur(14px)", border: `1px solid ${C.glassBorder}` }}>
               <RdvForm value={newRdvVal} onChange={setNewRdvVal} />
@@ -2621,8 +2723,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     fixedDays: tr(lang, { fr: "Jours fixes de la semaine", en: "Fixed weekly days", es: "Días fijos de la semana", pt: "Dias fixos da semana" }),
     off: tr(lang, { fr: "Off", en: "Off", es: "Libre", pt: "Livre" }),
     addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
-    addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, session loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a moved training, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
-    alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
+    addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, séance loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a moved training, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
+    alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
     date: tr(lang, { fr: "Date", en: "Date", es: "Fecha", pt: "Data" }),
     saveDate: tr(lang, { fr: "Enregistrer pour cette date", en: "Save for this date", es: "Guardar para esta fecha", pt: "Salvar para esta data" }),
     offException: tr(lang, { fr: "Off exceptionnel", en: "Exceptional day off", es: "Libre excepcional", pt: "Folga excepcional" }),
@@ -2632,8 +2734,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     addToSchedule: tr(lang, { fr: "Ajouter au planning", en: "Add to schedule", es: "Añadir a la planificación", pt: "Adicionar ao planejamento" }),
     monthDetail: tr(lang, { fr: "Détail du mois", en: "Month detail", es: "Detalle del mes", pt: "Detalhe do mês" }),
     noSessionMonth: tr(lang, { fr: "Aucune séance programmée ce mois-ci.", en: "No session scheduled this month.", es: "Ninguna sesión programada este mes.", pt: "Nenhuma sessão programada este mês." }),
-    session: tr(lang, { fr: "session", en: "session", es: "sesión", pt: "sessão" }),
-    sessions: tr(lang, { fr: "sessions", en: "sessions", es: "sesiones", pt: "sessões" }),
+    session: tr(lang, { fr: "séance", en: "session", es: "sesión", pt: "sessão" }),
+    sessions: tr(lang, { fr: "séances", en: "sessions", es: "sesiones", pt: "sessões" }),
     legendRest: tr(lang, { fr: "Repos", en: "Rest", es: "Descanso", pt: "Descanso" }),
     legendChill: tr(lang, { fr: "Chill", en: "Easy", es: "Suave", pt: "Leve" }),
     legendMedium: tr(lang, { fr: "Moyen", en: "Medium", es: "Medio", pt: "Médio" }),
@@ -2667,7 +2769,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         <SectionTitle icon={CalendarDays}>{T.fixedDays}</SectionTitle>
         {DAYS[lang].map((d, i) => (
           <div key={d} className="mb-3 pb-3" style={{ borderBottom: `1px solid ${C.borderSoft}66` }}>
-            <button onClick={() => setExpandedDow(expandedDow === i ? null : i)} className="w-full flex items-center justify-between">
+            <button onClick={() => setExpandedDow(expandedDow === i ? null : i)} className="w-full flex items-center justify-between py-2">
               <span className="text-xs font-semibold" style={{ color: C.text, ...fontBody }}>{d}</span>
               <div className="flex items-center gap-1.5">
                 {weeklyDays[i].length === 0 ? <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{T.off}</span> : weeklyDays[i].map((e) => <span key={e.id} className="text-sm">{sportIcon(e.sport)}</span>)}
@@ -2692,7 +2794,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           <div className="flex flex-col gap-2 mt-4">
             {Object.entries(exceptions).sort(([a], [b]) => a.localeCompare(b)).map(([date, ents]) => (
               <div key={date} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: C.bgElevated }}>
-                <button onClick={() => loadExcForEdit(date)} className="text-left flex-1"><span className="text-xs" style={{ color: C.text, ...fontBody }}>{date} — {ents.length === 0 ? T.offException : ents.map((e) => e.type === "blessure" ? T.blessure : e.type === "rdv" ? T.rdv : eventLabel(e.type, lang)).join(", ")}</span></button>
+                <button onClick={() => loadExcForEdit(date)} className="text-left flex-1 py-1.5"><span className="text-xs" style={{ color: C.text, ...fontBody }}>{date} — {ents.length === 0 ? T.offException : ents.map((e) => e.type === "blessure" ? T.blessure : e.type === "rdv" ? T.rdv : eventLabel(e.type, lang)).join(", ")}</span></button>
                 <button onClick={() => onClearException(date)} aria-label="Supprimer" className="p-2 -m-2"><Trash2 size={15} style={{ color: C.textFaint }} /></button>
               </div>
             ))}
@@ -2734,7 +2836,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           {monthDays.map((d) => (
             <button key={d.date} onClick={() => setSelectedDate(d.date)} className="aspect-square rounded-xl flex items-center justify-center text-[11px] font-semibold relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), color: d.entries.length === 0 ? C.textFaint : "#0A1613", ...fontMono }}>
               {Number(d.date.slice(-2))}
-              {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px]" style={{ background: C.bgElevated, color: C.text, border: `1px solid ${C.border}` }}>{d.entries.length}</span>}
+              {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px]" style={{ background: C.bgElevated, color: C.text, border: `1px solid ${C.border}` }}>{d.entries.length}</span>}
             </button>
           ))}
         </div>
@@ -2834,7 +2936,7 @@ function RemindersScreen({ settings, onSave, onBack, initialView }) {
   };
   return (
     <div className="px-5 pt-4 pb-24">
-      <button onClick={onBack} className="text-xs mb-3 flex items-center gap-1" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button>
+      <button onClick={onBack} className="text-xs mb-1 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button>
       <LargeHeader title={T.title} subtitle={T.subtitle} />
       <div className="mb-6"><SegmentedControl options={[{ value: "sommeil", label: T.tabSleep }, { value: "rappels", label: T.tabRem }]} value={view} onChange={setView} /></div>
 
@@ -2850,7 +2952,7 @@ function RemindersScreen({ settings, onSave, onBack, initialView }) {
               </div>
             ))}
           </div>
-          <button onClick={() => onSave({ wake: wake.map(() => wake[0]) })} className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.same}</button>
+          <button onClick={() => onSave({ wake: wake.map(() => wake[0]) })} className="text-xs font-semibold mt-1 py-2" style={{ color: C.primary, ...fontBody }}>{T.same}</button>
         </Card>
         <Card className="mb-4">
           <SectionTitle icon={Moon}>{T.sleepTitle}</SectionTitle>
@@ -2930,7 +3032,7 @@ function ScoreChart({ sessionsLog }) {
             <div><p style={{ ...fontMono, color: scoreColor(pts[pts.length - 1].v), fontSize: 18 }}>{pts[pts.length - 1].v}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint, ...fontBody }}>{T.last}</p></div>
             <div><p style={{ ...fontMono, color: C.text, fontSize: 18 }}>{pts.length}</p><p className="text-[11px] uppercase" style={{ color: C.textFaint, ...fontBody }}>{T.count}</p></div>
           </div>
-          <div className="flex justify-center gap-4 mb-3">{[[20, "0–39"], [50, "40–69"], [80, "70+"]].map(([v, r]) => (<span key={r} className="flex items-center gap-1.5 text-[11px]" style={{ color: C.textMuted, ...fontBody }}><span className="w-2 h-2 rounded-full" style={{ background: scoreColor(v) }} />{scoreWord(v, lang)} {r}</span>))}</div>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-3">{[[20, "0–39"], [50, "40–69"], [80, "70+"]].map(([v, r]) => (<span key={r} className="flex items-center gap-1.5 text-[11px] whitespace-nowrap" style={{ color: C.textMuted, ...fontBody }}><span className="w-2 h-2 rounded-full" style={{ background: scoreColor(v) }} />{scoreWord(v, lang)} {r}</span>))}</div>
           <p className="text-xs font-semibold leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{trend}</p>
           <p className="text-[11px] leading-relaxed mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p>
         </>)}
@@ -2997,7 +3099,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     reminderAt: (t) => tr(lang, { fr: `— rappel prévu à ${t}`, en: `— reminder set for ${t}`, es: `— aviso previsto a las ${t}`, pt: `— lembrete previsto para ${t}` }),
     sessionsWeek: tr(lang, { fr: "Séances / 7j", en: "Sessions / 7d", es: "Sesiones / 7d", pt: "Sessões / 7d" }),
     avgScore: tr(lang, { fr: "Score moyen", en: "Average score", es: "Puntuación media", pt: "Pontuação média" }),
-    nextEvent: tr(lang, { fr: "Prochain évent.", en: "Next event", es: "Próximo evento", pt: "Próximo evento" }),
+    nextEvent: tr(lang, { fr: "Prochain événement", en: "Next event", es: "Próximo evento", pt: "Próximo evento" }),
     thisWeek: tr(lang, { fr: "Cette semaine", en: "This week", es: "Esta semana", pt: "Esta semana" }),
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
@@ -3023,7 +3125,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     history: tr(lang, { fr: "Historique", en: "History", es: "Historial", pt: "Histórico" }),
     nothingYet: tr(lang, { fr: "Rien pour l'instant.", en: "Nothing yet.", es: "Nada por el momento.", pt: "Nada por enquanto." }),
     match: tr(lang, { fr: "Match / Combat", en: "Match / Fight", es: "Partido / Combate", pt: "Jogo / Luta" }),
-    loisir: tr(lang, { fr: "Session loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" }),
+    loisir: tr(lang, { fr: "Séance loisir", en: "Casual session", es: "Sesión libre", pt: "Sessão livre" }),
     entrainement: tr(lang, { fr: "Entraînement", en: "Training", es: "Entrenamiento", pt: "Treino" }),
   };
 
@@ -3048,7 +3150,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
 
       {lastPlan ? (
         <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="block w-full text-left mb-5">
-          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}{lastPlan.date && isoLocal(new Date(lastPlan.date)) < todayIso ? ` · ${fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" })}` : ""}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p><p className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
+          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}{lastPlan.date && isoLocal(new Date(lastPlan.date)) < todayIso ? ` · ${fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" })}` : ""}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p><p className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
         </button>
       ) : (
         <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
@@ -3057,9 +3159,9 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
       <Card style={{ padding: 0 }} className="mb-6">
         <div className="grid grid-cols-3">
           {[{ v: weekCount, l: T.sessionsWeek, c: C.primary }, { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint }, { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text }].map((s, i) => (
-            <div key={i} className="flex flex-col items-center py-3.5" style={{ borderRight: i < 2 ? `1px solid ${C.borderSoft}66` : "none" }}>
+            <div key={i} className="flex flex-col items-center py-3.5 px-1 min-w-0" style={{ borderRight: i < 2 ? `1px solid ${C.borderSoft}66` : "none" }}>
               <p style={{ ...fontMono, color: s.c, fontSize: 20 }}>{s.v}</p>
-              <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{s.l}</p>
+              <p className="text-[11px] uppercase tracking-wide text-center break-words leading-tight mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{s.l}</p>
             </div>
           ))}
         </div>
@@ -3094,7 +3196,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
                 <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
                 <div className="w-full aspect-square rounded-xl flex items-center justify-center relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), border: d.isToday ? `1.5px solid ${C.text}` : "none" }}>
                   {d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>}
-                  {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center text-[6px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
+                  {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
                 </div>
               </button>
             ))}
@@ -3105,7 +3207,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
 
       <ScoreChart sessionsLog={sessionsLog} />
 
-      <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-xs font-semibold" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
+      <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-xs font-semibold py-2 pl-3" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
       {sessionsLog.length === 0 ? <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.nothingYet}</p></Card> : (
         <GroupedList>
           {[...sessionsLog].reverse().slice(0, showAllHistory ? 30 : 3).map((s, i, arr) => (
@@ -3113,8 +3215,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
               <button type="button" onClick={() => onOpenPlan && onOpenPlan(s)} className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 py-3 text-left">
                 <span className="text-lg shrink-0">{sportIcon(s.sport)}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: C.text, ...fontBody }}>{s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}</p>
-                  <p className="text-xs truncate" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(s.date, lang)}</p>
+                  <p className="text-sm font-semibold break-words" style={{ color: C.text, ...fontBody }}>{s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}</p>
+                  <p className="text-xs break-words" style={{ color: C.textFaint, ...fontBody }}>{fmtDate(s.date, lang)}</p>
                 </div>
                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ background: scoreColor(s.score) }} /><span style={{ ...fontMono, color: C.text, fontSize: 15 }}>{s.score}</span><span className="text-[11px] font-semibold" style={{ color: scoreColor(s.score), ...fontBody }}>{scoreWord(s.score, lang)}</span></div>
                 <ChevronRightIcon size={15} style={{ color: C.textFaint }} />
@@ -3124,6 +3226,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           ))}
         </GroupedList>
       )}
+
+      <LegalFooter className="mt-8" />
 
       {selectedDayObj && <DayDetailSheet date={selectedDayObj.date} entries={selectedDayObj.entries} isException={selectedDayObj.isException} auto={selectedDayObj.auto} profile={profile} onClose={() => setSelectedDate(null)} onSaveException={onSaveException} onClearException={onClearException} onAddEntry={onAddEntry} onRemoveEntry={onRemoveEntry} goTo={goTo} onOpenPlan={onOpenPlanById} />}
     </div>
@@ -3178,7 +3282,7 @@ function ProTab() {
     f6t: tr(lang, { fr: "Synchronisation multi-appareils", en: "Multi-device sync", es: "Sincronización multidispositivo", pt: "Sincronização multi-dispositivo" }),
     f6d: tr(lang, { fr: "Retrouve tes données sur tous tes appareils via ton compte cloud. Arrive avec la prochaine mise à jour.", en: "Access your data on all your devices via your cloud account. Coming in a future update.", es: "Accede a tus datos en todos tus dispositivos con tu cuenta en la nube. Llega en una próxima actualización.", pt: "Acesse seus dados em todos os dispositivos com sua conta na nuvem. Chega em uma próxima atualização." }),
     soon: tr(lang, { fr: "Bientôt", en: "Coming soon", es: "Próximamente", pt: "Em breve" }),
-    freeStaysFree: tr(lang, { fr: "Le reste de l'app (récup après séance, conseils blessures, planning de base) reste gratuit, sans limite de temps.", en: "The rest of the app (post-session recovery, injury guidance, base scheduling) stays free, with no time limit.", es: "El resto de la app (recuperación tras la sesión, orientación de lesiones, planificación básica) sigue siendo gratis, sin límite de tiempo.", pt: "O resto do app (recuperação após a sessão, orientação de lesões, planejamento básico) continua grátis, sem limite de tempo." }),
+    freeStaysFree: tr(lang, { fr: "Le reste de l'app (plans de récup, conseils blessures, planning de base) reste gratuit, sans limite de temps.", en: "The rest of the app (recovery plans, injury guidance, base scheduling) stays free, with no time limit.", es: "El resto de la app (planes de recuperación, orientación de lesiones, planificación básica) sigue siendo gratis, sin límite de tiempo.", pt: "O resto do app (planos de recuperação, orientação de lesões, planejamento básico) continua grátis, sem limite de tempo." }),
     history: tr(lang, { fr: "Historique des paiements", en: "Payment history", es: "Historial de pagos", pt: "Histórico de pagamentos" }),
     noHistory: tr(lang, { fr: "Aucun paiement pour l'instant.", en: "No payments yet.", es: "Sin pagos por el momento.", pt: "Nenhum pagamento por enquanto." }),
     demoBadge: tr(lang, { fr: "démo", en: "demo", es: "demo", pt: "demo" }),
@@ -3229,7 +3333,7 @@ function ProTab() {
           )}
           {cancelled && <Btn full variant="ghost" onClick={resumeSub} icon={Sparkles}>{T.resumeBtn}</Btn>}
 
-          <div className="mt-6">
+          <div className="mt-6 mb-8">
             <SectionTitle icon={Clock}>{T.history}</SectionTitle>
             {(!history || history.length === 0) ? (
               <Card><p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.noHistory}</p></Card>
@@ -3264,7 +3368,7 @@ function ProTab() {
             <div key={i} className="flex items-start gap-3.5 px-5 py-4" style={{ borderBottom: i === features.length - 1 ? "none" : `1px solid ${C.glassBorder}` }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft }}><f.Icon size={17} style={{ color: C.primary }} /></div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2"><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{f.title}</p>{f.soon && <Badge color={C.textMuted}>{T.soon}</Badge>}</div>
+                <div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold" style={{ color: C.text, ...fontBody }}>{f.title}</p>{f.soon && <Badge color={C.textMuted}>{T.soon}</Badge>}</div>
                 <p className="text-xs leading-relaxed mt-1" style={{ color: C.textMuted, ...fontBody }}>{f.desc}</p>
               </div>
             </div>
@@ -3272,6 +3376,7 @@ function ProTab() {
         </GroupedList>
       </div>
       <p className="text-[11px] text-center leading-relaxed" style={{ color: C.textFaint, ...fontBody }}>{T.freeStaysFree}</p>
+      <LegalFooter className="mt-4" />
     </div>
   );
 }
@@ -3349,7 +3454,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     remindersLabel: tr(lang, { fr: "Sommeil & rappels", en: "Sleep & reminders", es: "Sueño y recordatorios", pt: "Sono e lembretes" }),
     remindersBtn: tr(lang, { fr: "Régler mes rappels", en: "Set my reminders", es: "Ajustar mis recordatorios", pt: "Ajustar meus lembretes" }),
     tutorial: tr(lang, { fr: "Tutoriel", en: "Tutorial", es: "Tutorial", pt: "Tutorial" }),
-    replayTutorial: tr(lang, { fr: "Revoir le tutoriel", en: "Replay the tutorial", es: "Ver el tutorial otra vez", pt: "Rever o tutorial" }),
+    replayTutorial: tr(lang, { fr: "Revoir le tutoriel et les guides", en: "Replay the tutorial and guides", es: "Ver el tutorial y las guías otra vez", pt: "Rever o tutorial e os guias" }),
     title: tr(lang, { fr: "Mon profil", en: "My profile", es: "Mi perfil", pt: "Meu perfil" }),
     save: tr(lang, { fr: "Enregistrer", en: "Save", es: "Guardar", pt: "Guardar" }),
     tabProfile: tr(lang, { fr: "Profil", en: "Profile", es: "Perfil", pt: "Perfil" }),
@@ -3396,7 +3501,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     cancelDelete: tr(lang, { fr: "Annuler", en: "Cancel", es: "Cancelar", pt: "Cancelar" }),
     deleting: tr(lang, { fr: "Suppression en cours…", en: "Deleting…", es: "Eliminando…", pt: "Excluindo…" }),
     proCardTitle: tr(lang, { fr: "REGEN Pro", en: "REGEN Pro", es: "REGEN Pro", pt: "REGEN Pro" }),
-    proCardFree: tr(lang, { fr: "Débloque le multi-sport, la nutrition avancée et plus →", en: "Unlock multi-sport, advanced nutrition and more →", es: "Desbloquea multideporte, nutrición avanzada y más →", pt: "Desbloqueie multi-esporte, nutrição avançada e mais →" }),
+    proCardFree: tr(lang, { fr: "Débloque le multi-sport, la nutrition avancée et plus →", en: "Unlock multi-sport, advanced nutrition and more →", es: "Desbloquea multideporte, nutrición avanzada y más →", pt: "Desbloqueie multi-esporte, nutrição avançada e mais →" }),
   };
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
@@ -3490,9 +3595,9 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
           <div className="mt-8">
         <div className="mt-2"><Btn full variant="danger" onClick={onLogout} icon={LogOut}>{T.logout}</Btn></div>
         <p className="text-xs text-center mt-6" style={{ color: C.textFaint, ...fontBody }}>
-          <a href="/conditions.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
+          <a href={`${LEGAL_BASE}/conditions.html`} target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalTerms}</a>
           {" · "}
-          <a href="/confidentialite.html" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
+          <a href={`${LEGAL_BASE}/confidentialite.html`} target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>{T.legalPrivacy}</a>
         </p>
         {!confirmingDelete ? (
           <button onClick={() => setConfirmingDelete(true)} className="w-full text-center mt-4 pb-2 text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.deleteAccount}</button>
@@ -3532,6 +3637,10 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [toast, setToast] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [guide, setGuide] = useState(null);            // clé du guide affiché (ou null)
+  const [guidesSeen, setGuidesSeen] = useState(null);  // { home: true, ... } ; null = pas encore chargé
+  const GUIDES_KEY = authUser ? `regen:guides:${authUser.id}` : null;
+  const persistGuides = (obj) => { try { if (GUIDES_KEY && typeof window !== "undefined") window.localStorage.setItem(GUIDES_KEY, JSON.stringify(obj)); } catch { /* stockage indisponible : on garde en mémoire */ } };
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2600); };
   const [lang, setLangState] = useState("fr");
   const [recoveryToken, setRecoveryToken] = useState(null);
@@ -3554,6 +3663,23 @@ export default function App() {
     sbUpsert("user_settings", { user_id: authUser.id, data: next }, accessToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, userData?.plannerConfig, userData?.sessionsLog, userData?.profile, settingsKey, lang]);
+  // Guides : on lit ce qui a déjà été vu, puis on ouvre automatiquement celui de la page courante (1 seule fois).
+  useEffect(() => {
+    if (!GUIDES_KEY) { setGuidesSeen(null); return; }
+    let seen = {};
+    try { const raw = typeof window !== "undefined" ? window.localStorage.getItem(GUIDES_KEY) : null; if (raw) seen = JSON.parse(raw) || {}; } catch { seen = {}; }
+    setGuidesSeen(seen);
+  }, [GUIDES_KEY]);
+  const guideKey = showProfile ? "profile" : tab === "recup" ? (recupResult ? "recup_result" : "recup") : tab;
+  useEffect(() => {
+    if (screen !== "main" || showTutorial || guide || guidesSeen === null) return;
+    if (!guidesSeen[guideKey]) setGuide(guideKey);
+  }, [guideKey, screen, showTutorial, guide, guidesSeen]);
+  const closeGuide = () => {
+    if (guide) { const next = { ...(guidesSeen || {}), [guide]: true }; setGuidesSeen(next); persistGuides(next); }
+    setGuide(null);
+  };
+  const replayTutorial = () => { setGuidesSeen({}); persistGuides({}); setShowProfile(false); setShowTutorial(true); };
   useEffect(() => {
     // Lien "mot de passe oublié" cliqué depuis l'email : Supabase redirige ici
     // avec un token dans le hash de l'URL, ce qui prime sur le flux normal.
@@ -3811,7 +3937,7 @@ export default function App() {
               <>
                 <div className="flex items-center justify-between px-5 py-3.5 shrink-0" style={{ background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}>
                   <div className="flex items-center gap-2"><img src={APP_LOGO} alt="REGEN" className="w-6 h-6 rounded-lg object-cover" /><span className="font-bold text-sm tracking-tight" style={{ color: C.text, ...fontDisplay }}>REGEN</span>{proStatus.isPro && <Crown size={13} style={{ color: C.primary }} />}</div>
-                  <button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button>
+                  <div className="flex items-center gap-2"><button onClick={() => setGuide(guideKey)} aria-label={tr(lang, { fr: "Aide sur cette page", en: "Help on this page", es: "Ayuda sobre esta página", pt: "Ajuda sobre esta página" })} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}><HelpCircle size={16} style={{ color: C.textMuted }} /></button><button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button></div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
@@ -3829,8 +3955,9 @@ export default function App() {
                   </div>
                 </div>
                 {showTutorial && <TutorialScreen onDone={() => setShowTutorial(false)} />}
+                {guide && !showTutorial && <GuideSheet guideKey={guide} onClose={closeGuide} />}
                 {toast && <div className="fixed left-1/2 px-4 py-2.5 rounded-full text-xs font-semibold" style={{ top: "calc(env(safe-area-inset-top) + 64px)", transform: "translateX(-50%)", zIndex: 60, background: C.surface, color: C.text, border: `1px solid ${C.primary}66`, boxShadow: "0 8px 24px rgba(0,0,0,.4)", ...fontBody }}>{toast}</div>}
-                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={() => { setShowProfile(false); setShowTutorial(true); }} onOpenReminders={() => { setShowProfile(false); goToTab("rappels"); }} />}
+                {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={replayTutorial} onOpenReminders={() => { setShowProfile(false); goToTab("rappels"); }} />}
               </>
             )}
           </div>
