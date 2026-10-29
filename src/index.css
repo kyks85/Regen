@@ -19,12 +19,5 @@ input[type="datetime-local"]::-webkit-date-and-time-value, input[type="month"]::
   text-align: left; min-height: 1.4em; margin: 0;
 }
 
-/* Plein écran réel : en appli installée (iPhone), la hauteur « dynamique » s'arrête
-   avant le bas de l'écran ; on prend alors la hauteur complète de l'écran. */
+/* Zone de l'app = exactement la zone visible de l'écran (ne jamais dépasser, sinon le bas est coupé). */
 .app-root { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
-@media (display-mode: standalone) {
-  .app-root { bottom: auto; height: 100vh; }
-}
-@supports (-webkit-touch-callout: none) {
-  @media (display-mode: standalone) { .app-root { height: 100vh; } }
-}
