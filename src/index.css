@@ -19,5 +19,6 @@ input[type="datetime-local"]::-webkit-date-and-time-value, input[type="month"]::
   text-align: left; min-height: 1.4em; margin: 0;
 }
 
-/* Zone de l'app = exactement la zone visible de l'écran (ne jamais dépasser, sinon le bas est coupé). */
-.app-root { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+/* Zone de l'app : tout l'écran. Sur iPhone installé, --app-h corrige une hauteur de page trop courte. */
+.app-root, .fixed-full { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+html[data-fullh] .app-root, html[data-fullh] .fixed-full { bottom: auto; height: var(--app-h); }

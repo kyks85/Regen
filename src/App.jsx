@@ -20,6 +20,28 @@ function tr(lang, d) { return d[lang] || d.fr; }
 // Date du jour dans le fuseau horaire de l'utilisateur (YYYY-MM-DD) — et non en UTC,
 // sinon entre minuit et 2h du matin l'app croirait être encore la veille.
 function isoLocal(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+
+// iPhone (app installée) : la « hauteur de page » est parfois ~60 px plus courte que l'écran,
+// ce qui laisse une bande vide sous la barre du bas. On prend alors la hauteur réelle de l'écran.
+function applyFullHeight() {
+  try {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const installed = navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)")?.matches || window.Capacitor?.getPlatform?.() === "ios";
+    const root = document.documentElement;
+    const diff = Math.max(window.screen.height, window.screen.width) - window.innerHeight;
+    if (isIOS && installed && window.innerHeight > window.innerWidth && diff >= 20 && diff <= 120) {
+      root.style.setProperty("--app-h", Math.max(window.screen.height, window.screen.width) + "px");
+      root.setAttribute("data-fullh", "1");
+    } else { root.style.removeProperty("--app-h"); root.removeAttribute("data-fullh"); }
+  } catch (e) { /* sans effet */ }
+}
+if (typeof window !== "undefined") {
+  applyFullHeight();
+  window.addEventListener("resize", applyFullHeight);
+  window.addEventListener("orientationchange", () => setTimeout(applyFullHeight, 300));
+}
 const LangContext = createContext({ lang: "fr", setLang: () => {} });
 const useLang = () => useContext(LangContext);
 
@@ -1803,7 +1825,7 @@ function AuthScreen({ onAuth }) {
       </p>
 
       {forgotOpen && (
-        <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setForgotOpen(false)}>
+        <div className="fixed-full z-50 flex items-end" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setForgotOpen(false)}>
           <div className="w-full rounded-t-[28px] p-5" style={{ background: "rgba(15,33,28,0.92)", backdropFilter: "blur(32px)", border: `1px solid ${C.glassBorder}`, paddingBottom: "max(24px, env(safe-area-inset-bottom))" }} onClick={(e) => e.stopPropagation()}>
             <div className="w-9 h-1 rounded-full mx-auto mb-4" style={{ background: C.border }} />
             <h3 className="font-bold text-base mb-2" style={{ color: C.text, ...fontDisplay }}>{T.forgotTitle}</h3>
@@ -2596,7 +2618,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
   const restPlan = entries.length === 0 ? buildRestDayPlan(profile, lang) : null;
 
   return (
-    <div className="fixed inset-0 flex items-end z-50" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={onClose}>
+    <div className="fixed-full flex items-end z-50" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={onClose}>
       <div className="w-full rounded-t-[28px] p-5 pt-3 max-h-[85vh] overflow-y-auto" style={{ background: "rgba(15,33,28,0.78)", backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)", border: `1px solid ${C.glassBorder}`, boxShadow: `inset 0 1px 0 ${C.glassHighlight}` }} onClick={(e) => e.stopPropagation()}>
         <div className="w-9 h-1 rounded-full mx-auto mb-4" style={{ background: C.border }} />
         <div className="flex justify-between items-start mb-4">
@@ -3554,7 +3576,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     proCardFree: tr(lang, { fr: "Débloque le multi-sport, la nutrition avancée et plus →", en: "Unlock multi-sport, advanced nutrition and more →", es: "Desbloquea multideporte, nutrición avanzada y más →", pt: "Desbloqueie multi-esporte, nutrição avançada e mais →" }),
   };
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
+    <div className="fixed-full z-50 flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg }}>
       <div className="flex items-center justify-between px-5 pb-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)", background: "rgba(10,22,19,0.55)", backdropFilter: "blur(24px)", borderBottom: `1px solid ${C.glassBorder}` }}><h2 className="font-bold text-lg tracking-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2><button onClick={onClose} aria-label="Fermer" className="flex items-center justify-center" style={{ width: 44, height: 44, marginRight: -10 }}><X size={22} style={{ color: C.textMuted }} /></button></div>
       <div className="px-5 pt-3 pb-1 shrink-0" style={{ background: "rgba(10,22,19,0.40)", borderBottom: `1px solid ${C.glassBorder}` }}>
         <SegmentedControl small options={[{ value: "profil", label: T.tabProfile }, { value: "sport", label: T.tabSport }, { value: "nutrition", label: T.tabFood }, { value: "compte", label: T.tabAccount }]} value={ptab} onChange={setPtab} />
