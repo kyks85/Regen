@@ -7,7 +7,7 @@ html, body, #root {
   margin: 0;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
-  background-color: #070E0D;
+  background-color: #0A1613;
 }
 
 /* iOS : les champs date/heure gardent la largeur de leur cadre et le texte à gauche */
@@ -17,4 +17,14 @@ input[type="date"], input[type="time"], input[type="datetime-local"], input[type
 input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value,
 input[type="datetime-local"]::-webkit-date-and-time-value, input[type="month"]::-webkit-date-and-time-value {
   text-align: left; min-height: 1.4em; margin: 0;
+}
+
+/* Plein écran réel : en appli installée (iPhone), la hauteur « dynamique » s'arrête
+   avant le bas de l'écran ; on prend alors la hauteur complète de l'écran. */
+.app-root { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+@media (display-mode: standalone) {
+  .app-root { bottom: auto; height: 100vh; }
+}
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) { .app-root { height: 100vh; } }
 }

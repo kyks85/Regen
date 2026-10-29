@@ -3980,7 +3980,7 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#000" }}>
+        <div className="app-root flex items-center justify-center" style={{ background: C.bg }}>
           <style>{FONTS}</style>
           <div className="relative w-full max-w-[480px] h-full overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
             {booting && <div className="flex-1 flex items-center justify-center"><img src={APP_LOGO} alt="REGEN" className="w-14 h-14 rounded-2xl object-cover animate-pulse" /></div>}
