@@ -630,10 +630,56 @@ function buildProgram(plan, lang) {
 /* ============================================================
    RECOVERY LOGIC
    ============================================================ */
-function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0 }) {
+/* Charge cumulée : chaque séance récente (journal + planning) pèse selon son intensité,
+   et son poids diminue de moitié toutes les 36 h (oubli sur ~5 jours). Plusieurs séances
+   le même jour s'additionnent donc vraiment. Les coefficients sont des estimations
+   raisonnables, pas une mesure médicale. */
+let LOAD_CTX = { sessionsLog: [], plannerConfig: null };
+const setLoadContext = (ctx) => { LOAD_CTX = ctx; };
+function sessionWeight(type, intensity) {
+  if (type === "match") return 1;
+  return intensity === "intense" ? 0.8 : intensity === "chill" ? 0.2 : 0.5;
+}
+function computeLoad(at = new Date(), ctx = LOAD_CTX) {
+  const atT = at.getTime();
+  const items = [];
+  const logged = new Set();
+  (ctx.sessionsLog || []).forEach((x) => {
+    if (!x || !x.date || x.restDay) return;
+    const t = new Date(x.date).getTime();
+    if (!Number.isFinite(t)) return;
+    logged.add(`${isoLocal(new Date(x.date))}|${x.sport}|${x.eventType}`);
+    items.push({ t, w: sessionWeight(x.eventType, x.intensity) });
+  });
+  const cfg = ctx.plannerConfig;
+  if (cfg && cfg.weeklyDays) {
+    for (let d = 0; d <= 7; d++) {
+      const day = new Date(atT - d * 86400000);
+      const iso = isoLocal(day);
+      const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions || {}, iso);
+      (entries || []).forEach((e) => {
+        if (!SPORT_TYPES.includes(e.type)) return;
+        if (logged.has(`${iso}|${e.sport}|${e.type}`)) return;
+        const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
+        const t = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
+        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen") });
+      });
+    }
+  }
+  let load = 0, count7 = 0;
+  items.forEach((it) => {
+    const ageH = (atT - it.t) / 3600000;
+    if (ageH < 0 || ageH > 7 * 24) return;
+    count7++;
+    if (ageH <= 120) load += it.w * Math.pow(0.5, ageH / 36);
+  });
+  return { bonus: Math.min(30, Math.round(load * 14)), count7 };
+}
+function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0, loadBonus = null }) {
   let s = fatigue * 10;
-  // Charge de la semaine : plus tu as enchaîné de séances sur 7 jours, plus le besoin de récup monte.
-  if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
+  // Charge cumulée des séances récentes (voir computeLoad).
+  if (loadBonus != null) s += loadBonus;
+  else if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
   if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
@@ -734,9 +780,11 @@ function computeMuscleKeys(sportKey, muscuZones) {
   return (SPORTS[sportKey] || SPORTS.autre).muscles;
 }
 function generatePlan(profile, input, lang) {
-  const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay, weekLoad = 0 } = input;
+  const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay } = input;
   const age = computeAge(profile.dateNaissance);
-  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau, weekLoad });
+  const ld = restDay ? { bonus: 0, count7: 0 } : computeLoad(input.loadAt || new Date());
+  const weekLoad = input.weekLoad ?? ld.count7;
+  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau, weekLoad, loadBonus: ld.bonus });
   const sportKey = sport || profile.sports?.[0] || "autre";
   const muscleKeys = computeMuscleKeys(sportKey, muscuZones);
   const stretches = muscleKeys.map((k) => { const d = STRETCH_DB[k] || STRETCH_DB.corps_entier; return { key: k, ...(d[lang] || d.fr) }; });
@@ -763,7 +811,7 @@ function generatePlan(profile, input, lang) {
 function mergeSportEntriesPlan(profile, sportEntries, date, lang) {
   const individual = sportEntries.map((e) => ({
     entry: e,
-    plan: generatePlan(profile, { eventType: e.type, intensity: e.intensity || "moyen", fatigue: 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, seed: date + "-" + e.id }, lang),
+    plan: generatePlan(profile, { eventType: e.type, intensity: e.intensity || "moyen", fatigue: 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00") }, lang),
   }));
   const maxScore = Math.max(...individual.map((p) => p.plan.score));
   const score = Math.min(100, maxScore + (individual.length - 1) * 8);
@@ -2193,7 +2241,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const weekLoad = (sessionsLog || []).filter((x) => x.date && (Date.now() - new Date(x.date).getTime()) / 86400000 <= 7).length; const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, weekLoad }, lang); setResult(plan); onGenerate(plan); };
+  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones }, lang); setResult(plan); onGenerate(plan); };
 
   const T = {
     title: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
@@ -2543,7 +2591,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
   };
 
   const [expandedSessionId, setExpandedSessionId] = useState(null);
-  const individualSportPlans = sportEntries.map((e) => ({ entry: e, plan: generatePlan(profile, { eventType: e.type, intensity: e.intensity || "moyen", fatigue: 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, seed: date + "-" + e.id }, lang) }));
+  const individualSportPlans = sportEntries.map((e) => ({ entry: e, plan: generatePlan(profile, { eventType: e.type, intensity: e.intensity || "moyen", fatigue: 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00") }, lang) }));
   const combinedPlan = sportEntries.length > 0 ? mergeSportEntriesPlan(profile, sportEntries, date, lang) : null;
   const restPlan = entries.length === 0 ? buildRestDayPlan(profile, lang) : null;
 
@@ -3916,6 +3964,7 @@ export default function App() {
     return { ok: true };
   };
 
+  setLoadContext({ sessionsLog: userData?.sessionsLog || [], plannerConfig: userData?.plannerConfig || null });
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
@@ -3931,9 +3980,9 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <div className="w-full h-dvh flex items-center justify-center" style={{ background: "#000" }}>
+        <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#000" }}>
           <style>{FONTS}</style>
-          <div className="relative w-full max-w-[480px] h-dvh overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
+          <div className="relative w-full max-w-[480px] h-full overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
             {booting && <div className="flex-1 flex items-center justify-center"><img src={APP_LOGO} alt="REGEN" className="w-14 h-14 rounded-2xl object-cover animate-pulse" /></div>}
             {!booting && recoveryToken && <ResetPasswordScreen token={recoveryToken} onDone={() => { setRecoveryToken(null); window.history.replaceState(null, "", window.location.pathname); }} />}
             {!booting && !recoveryToken && screen === "auth" && <AuthScreen onAuth={handleAuth} />}
@@ -3955,7 +4004,7 @@ export default function App() {
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
                   <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
-                  <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
+                  <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(8px, calc(env(safe-area-inset-bottom) - 12px))" }}>
                     {NAV.map(([key, Icon]) => (<button key={key} onClick={() => goToTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: navActive === key ? C.primary : C.textFaint }} /><span className="text-[10px] font-semibold text-center" style={{ color: navActive === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
                   </div>
                 </div>
