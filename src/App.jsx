@@ -2093,7 +2093,7 @@ function getGuides(lang) {
       d: T4("Tout ton suivi en un coup d'œil.", "Everything you track, at a glance.", "Todo tu seguimiento de un vistazo.", "Todo o seu acompanhamento num relance."),
       b: [T4("La grande carte montre le score de ta dernière séance : plus il est haut, plus ton corps a besoin de récupérer. Touche-la pour rouvrir le plan.", "The big card shows your last session's score: the higher it is, the more your body needs to recover. Tap it to reopen the plan.", "La tarjeta grande muestra la puntuación de tu última sesión: cuanto más alta, más necesita recuperarse tu cuerpo. Tócala para reabrir el plan.", "O cartão grande mostra a pontuação da última sessão: quanto mais alta, mais seu corpo precisa recuperar. Toque para reabrir o plano."),
           T4("Les raccourcis mènent à la Séance imprévue, la Nutrition, les Blessures et le Planning.", "The shortcuts lead to Unplanned session, Nutrition, Injuries and Schedule.", "Los accesos llevan a Sesión imprevista, Nutrición, Lesiones y Plan.", "Os atalhos levam a Sessão imprevista, Nutrição, Lesões e Agenda."),
-          T4("La carte « Sommeil & rappels » règle tes heures de réveil et tes rappels de coucher et d'étirements.", "The \"Sleep & reminders\" card sets your wake-up times and your bedtime and stretching reminders.", "La tarjeta «Sueño y recordatorios» ajusta tus horas de despertar y tus recordatorios de dormir y estirar.", "O cartão «Sono e lembretes» define seus horários de despertar e lembretes de dormir e alongar."),
+          T4("La carte « Sommeil & étirements » règle tes heures de réveil et tes rappels de coucher et d'étirements.", "The \"Sleep & stretching\" card sets your wake-up times and your bedtime and stretching reminders.", "La tarjeta «Sueño y estiramientos» ajusta tus horas de despertar y tus recordatorios de dormir y estirar.", "O cartão «Sono e alongamentos» define seus horários de despertar e lembretes de dormir e alongar."),
           T4("« Cette semaine » résume ton planning : touche un jour pour voir son détail.", "\"This week\" sums up your schedule: tap a day to see its details.", "«Esta semana» resume tu plan: toca un día para ver su detalle.", "«Esta semana» resume sua agenda: toque num dia para ver os detalhes."),
           T4("La courbe suit ton score sur 4, 8 ou 12 semaines. Dans l'historique, touche une séance pour rouvrir son plan, ou la poubelle pour la supprimer.", "The curve tracks your score over 4, 8 or 12 weeks. In the history, tap a session to reopen its plan, or the bin to delete it.", "La curva sigue tu puntuación en 4, 8 o 12 semanas. En el historial, toca una sesión para reabrir su plan, o la papelera para borrarla.", "A curva acompanha sua pontuação em 4, 8 ou 12 semanas. No histórico, toque numa sessão para reabrir o plano, ou na lixeira para excluir.")] },
     recup: { Icon: Activity,
@@ -2138,7 +2138,7 @@ function getGuides(lang) {
           T4("Pro : sports et séances illimités, nutrition détaillée, programme chronométré, récup automatique, ajouts illimités.", "Pro: unlimited sports and sessions, detailed nutrition, timed programme, automatic recovery, unlimited additions.", "Pro: deportes y sesiones ilimitados, nutrición detallada, programa con horarios, recuperación automática, añadidos ilimitados.", "Pro: esportes e sessões ilimitados, nutrição detalhada, programa cronometrado, recuperação automática, adições ilimitadas."),
           T4("L'essai Pro dure 7 jours. Tu peux résilier à tout moment depuis cette page.", "The Pro trial lasts 7 days. You can cancel anytime from this page.", "La prueba Pro dura 7 días. Puedes cancelar en cualquier momento desde esta página.", "O teste Pro dura 7 dias. Você pode cancelar a qualquer momento nesta página.")] },
     rappels: { Icon: Moon,
-      t: T4("Sommeil & rappels", "Sleep & reminders", "Sueño y recordatorios", "Sono e lembretes"),
+      t: T4("Sommeil & étirements", "Sleep & stretching", "Sueño y estiramientos", "Sono e alongamentos"),
       d: T4("Dors assez et étire-toi à temps.", "Sleep enough and stretch on time.", "Duerme lo suficiente y estira a tiempo.", "Durma o suficiente e alongue a tempo."),
       b: [T4("Sommeil : indique ton heure de réveil pour chaque jour. REGEN calcule ton heure de coucher idéale.", "Sleep: set your wake-up time for each day. REGEN works out your ideal bedtime.", "Sueño: indica tu hora de despertar cada día. REGEN calcula tu hora ideal de acostarte.", "Sono: informe seu horário de despertar em cada dia. O REGEN calcula seu horário ideal de dormir."),
           T4("Active le rappel de coucher : tu es prévenu 30 minutes avant, les soirs de séance ou tous les soirs.", "Turn on the bedtime reminder: you're alerted 30 minutes before, on session evenings or every evening.", "Activa el recordatorio de dormir: te avisa 30 minutos antes, las noches de sesión o todas las noches.", "Ative o lembrete de dormir: você é avisado 30 minutos antes, nas noites de sessão ou todas as noites."),
@@ -2149,7 +2149,7 @@ function getGuides(lang) {
       d: T4("Plus il est précis, plus les conseils le sont.", "The more accurate it is, the more accurate the advice.", "Cuanto más preciso, más precisos los consejos.", "Quanto mais preciso, mais precisos os conselhos."),
       b: [T4("Mets à jour ton poids, ton niveau, tes sports et ton matériel : les plans se recalculent. Pense à Enregistrer.", "Update your weight, level, sports and equipment: plans are recalculated. Remember to Save.", "Actualiza tu peso, nivel, deportes y equipo: los planes se recalculan. No olvides Guardar.", "Atualize peso, nível, esportes e equipamento: os planos são recalculados. Lembre-se de Salvar."),
           T4("Aliments : gère tes allergies, ton régime et les aliments à éviter.", "Food: manage your allergies, diet and foods to avoid.", "Alimentos: gestiona tus alergias, dieta y alimentos a evitar.", "Alimentos: gerencie alergias, dieta e alimentos a evitar."),
-          T4("Compte : langue, notifications, Sommeil & rappels, abonnement, tutoriel et déconnexion.", "Account: language, notifications, Sleep & reminders, subscription, tutorial and log out.", "Cuenta: idioma, notificaciones, Sueño y recordatorios, suscripción, tutorial y cerrar sesión.", "Conta: idioma, notificações, Sono e lembretes, assinatura, tutorial e sair.")] },
+          T4("Compte : langue, notifications, Sommeil & étirements, abonnement, tutoriel et déconnexion.", "Account: language, notifications, Sleep & stretching, subscription, tutorial and log out.", "Cuenta: idioma, notificaciones, Sueño y estiramientos, suscripción, tutorial y cerrar sesión.", "Conta: idioma, notificações, Sono e alongamentos, assinatura, tutorial e sair.")] },
   };
 }
 
@@ -2430,7 +2430,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
 /* ============================================================
    RÉCUP APRÈS SÉANCE (séance imprévue déjà faite)
    ============================================================ */
-function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessionsLog, embedded }) {
+function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessionsLog, embedded, onAdded }) {
   const { lang } = useLang();
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
@@ -2449,7 +2449,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe: minutes ? rpe : null }, lang); setResult(plan); onGenerate(plan); };
+  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe: minutes ? rpe : null }, lang); onGenerate(plan); if (embedded) { setMinutes(0); setHeure(""); setMuscuZones([]); onAdded && onAdded(); } else setResult(plan); };
 
   const T = {
     title: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
@@ -2471,6 +2471,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     scoreExplain: tr(lang, { fr: "Score de 0 à 100 calculé pour cette séance : plus il est haut, plus ton corps a besoin de temps pour récupérer.", en: "Score from 0 to 100 calculated for this session: the higher it is, the more time your body needs to recover.", es: "Puntuación de 0 a 100 calculada para esta sesión: cuanto más alta, más tiempo necesita tu cuerpo para recuperarse.", pt: "Pontuação de 0 a 100 calculada para esta sessão: quanto mais alta, mais tempo seu corpo precisa para se recuperar." }),
     generalDisclaimer: tr(lang, { fr: "Conseils généraux de récupération : ils ne remplacent pas l'avis d'un professionnel de santé. En cas de douleur persistante, consulte un professionnel.", en: "General recovery advice: it doesn't replace a health professional's opinion. If pain persists, see a professional.", es: "Consejos generales de recuperación: no sustituyen la opinión de un profesional sanitario. Si el dolor persiste, consulta a un profesional.", pt: "Conselhos gerais de recuperação: não substituem a opinião de um profissional de saúde. Se a dor persistir, consulte um profissional." }),
     loadNote: (n) => tr(lang, { fr: `Score majoré : tu as déjà fait ${n} séances ces 7 derniers jours.`, en: `Score increased: you already did ${n} sessions in the last 7 days.`, es: `Puntuación aumentada: ya hiciste ${n} sesiones en los últimos 7 días.`, pt: `Pontuação aumentada: você já fez ${n} sessões nos últimos 7 dias.` }),
+    addDone: tr(lang, { fr: "Ajouter cette séance", en: "Add this session", es: "Añadir esta sesión", pt: "Adicionar esta sessão" }),
     durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
     durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
     rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
@@ -2495,7 +2496,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   };
 
   const wrapCls = embedded ? "" : "px-5 pb-24 pt-4";
-  if (result) {
+  if (result && !embedded) {
     return (
       <div className={wrapCls}>
         <button onClick={() => setResult(null)} className="text-xs mb-3 flex items-center gap-1 py-2" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
@@ -2538,7 +2539,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
         <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
       </Card>
-      <Btn full onClick={submit} icon={Sparkles}>{T.generate}</Btn>
+      <Btn full onClick={submit} icon={embedded ? Plus : Sparkles}>{embedded ? T.addDone : T.generate}</Btn>
       {onPlanFuture && !embedded && <button type="button" onClick={onPlanFuture} className="w-full text-center mt-5 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.futureLink}</button>}
     </div>
   );
@@ -2902,7 +2903,6 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
                             <span>{s.label}</span><span style={{ ...fontMono, color: C.primary, fontSize: 10 }}>{s.duree}</span>
                           </div>
                         ))}
-                        {e.sessionId && onOpenPlan && <button onClick={() => onOpenPlan(e.sessionId)} className="flex items-center gap-1.5 text-xs font-semibold mt-2" style={{ color: C.primary, ...fontBody }}><Sparkles size={13} /> {T.openPlan}</button>}
                       </div>
                     )}
                   </div>
@@ -2997,7 +2997,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
     addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, séance loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a rescheduled training session, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
     unplannedTitle: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
-    unplannedHint: tr(lang, { fr: "Tu as fait une séance non prévue ? Renseigne-la pour obtenir son plan de récup. Elle est ajoutée à ton planning.", en: "Did an unplanned session? Enter it to get its recovery plan. It is added to your schedule.", es: "¿Hiciste una sesión no prevista? Introdúcela para obtener su plan de recuperación. Se añade a tu planificación.", pt: "Fez uma sessão não prevista? Informe-a para obter o plano de recuperação. Ela é adicionada ao seu planejamento." }),
+    unplannedHint: tr(lang, { fr: "Tu viens de faire une séance non prévue ? Ajoute-la : elle rejoint ton planning et ton plan de récup du jour est mis à jour.", en: "Just did an unplanned session? Add it: it joins your schedule and today's recovery plan is updated.", es: "¿Acabas de hacer una sesión no prevista? Añádela: se une a tu planificación y el plan de recuperación de hoy se actualiza.", pt: "Acabou de fazer uma sessão não prevista? Adicione-a: ela entra no planejamento e o plano de recuperação de hoje é atualizado." }),
     alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
     date: tr(lang, { fr: "Date", en: "Date", es: "Fecha", pt: "Data" }),
     saveDate: tr(lang, { fr: "Enregistrer pour cette date", en: "Save for this date", es: "Guardar para esta fecha", pt: "Salvar para esta data" }),
@@ -3099,7 +3099,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         <Card className="mt-5 mb-4" style={{ background: `linear-gradient(160deg, ${C.primary}14 0%, ${C.surface} 55%)` }}>
           <SectionTitle icon={Activity}>{T.unplannedTitle}</SectionTitle>
           <p className="text-xs -mt-2 mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.unplannedHint}</p>
-          <RecupTab embedded profile={profile} onGenerate={recup.onGenerate} result={recup.result} setResult={recup.setResult} sessionsLog={recup.sessionsLog} />
+          <RecupTab embedded profile={profile} onGenerate={recup.onGenerate} result={null} setResult={recup.setResult} sessionsLog={recup.sessionsLog} onAdded={recup.onAdded} />
         </Card>
       )}
       </>)}
@@ -3166,7 +3166,7 @@ function ToggleRow({ label, sub, on, onChange }) {
   );
 }
 
-// Page dédiée « Sommeil & rappels » : deux sections séparées (Sommeil / Rappels).
+// Page dédiée « Sommeil & étirements » : deux sections séparées (Sommeil / Rappels).
 function RemindersScreen({ settings, onSave, onBack, initialView }) {
   const { lang } = useLang();
   const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
@@ -3176,9 +3176,9 @@ function RemindersScreen({ settings, onSave, onBack, initialView }) {
   const all = settings.queue || [];
   const T = {
     back: T4("Accueil", "Home", "Inicio", "Início"),
-    title: T4("Sommeil & rappels", "Sleep & reminders", "Sueño y recordatorios", "Sono e lembretes"),
+    title: T4("Sommeil & étirements", "Sleep & stretching", "Sueño y estiramientos", "Sono e alongamentos"),
     subtitle: T4("Dors assez, étire-toi à temps", "Sleep enough, stretch on time", "Duerme lo suficiente, estira a tiempo", "Durma o suficiente, alongue a tempo"),
-    tabSleep: T4("Sommeil", "Sleep", "Sueño", "Sono"), tabRem: T4("Rappels", "Reminders", "Recordatorios", "Lembretes"),
+    tabSleep: T4("Sommeil", "Sleep", "Sueño", "Sono"), tabRem: T4("Étirements", "Stretching", "Estiramientos", "Alongamentos"),
     wakeTitle: T4("Heures de réveil", "Wake-up times", "Horas de despertar", "Horários de despertar"),
     wakeHint: T4("À quelle heure te lèves-tu chaque jour ? REGEN en déduit l'heure de coucher idéale.", "What time do you get up each day? REGEN works out your ideal bedtime.", "¿A qué hora te levantas cada día? REGEN calcula tu hora ideal de acostarte.", "A que horas você acorda cada dia? O REGEN calcula seu horário ideal de dormir."),
     same: T4("Même heure tous les jours (comme le lundi)", "Same time every day (like Monday)", "Misma hora todos los días (como el lunes)", "Mesmo horário todos os dias (como segunda)"),
@@ -3423,7 +3423,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
     tapDay: tr(lang, { fr: "Touche un jour pour voir le détail complet.", en: "Tap a day to see the full detail.", es: "Toca un día para ver el detalle completo.", pt: "Toque em um dia para ver o detalhe completo." }),
-    remindersCard: tr(lang, { fr: "Sommeil & rappels", en: "Sleep & reminders", es: "Sueño y recordatorios", pt: "Sono e lembretes" }),
+    remindersCard: tr(lang, { fr: "Sommeil & étirements", en: "Sleep & stretching", es: "Sueño y estiramientos", pt: "Sono e alongamentos" }),
     remindersCardSub: tr(lang, { fr: "Règle ton réveil, ton heure de coucher et tes rappels d'étirements", en: "Set your wake-up, bedtime and stretching reminders", es: "Ajusta tu despertar, hora de dormir y recordatorios de estiramientos", pt: "Ajuste seu horário de acordar, de dormir e os lembretes de alongamento" }),
     tonightTitle: (bed) => tr(lang, { fr: `Ce soir : au lit vers ${bed}`, en: `Tonight: in bed by ${bed}`, es: `Esta noche: a la cama a las ${bed}`, pt: `Hoje à noite: na cama às ${bed}` }),
     tonightSub: (h, wake, t) => tr(lang, { fr: `${h} de sommeil pour te réveiller à ${wake} · rappel à ${t}`, en: `${h} of sleep to wake up at ${wake} · reminder at ${t}`, es: `${h} de sueño para despertar a las ${wake} · aviso a las ${t}`, pt: `${h} de sono para acordar às ${wake} · lembrete às ${t}` }),
@@ -3438,6 +3438,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     deleteSession: tr(lang, { fr: "Supprimer cette séance", en: "Delete this session", es: "Eliminar esta sesión", pt: "Excluir esta sessão" }),
     deleteSessionConfirm: tr(lang, { fr: "Supprimer cette séance de l'historique ? Elle sera aussi retirée du planning.", en: "Delete this session from your history? It will also be removed from your schedule.", es: "¿Eliminar esta sesión del historial? También se quitará de la planificación.", pt: "Excluir esta sessão do histórico? Ela também será removida do planejamento." }),
     scoreExplain: tr(lang, { fr: "Score de 0 à 100 calculé pour cette séance : plus il est haut, plus ton corps a besoin de temps pour récupérer.", en: "Score from 0 to 100 calculated for this session: the higher it is, the more time your body needs to recover.", es: "Puntuación de 0 a 100 calculada para esta sesión: cuanto más alta, más tiempo necesita tu cuerpo para recuperarse.", pt: "Pontuação de 0 a 100 calculada para esta sessão: quanto mais alta, mais tempo seu corpo precisa para se recuperar." }),
+    viewDayPlan: tr(lang, { fr: "Voir le plan de récup du jour", en: "View today's recovery plan", es: "Ver el plan de recuperación de hoy", pt: "Ver o plano de recuperação de hoje" }),
     viewPlan: tr(lang, { fr: "Voir le plan de récup", en: "View recovery plan", es: "Ver el plan de recuperación", pt: "Ver o plano de recuperação" }),
     seeMore: tr(lang, { fr: "Voir plus", en: "See more", es: "Ver más", pt: "Ver mais" }),
     seeLess: tr(lang, { fr: "Réduire", en: "Show less", es: "Reducir", pt: "Reduzir" }),
@@ -3467,14 +3468,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         </Card>
       )}
 
-      {lastPlan || live.any ? (
-        <HeroCard accent={scoreColor(live.score)} className="flex flex-col items-center mb-5" style={{ paddingTop: 20 }}>
-          <p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.liveNow}</p>
-          <RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={160} />
-          <p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.liveNote}</p>
-          {lastPlan && <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="text-xs font-semibold mt-3 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} · {sportIcon(lastPlan.sport)} {lastPlan.date ? fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" }) : ""} →</button>}
-        </HeroCard>
-      ) : (
+      {!lastPlan && !live.any && (
         <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
       )}
 
@@ -3515,6 +3509,11 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           </div>
         ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
         <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
+        <div className="flex flex-col items-center mt-4 pt-5" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          <RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={160} />
+          <p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.liveNote}</p>
+          <button type="button" onClick={() => setSelectedDate(todayIso)} className="text-xs font-semibold mt-2 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
+        </div>
         <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
           {[
             { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
@@ -3540,7 +3539,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <GroupedList>
           {[...sessionsLog].reverse().slice(0, showAllHistory ? 30 : 3).map((s, i, arr) => (
             <div key={s.id} className="flex items-center" style={{ borderBottom: i === arr.length - 1 ? "none" : `1px solid ${C.glassBorder}` }}>
-              <button type="button" onClick={() => onOpenPlan && onOpenPlan(s)} className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 py-3 text-left">
+              <button type="button" onClick={() => setSelectedDate(isoLocal(new Date(s.date)))} className="flex-1 min-w-0 flex items-center gap-3 pl-4 pr-2 py-3 text-left">
                 <span className="text-lg shrink-0">{sportIcon(s.sport)}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold break-words" style={{ color: C.text, ...fontBody }}>{s.eventType === "match" ? T.match : s.eventType === "loisir" ? T.loisir : T.entrainement}</p>
@@ -3781,7 +3780,7 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
     if (result && !result.ok) { setDeleteError(result.error); setDeleting(false); }
   };
   const T = {
-    remindersLabel: tr(lang, { fr: "Sommeil & rappels", en: "Sleep & reminders", es: "Sueño y recordatorios", pt: "Sono e lembretes" }),
+    remindersLabel: tr(lang, { fr: "Sommeil & étirements", en: "Sleep & stretching", es: "Sueño y estiramientos", pt: "Sono e alongamentos" }),
     remindersBtn: tr(lang, { fr: "Régler mes rappels", en: "Set my reminders", es: "Ajustar mis recordatorios", pt: "Ajustar meus lembretes" }),
     tutorial: tr(lang, { fr: "Tutoriel", en: "Tutorial", es: "Tutorial", pt: "Tutorial" }),
     replayTutorial: tr(lang, { fr: "Revoir le tutoriel et les guides", en: "Replay the tutorial and guides", es: "Ver el tutorial y las guías otra vez", pt: "Rever o tutorial e os guias" }),
@@ -4322,7 +4321,7 @@ export default function App() {
                   {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} recup={{ onGenerate: handleGeneratePlan, result: recupResult, setResult: setRecupResult, sessionsLog: userData.sessionsLog || [] }} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} recup={{ onGenerate: handleGeneratePlan, result: recupResult, setResult: setRecupResult, sessionsLog: userData.sessionsLog || [], onAdded: () => showToast(tr(lang, { fr: "Séance ajoutée ✓ Ton plan de récup du jour est mis à jour.", en: "Session added ✓ Today's recovery plan is updated.", es: "Sesión añadida ✓ El plan de recuperación de hoy está actualizado.", pt: "Sessão adicionada ✓ O plano de recuperação de hoje foi atualizado." })) }} />}
                   {tab === "pro" && <ProTab />}
                   {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
                 </div>
