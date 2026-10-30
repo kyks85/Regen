@@ -635,9 +635,10 @@ function buildProgram(plan, lang) {
    et son poids diminue de moitié toutes les 36 h (oubli sur ~5 jours). Plusieurs séances
    le même jour s'additionnent donc vraiment. Les coefficients sont des estimations
    raisonnables, pas une mesure médicale. */
-let LOAD_CTX = { sessionsLog: [], plannerConfig: null };
+let LOAD_CTX = { sessionsLog: [], plannerConfig: null, checkins: {} };
 const setLoadContext = (ctx) => { LOAD_CTX = ctx; };
-function sessionWeight(type, intensity) {
+function sessionWeight(type, intensity, rpe, minutes) {
+  if (rpe && minutes) return Math.max(0.15, Math.min(1.3, (rpe * minutes) / 600));   // charge « durée × effort ressenti »
   if (type === "match") return 1;
   return intensity === "intense" ? 0.8 : intensity === "chill" ? 0.2 : 0.5;
 }
@@ -650,7 +651,7 @@ function computeLoad(at = new Date(), ctx = LOAD_CTX) {
     const t = new Date(x.date).getTime();
     if (!Number.isFinite(t)) return;
     logged.add(`${isoLocal(new Date(x.date))}|${x.sport}|${x.eventType}`);
-    items.push({ t, w: sessionWeight(x.eventType, x.intensity) });
+    items.push({ t, w: sessionWeight(x.eventType, x.intensity, x.rpe, x.minutes) });
   });
   const cfg = ctx.plannerConfig;
   if (cfg && cfg.weeklyDays) {
@@ -676,12 +677,23 @@ function computeLoad(at = new Date(), ctx = LOAD_CTX) {
   });
   return { bonus: Math.min(30, Math.round(load * 14)), count7 };
 }
-function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0, loadBonus = null }) {
+/* Bilan du jour : sommeil, courbatures, stress, énergie (1 à 5) → forme du jour et ajustement du score. */
+const SORE_ZONES = { jambes: ["quads", "ischios", "mollets"], dos: ["lombaires", "dorsaux"], epaules: ["epaules", "trapezes"], bras: ["avant_bras", "poignet"], cou: ["cou", "cervicales"], hanches: ["hanches", "adducteurs"] };
+function readinessRaw(ci) {
+  if (!ci) return null;
+  const v = (n) => Math.max(1, Math.min(5, Number(n) || 3));
+  return (5 - v(ci.sleep)) + (v(ci.sore) - 1) + (v(ci.stress) - 1) + (5 - v(ci.energy));   // 0 (très en forme) à 16
+}
+const readinessScore = (ci) => (ci ? 100 - Math.round((readinessRaw(ci) * 100) / 16) : null);
+const readinessBonus = (ci) => (ci ? Math.max(-3, Math.min(10, Math.round((readinessRaw(ci) - 6) * 0.9))) : 0);
+function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0, loadBonus = null, rpe = null, minutes = null, readiness = 0 }) {
   let s = fatigue * 10;
+  s += readiness;
   // Charge cumulée des séances récentes (voir computeLoad).
   if (loadBonus != null) s += loadBonus;
   else if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
-  if (eventType === "match") s += 27;
+  if (rpe && minutes) s += Math.max(2, Math.min(34, Math.round((rpe * minutes) / 24)));   // durée × effort ressenti
+  else if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
   else s += 2;
@@ -782,19 +794,25 @@ function computeMuscleKeys(sportKey, muscuZones) {
 }
 function generatePlan(profile, input, lang) {
   const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay } = input;
+  const minutes = Number(input.minutes) > 0 ? Number(input.minutes) : null;
+  const rpe = minutes && Number(input.rpe) > 0 ? Number(input.rpe) : null;
+  // Le bilan du jour compte pour les séances « maintenant » (pas pour celles prévues plus tard).
+  const ci = restDay || input.loadAt ? null : (LOAD_CTX.checkins || {})[isoLocal()] || null;
   const age = computeAge(profile.dateNaissance);
   const ld = restDay ? { bonus: 0, count7: 0 } : computeLoad(input.loadAt || new Date());
   const weekLoad = input.weekLoad ?? ld.count7;
-  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau, weekLoad, loadBonus: ld.bonus });
+  const score = computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau: profile.niveau, weekLoad, loadBonus: ld.bonus, rpe, minutes, readiness: readinessBonus(ci) });
   const sportKey = sport || profile.sports?.[0] || "autre";
-  const muscleKeys = computeMuscleKeys(sportKey, muscuZones);
+  const baseKeys = computeMuscleKeys(sportKey, muscuZones);
+  const soreKeys = ci && Array.isArray(ci.zones) ? ci.zones.flatMap((z) => SORE_ZONES[z] || []) : [];
+  const muscleKeys = [...new Set([...baseKeys, ...soreKeys])];
   const stretches = muscleKeys.map((k) => { const d = STRETCH_DB[k] || STRETCH_DB.corps_entier; return { key: k, ...(d[lang] || d.fr) }; });
   const warmup = restDay ? [] : buildWarmup(muscleKeys, lang);
   const zones = zonesLabel(muscleKeys, lang);
   const mealSeed = seed || `${Date.now()}-${Math.random()}`;
   return {
     id: Date.now() + Math.random(), date: new Date().toISOString(), heure: heure || null,
-    eventType, intensity, fatigue, hoursToNext, sport: sportKey, muscuZones: muscuZones || [], lang, restDay: !!restDay, weekLoad,
+    eventType, intensity, fatigue, hoursToNext, sport: sportKey, muscuZones: muscuZones || [], lang, restDay: !!restDay, weekLoad, minutes, rpe, readiness: readinessScore(ci), soreZones: ci && ci.zones ? ci.zones : [],
     score, duree: recoveryDurationLabel(score, lang), stretches, warmup,
     massage: buildMassage(profile.equipement, zones, lang), coldHeat: buildColdHeat(profile.equipement, score, zones, lang, sportKey === "muscu"),
     sommeil: sleepHours(score, eventType), hydratation: hydrationLiters(Number(profile.poids), eventType, intensity),
@@ -1415,6 +1433,153 @@ function RdvForm({ value, onChange }) {
 /* ============================================================
    PLAN TABS
    ============================================================ */
+
+/* ============================================================
+   SUIVI : bilan du jour, suivi du plan de récup, récap de la semaine
+   Les données vivent dans user_settings.data (checkins, done) : pas de nouvelle table.
+   ============================================================ */
+const TrackCtx = createContext({ settings: {}, setCheckin: () => {}, toggleDone: () => {} });
+const useTrack = () => useContext(TrackCtx);
+const DONE_ITEMS = ["hydra", "stretch", "meal", "sleep"];
+
+function ScalePicker({ label, lowLabel, highLabel, value, onChange }) {
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-semibold mb-1.5" style={{ color: C.text, ...fontBody }}>{label}</p>
+      <div className="flex gap-1.5" role="radiogroup" aria-label={label}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" role="radio" aria-checked={value === n} onClick={() => onChange(n)} className="flex-1 rounded-xl text-sm font-bold transition-colors" style={{ minHeight: 44, background: value === n ? gradPrimary : C.surface, color: value === n ? "#052821" : C.textMuted, border: `1px solid ${value === n ? "transparent" : C.border}`, ...fontMono }}>{n}</button>
+        ))}
+      </div>
+      <div className="flex justify-between mt-1 px-0.5"><span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{lowLabel}</span><span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{highLabel}</span></div>
+    </div>
+  );
+}
+
+function CheckinCard() {
+  const { lang } = useLang();
+  const { settings, setCheckin } = useTrack();
+  const today = isoLocal();
+  const saved = (settings.checkins || {})[today];
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState({ sleep: 3, sore: 2, stress: 2, energy: 3, zones: [] });
+  const T = {
+    title: tr(lang, { fr: "Bilan du jour", en: "Daily check-in", es: "Chequeo del día", pt: "Check-in do dia" }),
+    sub: tr(lang, { fr: "4 touches pour affiner tes conseils et ton score", en: "4 taps to fine-tune your advice and score", es: "4 toques para afinar tus consejos y tu puntuación", pt: "4 toques para ajustar seus conselhos e sua pontuação" }),
+    sleep: tr(lang, { fr: "Sommeil de la nuit", en: "Last night's sleep", es: "Sueño de la noche", pt: "Sono da noite" }),
+    sleepLo: tr(lang, { fr: "mauvais", en: "poor", es: "malo", pt: "ruim" }), sleepHi: tr(lang, { fr: "excellent", en: "excellent", es: "excelente", pt: "excelente" }),
+    sore: tr(lang, { fr: "Courbatures", en: "Soreness", es: "Agujetas", pt: "Dor muscular" }),
+    soreLo: tr(lang, { fr: "aucune", en: "none", es: "ninguna", pt: "nenhuma" }), soreHi: tr(lang, { fr: "fortes", en: "strong", es: "fuertes", pt: "fortes" }),
+    stress: tr(lang, { fr: "Stress", en: "Stress", es: "Estrés", pt: "Estresse" }),
+    stressLo: tr(lang, { fr: "calme", en: "calm", es: "calma", pt: "calmo" }), stressHi: tr(lang, { fr: "élevé", en: "high", es: "alto", pt: "alto" }),
+    energy: tr(lang, { fr: "Énergie", en: "Energy", es: "Energía", pt: "Energia" }),
+    energyLo: tr(lang, { fr: "faible", en: "low", es: "baja", pt: "baixa" }), energyHi: tr(lang, { fr: "haute", en: "high", es: "alta", pt: "alta" }),
+    zones: tr(lang, { fr: "Zones sensibles (optionnel)", en: "Sore areas (optional)", es: "Zonas sensibles (opcional)", pt: "Áreas sensíveis (opcional)" }),
+    save: tr(lang, { fr: "Enregistrer mon bilan", en: "Save my check-in", es: "Guardar mi chequeo", pt: "Salvar meu check-in" }),
+    form: tr(lang, { fr: "Forme du jour", en: "Today's form", es: "Forma de hoy", pt: "Forma de hoje" }),
+    edit: tr(lang, { fr: "Modifier", en: "Edit", es: "Modificar", pt: "Editar" }),
+    taken: tr(lang, { fr: "Pris en compte dans le score et les étirements de tes prochaines séances.", en: "Factored into the score and stretches of your next sessions.", es: "Se tiene en cuenta en la puntuación y los estiramientos de tus próximas sesiones.", pt: "Considerado na pontuação e nos alongamentos das suas próximas sessões." }),
+    sensitive: tr(lang, { fr: "Zones sensibles", en: "Sore areas", es: "Zonas sensibles", pt: "Áreas sensíveis" }),
+  };
+  const zoneLabels = { jambes: tr(lang, { fr: "Jambes", en: "Legs", es: "Piernas", pt: "Pernas" }), dos: tr(lang, { fr: "Dos", en: "Back", es: "Espalda", pt: "Costas" }), epaules: tr(lang, { fr: "Épaules", en: "Shoulders", es: "Hombros", pt: "Ombros" }), bras: tr(lang, { fr: "Bras", en: "Arms", es: "Brazos", pt: "Braços" }), cou: tr(lang, { fr: "Cou", en: "Neck", es: "Cuello", pt: "Pescoço" }), hanches: tr(lang, { fr: "Hanches", en: "Hips", es: "Caderas", pt: "Quadris" }) };
+  const word = (r) => (r >= 70 ? tr(lang, { fr: "Bonne forme", en: "Good form", es: "Buena forma", pt: "Boa forma" }) : r >= 40 ? tr(lang, { fr: "Forme moyenne", en: "Average form", es: "Forma media", pt: "Forma média" }) : tr(lang, { fr: "Récupération à privilégier", en: "Prioritise recovery", es: "Prioriza la recuperación", pt: "Priorize a recuperação" }));
+  const tip = (r) => (r >= 70 ? tr(lang, { fr: "Tu peux suivre ton programme comme prévu.", en: "You can follow your program as planned.", es: "Puedes seguir tu programa como estaba previsto.", pt: "Você pode seguir seu programa como planejado." }) : r >= 40 ? tr(lang, { fr: "Écoute ton corps et soigne l'hydratation et le sommeil.", en: "Listen to your body and take care of hydration and sleep.", es: "Escucha a tu cuerpo y cuida la hidratación y el sueño.", pt: "Ouça seu corpo e cuide da hidratação e do sono." }) : tr(lang, { fr: "Pense à alléger la séance si besoin et à soigner sommeil, repas et hydratation.", en: "Consider a lighter session if needed, and look after sleep, meals and hydration.", es: "Piensa en aligerar la sesión si hace falta y cuida sueño, comidas e hidratación.", pt: "Pense em aliviar a sessão se precisar e cuide de sono, refeições e hidratação." }));
+  const toggleZone = (z) => setV((p) => ({ ...p, zones: p.zones.includes(z) ? p.zones.filter((x) => x !== z) : [...p.zones, z] }));
+  if (saved && !editing) {
+    const r = readinessScore(saved);
+    const col = r >= 70 ? C.primary : r >= 40 ? C.scoreMid : C.scoreHigh;
+    return (
+      <Card className="mb-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.textFaint, ...fontBody }}>{T.form}</p>
+            <p className="text-sm font-bold mt-0.5 break-words" style={{ color: col, ...fontDisplay }}>{word(r)}</p>
+          </div>
+          <span style={{ ...fontMono, color: col, fontSize: 30, lineHeight: 1 }}>{r}</span>
+        </div>
+        <p className="text-xs mt-2 leading-relaxed" style={{ color: C.textMuted, ...fontBody }}>{tip(r)}</p>
+        {saved.zones && saved.zones.length > 0 && <p className="text-xs mt-1.5" style={{ color: C.textMuted, ...fontBody }}>{T.sensitive} : {saved.zones.map((z) => zoneLabels[z]).join(", ")}</p>}
+        <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.taken}</p>
+        <button onClick={() => { setV({ sleep: saved.sleep, sore: saved.sore, stress: saved.stress, energy: saved.energy, zones: saved.zones || [] }); setEditing(true); }} className="text-xs font-semibold mt-1 py-2" style={{ color: C.primary, ...fontBody }}>{T.edit}</button>
+      </Card>
+    );
+  }
+  return (
+    <Card className="mb-5">
+      <SectionTitle icon={Sparkles}>{T.title}</SectionTitle>
+      <p className="text-xs -mt-2 mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.sub}</p>
+      <ScalePicker label={T.sleep} lowLabel={T.sleepLo} highLabel={T.sleepHi} value={v.sleep} onChange={(n) => setV({ ...v, sleep: n })} />
+      <ScalePicker label={T.sore} lowLabel={T.soreLo} highLabel={T.soreHi} value={v.sore} onChange={(n) => setV({ ...v, sore: n })} />
+      <ScalePicker label={T.stress} lowLabel={T.stressLo} highLabel={T.stressHi} value={v.stress} onChange={(n) => setV({ ...v, stress: n })} />
+      <ScalePicker label={T.energy} lowLabel={T.energyLo} highLabel={T.energyHi} value={v.energy} onChange={(n) => setV({ ...v, energy: n })} />
+      <p className="text-xs font-semibold mb-1.5" style={{ color: C.text, ...fontBody }}>{T.zones}</p>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {Object.keys(zoneLabels).map((z) => (
+          <button key={z} type="button" aria-pressed={v.zones.includes(z)} onClick={() => toggleZone(z)} className="px-3 rounded-full text-xs font-semibold" style={{ minHeight: 40, background: v.zones.includes(z) ? C.primary : C.surface, color: v.zones.includes(z) ? "#052821" : C.textMuted, border: `1px solid ${v.zones.includes(z) ? C.primary : C.border}`, ...fontBody }}>{zoneLabels[z]}</button>
+        ))}
+      </div>
+      <Btn full onClick={() => { setCheckin(today, v); setEditing(false); }}>{T.save}</Btn>
+    </Card>
+  );
+}
+
+function RecoveryChecklist({ plan, checkKey }) {
+  const { lang } = useLang();
+  const { settings, toggleDone } = useTrack();
+  const done = (settings.done || {})[checkKey] || {};
+  const n = DONE_ITEMS.filter((k) => done[k]).length;
+  const items = {
+    hydra: tr(lang, { fr: `Hydratation (${plan.hydratation} L)`, en: `Hydration (${plan.hydratation} L)`, es: `Hidratación (${plan.hydratation} L)`, pt: `Hidratação (${plan.hydratation} L)` }),
+    stretch: tr(lang, { fr: "Étirements faits", en: "Stretching done", es: "Estiramientos hechos", pt: "Alongamentos feitos" }),
+    meal: tr(lang, { fr: "Repas de récupération", en: "Recovery meal", es: "Comida de recuperación", pt: "Refeição de recuperação" }),
+    sleep: tr(lang, { fr: `Coucher à l'heure (${plan.sommeil} h de sommeil visées)`, en: `Bed on time (aiming for ${plan.sommeil} h of sleep)`, es: `Acostarte a tiempo (objetivo ${plan.sommeil} h de sueño)`, pt: `Dormir na hora (meta de ${plan.sommeil} h de sono)` }),
+  };
+  const title = tr(lang, { fr: "Suivi de ta récup", en: "Your recovery tracker", es: "Seguimiento de tu recuperación", pt: "Acompanhamento da sua recuperação" });
+  return (
+    <Card className="mb-4">
+      <div className="flex items-center justify-between mb-3"><p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{title}</p><span style={{ ...fontMono, color: n === 4 ? C.primary : C.textMuted, fontSize: 14 }}>{n}/4</span></div>
+      {DONE_ITEMS.map((k) => (
+        <button key={k} type="button" role="checkbox" aria-checked={!!done[k]} onClick={() => toggleDone(checkKey, k)} className="w-full flex items-center gap-3 text-left" style={{ minHeight: 44 }}>
+          <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: done[k] ? C.primary : "transparent", border: `1.5px solid ${done[k] ? C.primary : C.border}` }}>{done[k] && <Check size={14} style={{ color: "#052821" }} />}</span>
+          <span className="text-xs leading-snug" style={{ color: done[k] ? C.textMuted : C.text, textDecoration: done[k] ? "line-through" : "none", ...fontBody }}>{items[k]}</span>
+        </button>
+      ))}
+    </Card>
+  );
+}
+
+function WeekRecap({ sessionsLog }) {
+  const { lang } = useLang();
+  const { settings } = useTrack();
+  const now = Date.now();
+  const week = (sessionsLog || []).filter((x) => x.date && !x.restDay && (now - new Date(x.date).getTime()) / 86400000 <= 7);
+  const cis = Object.entries(settings.checkins || {}).filter(([d]) => (now - new Date(d + "T12:00:00").getTime()) / 86400000 <= 7).map(([, c]) => c);
+  if (week.length === 0 && cis.length === 0) return null;
+  const done = settings.done || {};
+  const doneCount = week.reduce((a, x) => a + DONE_ITEMS.filter((k) => (done[`s:${x.date}`] || {})[k]).length, 0);
+  const follow = week.length ? Math.round((doneCount / (week.length * 4)) * 100) : null;
+  const scores = week.map((x) => Number(x.score)).filter(Number.isFinite);
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const sleepAvg = cis.length ? (cis.reduce((a, c) => a + (Number(c.sleep) || 0), 0) / cis.length).toFixed(1) : null;
+  const T = {
+    title: tr(lang, { fr: "Ta semaine", en: "Your week", es: "Tu semana", pt: "Sua semana" }),
+    sessions: tr(lang, { fr: "Séances", en: "Sessions", es: "Sesiones", pt: "Sessões" }),
+    score: tr(lang, { fr: "Score moyen", en: "Avg score", es: "Punt. media", pt: "Pont. média" }),
+    follow: tr(lang, { fr: "Récup suivie", en: "Plan followed", es: "Plan seguido", pt: "Plano seguido" }),
+    checkins: tr(lang, { fr: "Bilans", en: "Check-ins", es: "Chequeos", pt: "Check-ins" }),
+    sleep: tr(lang, { fr: "Sommeil moyen", en: "Avg sleep", es: "Sueño medio", pt: "Sono médio" }),
+  };
+  const cells = [[T.sessions, week.length], [T.score, avg ?? "–"], [T.follow, follow === null ? "–" : `${follow}%`], [T.checkins, `${cis.length}/7`], ...(sleepAvg ? [[T.sleep, `${sleepAvg}/5`]] : [])];
+  return (
+    <Card className="mb-7">
+      <SectionTitle icon={TrendingUp}>{T.title}</SectionTitle>
+      <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center">
+        {cells.map(([l, val]) => (<div key={l} className="min-w-0"><p style={{ ...fontMono, color: C.text, fontSize: 20 }}>{val}</p><p className="text-[11px] mt-0.5 break-words" style={{ color: C.textFaint, ...fontBody }}>{l}</p></div>))}
+      </div>
+    </Card>
+  );
+}
+
 function PlanTabs({ plan }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
@@ -2003,6 +2168,30 @@ function GuideSheet({ guideKey, onClose }) {
   );
 }
 
+function NotifPromptSheet({ onAccept, onLater }) {
+  const { lang } = useLang();
+  const T = {
+    title: tr(lang, { fr: "Activer les rappels ?", en: "Turn on reminders?", es: "¿Activar los recordatorios?", pt: "Ativar os lembretes?" }),
+    desc: tr(lang, { fr: "REGEN peut te prévenir la veille d'une séance, avant l'heure du coucher et pour tes étirements. Tu pourras le changer à tout moment dans ton profil.", en: "REGEN can notify you the day before a session, before bedtime and for your stretches. You can change this at any time in your profile.", es: "REGEN puede avisarte la víspera de una sesión, antes de la hora de acostarte y para tus estiramientos. Puedes cambiarlo en cualquier momento en tu perfil.", pt: "O REGEN pode avisar você na véspera de uma sessão, antes da hora de dormir e para os seus alongamentos. Você pode mudar isso a qualquer momento no seu perfil." }),
+    yes: tr(lang, { fr: "Activer", en: "Turn on", es: "Activar", pt: "Ativar" }),
+    later: tr(lang, { fr: "Plus tard", en: "Not now", es: "Más tarde", pt: "Agora não" }),
+  };
+  return (
+    <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 85, background: "rgba(0,0,0,0.62)" }}>
+      <div role="dialog" aria-label={T.title} className="rounded-t-[28px] px-5 pt-5 flex flex-col" style={{ background: C.bg, border: `1px solid ${C.glassBorder}`, borderBottom: "none", paddingBottom: "max(20px, env(safe-area-inset-bottom))", boxShadow: "0 -20px 50px rgba(0,0,0,.5)" }}>
+        <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: C.border }} />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: C.primarySoft, border: `1px solid ${C.primary}55` }}><Bell size={22} style={{ color: C.primary }} /></div>
+          <h2 className="text-lg font-extrabold tracking-tight leading-tight" style={{ color: C.text, ...fontDisplay }}>{T.title}</h2>
+        </div>
+        <p className="text-sm leading-relaxed mb-5" style={{ color: C.textMuted, ...fontBody }}>{T.desc}</p>
+        <Btn full onClick={onAccept}>{T.yes}</Btn>
+        <button onClick={onLater} className="w-full py-3 mt-1 text-sm font-semibold" style={{ color: C.textMuted, ...fontBody }}>{T.later}</button>
+      </div>
+    </div>
+  );
+}
+
 function Onboarding({ onComplete }) {
   const { lang } = useLang();
   const { isPro, isTrial, startTrial } = usePro();
@@ -2234,6 +2423,8 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   const [hoursToNext, setHoursToNext] = useState(48);
   const [heure, setHeure] = useState("");
   const [muscuZones, setMuscuZones] = useState([]);
+  const [minutes, setMinutes] = useState(0);
+  const [rpe, setRpe] = useState(6);
 
   const sportOptions = useMemo(() => {
     const declared = (profile.sports || []).map((k) => ({ value: k, label: `${sportIcon(k)} ${sportLabel(k, lang)}` }));
@@ -2242,7 +2433,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones }, lang); setResult(plan); onGenerate(plan); };
+  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe: minutes ? rpe : null }, lang); setResult(plan); onGenerate(plan); };
 
   const T = {
     title: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
@@ -2264,6 +2455,13 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     scoreExplain: tr(lang, { fr: "Score de 0 à 100 calculé pour cette séance : plus il est haut, plus ton corps a besoin de temps pour récupérer.", en: "Score from 0 to 100 calculated for this session: the higher it is, the more time your body needs to recover.", es: "Puntuación de 0 a 100 calculada para esta sesión: cuanto más alta, más tiempo necesita tu cuerpo para recuperarse.", pt: "Pontuação de 0 a 100 calculada para esta sessão: quanto mais alta, mais tempo seu corpo precisa para se recuperar." }),
     generalDisclaimer: tr(lang, { fr: "Conseils généraux de récupération : ils ne remplacent pas l'avis d'un professionnel de santé. En cas de douleur persistante, consulte un professionnel.", en: "General recovery advice: it doesn't replace a health professional's opinion. If pain persists, see a professional.", es: "Consejos generales de recuperación: no sustituyen la opinión de un profesional sanitario. Si el dolor persiste, consulta a un profesional.", pt: "Conselhos gerais de recuperação: não substituem a opinião de um profissional de saúde. Se a dor persistir, consulte um profissional." }),
     loadNote: (n) => tr(lang, { fr: `Score majoré : tu as déjà fait ${n} séances ces 7 derniers jours.`, en: `Score increased: you already did ${n} sessions in the last 7 days.`, es: `Puntuación aumentada: ya hiciste ${n} sesiones en los últimos 7 días.`, pt: `Pontuação aumentada: você já fez ${n} sessões nos últimos 7 dias.` }),
+    durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
+    durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
+    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
+    rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
+    usedNote: (m, r) => tr(lang, { fr: `Calculé avec ta durée (${m} min) et ton effort (${r}/10).`, en: `Calculated with your length (${m} min) and effort (${r}/10).`, es: `Calculado con tu duración (${m} min) y esfuerzo (${r}/10).`, pt: `Calculado com sua duração (${m} min) e esforço (${r}/10).` }),
+    formNote: (r) => tr(lang, { fr: `Ton bilan du jour (forme ${r}/100) a été pris en compte.`, en: `Your daily check-in (form ${r}/100) was factored in.`, es: `Se tuvo en cuenta tu chequeo del día (forma ${r}/100).`, pt: `Seu check-in do dia (forma ${r}/100) foi considerado.` }),
+    soreNote: tr(lang, { fr: "Tes zones sensibles ont été ajoutées aux étirements.", en: "Your sore areas were added to the stretches.", es: "Tus zonas sensibles se añadieron a los estiramientos.", pt: "Suas áreas sensíveis foram adicionadas aos alongamentos." }),
     recoveryNeed: tr(lang, { fr: "Besoin de récupération", en: "Recovery need", es: "Necesidad de recuperación", pt: "Necessidade de recuperação" }),
     sleep: tr(lang, { fr: "Sommeil", en: "Sleep", es: "Sueño", pt: "Sono" }),
     hydration: tr(lang, { fr: "Hydratation", en: "Hydration", es: "Hidratación", pt: "Hidratação" }),
@@ -2290,11 +2488,15 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
           <p className="text-[11px] leading-relaxed text-center mt-3 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p>
           <p className="text-[11px] leading-relaxed text-center mt-2 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.generalDisclaimer}</p>
           {result.weekLoad >= 2 && <p className="text-xs leading-relaxed text-center mt-2 px-3 font-semibold" style={{ color: C.warn, ...fontBody }}>{T.loadNote(result.weekLoad)}</p>}
+          {result.minutes && result.rpe && <p className="text-[11px] leading-relaxed text-center mt-2 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.usedNote(result.minutes, result.rpe)}</p>}
+          {result.readiness != null && <p className="text-[11px] leading-relaxed text-center mt-1 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.formNote(result.readiness)}</p>}
+          {result.soreZones && result.soreZones.length > 0 && <p className="text-[11px] leading-relaxed text-center mt-1 px-3" style={{ color: C.textFaint, ...fontBody }}>{T.soreNote}</p>}
           <div className="flex gap-4 mt-4 text-center">
             <div><Moon size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.sommeil}h</p><p className="text-[11px]" style={{ color: C.textMuted }}>{T.sleep}</p></div>
             <div><Droplet size={16} style={{ color: C.primary, margin: "0 auto" }} /><p style={{ ...fontMono, color: C.text, fontSize: 16 }}>{result.hydratation}L</p><p className="text-[11px]" style={{ color: C.textMuted }}>{T.hydration}</p></div>
           </div>
         </HeroCard>
+        <RecoveryChecklist plan={result} checkKey={`s:${result.date}`} />
         <PlanTabs plan={result} />
       </div>
     );
@@ -2311,6 +2513,8 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
         <Field label={T.typeLabel}><SegmentedControl options={[{ value: "entrainement", label: T.entrainementLabel }, { value: "match", label: T.matchLabel }, { value: "loisir", label: T.loisirLabel }]} value={eventType} onChange={setEventType} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></Field>
         {eventType !== "match" && <Field label={T.intensityLabel}><SegmentedControl options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={intensity} onChange={setIntensity} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></Field>}
         <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
+        <Field label={T.durLabel}><Select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
+        {minutes > 0 && <Field label={T.rpeLabel(rpe)}><input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p></Field>}
       </Card>
       <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
       <Card className="mb-7">
@@ -2693,6 +2897,7 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
               <SectionTitle icon={Sparkles}>{T.recupProgram}</SectionTitle>
               {combinedPlan.combined && <p className="text-xs -mt-2 mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.combinedNote(combinedPlan.sessionsCount)}</p>}
               <div className="flex justify-center mb-3"><RecoveryDial score={combinedPlan.score} label={T.recupProgram} sub={combinedPlan.duree} size={150} /></div>
+              {!combinedPlan.restDay && <RecoveryChecklist plan={combinedPlan} checkKey={`d:${date}`} />}
               <PlanTabs plan={combinedPlan} />
             </div>
           </>
@@ -3223,6 +3428,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
       </div>
 
+      <CheckinCard />
       <button onClick={() => goTo("rappels")} className="w-full text-left mb-4">
         <Card style={tonight ? { background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` } : undefined}>
           <div className="flex items-center gap-3">
@@ -3254,6 +3460,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
       </Card>
 
+      <WeekRecap sessionsLog={sessionsLog} />
       <ScoreChart sessionsLog={sessionsLog} />
 
       <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-xs font-semibold py-2 pl-3" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
@@ -3707,6 +3914,17 @@ export default function App() {
     setUserData((prev) => ({ ...prev, settings: next }));
     await sbUpsert("user_settings", { user_id: authUser.id, data: next }, accessToken);
   };
+  // Suivi : bilans du jour et étapes de récup cochées (stockés dans user_settings, on garde ~60 jours).
+  const pruneOld = (obj, keyDate) => { const lim = Date.now() - 60 * 86400000; const out = {}; Object.keys(obj || {}).forEach((k) => { const d = new Date(keyDate(k) + "T12:00:00").getTime(); if (!Number.isFinite(d) || d >= lim) out[k] = obj[k]; }); return out; };
+  const setCheckin = (dateIso, ci) => {
+    const st = userData?.settings || defaultSettings();
+    handleSaveSettings({ checkins: pruneOld({ ...(st.checkins || {}), [dateIso]: ci }, (k) => k) });
+  };
+  const toggleDone = (key, item) => {
+    const st = userData?.settings || defaultSettings();
+    const cur = (st.done || {})[key] || {};
+    handleSaveSettings({ done: pruneOld({ ...(st.done || {}), [key]: { ...cur, [item]: !cur[item] } }, (k) => k.slice(2, 12)) });
+  };
   // Recalcule la liste des rappels (coucher / étirements) quand le planning, les séances ou les réglages changent.
   useEffect(() => {
     if (screen !== "main" || !userData?.profile || !authUser) return;
@@ -3730,6 +3948,38 @@ export default function App() {
     if (screen !== "main" || showTutorial || guide || guidesSeen === null) return;
     if (!guidesSeen[guideKey]) setGuide(guideKey);
   }, [guideKey, screen, showTutorial, guide, guidesSeen]);
+  // Demande des notifications : une seule fois par appareil, à l'inscription ou à la première connexion
+  // (une réinstallation de l'app efface ce repère, donc la question revient). Si c'est déjà accepté, on
+  // réenregistre simplement l'appareil en silence, une fois par ouverture.
+  const [notifAsk, setNotifAsk] = useState(false);
+  useEffect(() => {
+    if (screen !== "main" || !authUser || !accessToken || showTutorial || guide || guidesSeen === null) return;
+    let doneSession = false;
+    try { doneSession = window.sessionStorage.getItem("regen:notifSession") === "1"; } catch { /* ignoré */ }
+    if (doneSession) return;
+    try { window.sessionStorage.setItem("regen:notifSession", "1"); } catch { /* ignoré */ }
+    const askedKey = `regen:notifAsked:${authUser.id}`;
+    let alreadyAsked = false;
+    try { alreadyAsked = window.localStorage.getItem(askedKey) === "1"; } catch { /* ignoré */ }
+    const markAsked = () => { try { window.localStorage.setItem(askedKey, "1"); } catch { /* ignoré */ } };
+    (async () => {
+      try {
+        if (window.Capacitor?.isNativePlatform?.()) {
+          const { PushNotifications } = await import("@capacitor/push-notifications");
+          const perm = await PushNotifications.checkPermissions();
+          if (perm.receive === "denied") return;
+          if (perm.receive === "granted") { await subscribeToPush(authUser.id, accessToken); return; }
+          if (alreadyAsked) return;
+          markAsked();
+          await subscribeToPush(authUser.id, accessToken);   // ouvre la fenêtre système
+          return;
+        }
+        if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+        if (Notification.permission === "granted") { await subscribeToPush(authUser.id, accessToken); return; }
+        if (Notification.permission === "default" && !alreadyAsked) { markAsked(); setNotifAsk(true); }   // iPhone exige un geste : carte d'abord
+      } catch { /* sans effet */ }
+    })();
+  }, [screen, authUser, accessToken, showTutorial, guide, guidesSeen]);
   const closeGuide = () => {
     if (guide) { const next = { ...(guidesSeen || {}), [guide]: true }; setGuidesSeen(next); persistGuides(next); }
     setGuide(null);
@@ -3966,7 +4216,7 @@ export default function App() {
     return { ok: true };
   };
 
-  setLoadContext({ sessionsLog: userData?.sessionsLog || [], plannerConfig: userData?.plannerConfig || null });
+  setLoadContext({ sessionsLog: userData?.sessionsLog || [], plannerConfig: userData?.plannerConfig || null, checkins: (userData?.settings || {}).checkins || {} });
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
@@ -3982,6 +4232,7 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
+       <TrackCtx.Provider value={{ settings: userData?.settings || {}, setCheckin, toggleDone }}>
         <div className="app-root flex items-center justify-center" style={{ background: C.bg }}>
           <style>{FONTS}</style>
           <div className="relative w-full max-w-[480px] h-full overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
@@ -4012,12 +4263,14 @@ export default function App() {
                 </div>
                 {showTutorial && <TutorialScreen onDone={() => setShowTutorial(false)} />}
                 {guide && !showTutorial && <GuideSheet guideKey={guide} onClose={closeGuide} />}
+                {notifAsk && !showTutorial && !guide && <NotifPromptSheet onAccept={async () => { setNotifAsk(false); await subscribeToPush(authUser.id, accessToken); }} onLater={() => setNotifAsk(false)} />}
                 {toast && <div className="fixed left-1/2 px-4 py-2.5 rounded-full text-xs font-semibold" style={{ top: "calc(env(safe-area-inset-top) + 64px)", transform: "translateX(-50%)", zIndex: 60, background: C.surface, color: C.text, border: `1px solid ${C.primary}66`, boxShadow: "0 8px 24px rgba(0,0,0,.4)", ...fontBody }}>{toast}</div>}
                 {showProfile && <ProfileScreen profile={userData.profile} userId={authUser.id} accessToken={accessToken} onSave={handleSaveProfile} onClose={() => setShowProfile(false)} onLogout={handleLogout} onDeleteAccount={handleDeleteAccount} onOpenPro={() => { setShowProfile(false); setTab("pro"); }} onTutorial={replayTutorial} onOpenReminders={() => { setShowProfile(false); goToTab("rappels"); }} />}
               </>
             )}
           </div>
         </div>
+       </TrackCtx.Provider>
       </LangContext.Provider>
     </ProContext.Provider>
   );
