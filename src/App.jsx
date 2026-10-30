@@ -21,38 +21,6 @@ function tr(lang, d) { return d[lang] || d.fr; }
 // sinon entre minuit et 2h du matin l'app croirait être encore la veille.
 function isoLocal(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 
-// iPhone (app installée) : la « hauteur de page » est parfois ~60 px plus courte que l'écran,
-// ce qui laisse une bande vide sous la barre du bas. On prend alors la hauteur réelle de l'écran.
-function applyFullHeight() {
-  try {
-    if (typeof window === "undefined" || !document.body) return;
-    const ua = navigator.userAgent || "";
-    const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const root = document.documentElement;
-    // Hauteur de la zone réservée en haut (encoche / Dynamic Island), mesurée sur l'appareil.
-    const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;top:0;left:0;width:1px;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top)";
-    document.body.appendChild(probe);
-    const safeTop = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-    document.body.removeChild(probe);
-    const full = Math.max(window.screen.height, window.screen.width);
-    const diff = full - window.innerHeight;
-    // Signature du défaut : la page est plus courte que l'écran d'exactement la zone du haut.
-    const shortByTopInset = safeTop > 0 && Math.abs(diff - safeTop) <= 6;
-    if (isIOS && window.innerHeight > window.innerWidth && shortByTopInset) {
-      root.style.setProperty("--app-h", full + "px");
-      root.setAttribute("data-fullh", "1");
-    } else { root.style.removeProperty("--app-h"); root.removeAttribute("data-fullh"); }
-  } catch (e) { /* sans effet */ }
-}
-if (typeof window !== "undefined") {
-  applyFullHeight();
-  window.addEventListener("resize", applyFullHeight);
-  window.addEventListener("orientationchange", () => setTimeout(applyFullHeight, 300));
-  window.addEventListener("pageshow", applyFullHeight);
-  document.addEventListener("visibilitychange", () => setTimeout(applyFullHeight, 150));
-  [300, 1000, 2500].forEach((d) => setTimeout(applyFullHeight, d));
-}
 const LangContext = createContext({ lang: "fr", setLang: () => {} });
 const useLang = () => useContext(LangContext);
 
