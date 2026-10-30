@@ -686,6 +686,53 @@ function readinessRaw(ci) {
 }
 const readinessScore = (ci) => (ci ? 100 - Math.round((readinessRaw(ci) * 100) / 16) : null);
 const readinessBonus = (ci) => (ci ? Math.max(-3, Math.min(10, Math.round((readinessRaw(ci) - 6) * 0.9))) : 0);
+/* Besoin de récupération « en direct » : tient compte de TOUTES les séances (faites, imprévues, prévues,
+   à venir dans les 48 h), du suivi du plan de récup (cases cochées) et du bilan du jour. */
+function liveRecoveryNeed(now = new Date(), ctx = LOAD_CTX, settings = {}) {
+  const nowT = now.getTime();
+  const done = settings.done || {};
+  const doneN = (k) => DONE_ITEMS.filter((i) => (done[k] || {})[i]).length;
+  const items = [];
+  const loggedCount = {};
+  (ctx.sessionsLog || []).forEach((x) => {
+    if (!x || !x.date || x.restDay) return;
+    const t = new Date(x.date).getTime(); if (!Number.isFinite(t)) return;
+    const key = `${isoLocal(new Date(x.date))}|${x.sport}|${x.eventType}`;
+    loggedCount[key] = (loggedCount[key] || 0) + 1;
+    items.push({ t, w: sessionWeight(x.eventType, x.intensity, x.rpe, x.minutes), n: doneN(`s:${x.date}`) });
+  });
+  const cfg = ctx.plannerConfig;
+  if (cfg && cfg.weeklyDays) {
+    const seen = {};
+    for (let d = -7; d <= 2; d++) {
+      const iso = isoLocal(new Date(nowT - d * 86400000));
+      const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions || {}, iso);
+      (entries || []).forEach((e) => {
+        if (!SPORT_TYPES.includes(e.type)) return;
+        const key = `${iso}|${e.sport}|${e.type}`;
+        seen[key] = (seen[key] || 0) + 1;
+        if (seen[key] <= (loggedCount[key] || 0)) return;   // déjà comptée via l'historique
+        const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
+        const t = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
+        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen"), n: doneN(`d:${iso}`) });
+      });
+    }
+  }
+  let past = 0, future = 0, any = false;
+  items.forEach((it) => {
+    const dh = (it.t - nowT) / 3600000;
+    if (dh <= 0) {
+      const age = -dh; if (age > 120) return;
+      any = true;
+      past += it.w * Math.pow(0.5, age / 36) * (1 - Math.min(0.24, 0.06 * it.n));   // plan de récup suivi = besoin réduit
+    } else if (dh <= 48) { any = true; future += it.w * (dh <= 24 ? 0.5 : 0.25); }   // séance proche = il faut être récupéré avant
+  });
+  let need = 100 * (1 - Math.exp(-0.9 * (past + 0.6 * future)));
+  const ci = (settings.checkins || {})[isoLocal(now)];
+  if (ci) { any = true; need += Math.max(-5, Math.min(12, (readinessRaw(ci) - 6) * 1.2)); }
+  return { score: Math.max(0, Math.min(100, Math.round(need))), any };
+}
+
 function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau, weekLoad = 0, loadBonus = null, rpe = null, minutes = null, readiness = 0 }) {
   let s = fatigue * 10;
   s += readiness;
@@ -1548,37 +1595,6 @@ function RecoveryChecklist({ plan, checkKey }) {
   );
 }
 
-function WeekRecap({ sessionsLog }) {
-  const { lang } = useLang();
-  const { settings } = useTrack();
-  const now = Date.now();
-  const week = (sessionsLog || []).filter((x) => x.date && !x.restDay && (now - new Date(x.date).getTime()) / 86400000 <= 7);
-  const cis = Object.entries(settings.checkins || {}).filter(([d]) => (now - new Date(d + "T12:00:00").getTime()) / 86400000 <= 7).map(([, c]) => c);
-  if (week.length === 0 && cis.length === 0) return null;
-  const done = settings.done || {};
-  const doneCount = week.reduce((a, x) => a + DONE_ITEMS.filter((k) => (done[`s:${x.date}`] || {})[k]).length, 0);
-  const follow = week.length ? Math.round((doneCount / (week.length * 4)) * 100) : null;
-  const scores = week.map((x) => Number(x.score)).filter(Number.isFinite);
-  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
-  const sleepAvg = cis.length ? (cis.reduce((a, c) => a + (Number(c.sleep) || 0), 0) / cis.length).toFixed(1) : null;
-  const T = {
-    title: tr(lang, { fr: "Ta semaine", en: "Your week", es: "Tu semana", pt: "Sua semana" }),
-    sessions: tr(lang, { fr: "Séances", en: "Sessions", es: "Sesiones", pt: "Sessões" }),
-    score: tr(lang, { fr: "Score moyen", en: "Avg score", es: "Punt. media", pt: "Pont. média" }),
-    follow: tr(lang, { fr: "Récup suivie", en: "Plan followed", es: "Plan seguido", pt: "Plano seguido" }),
-    checkins: tr(lang, { fr: "Bilans", en: "Check-ins", es: "Chequeos", pt: "Check-ins" }),
-    sleep: tr(lang, { fr: "Sommeil moyen", en: "Avg sleep", es: "Sueño medio", pt: "Sono médio" }),
-  };
-  const cells = [[T.sessions, week.length], [T.score, avg ?? "–"], [T.follow, follow === null ? "–" : `${follow}%`], [T.checkins, `${cis.length}/7`], ...(sleepAvg ? [[T.sleep, `${sleepAvg}/5`]] : [])];
-  return (
-    <Card className="mb-7">
-      <SectionTitle icon={TrendingUp}>{T.title}</SectionTitle>
-      <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center">
-        {cells.map(([l, val]) => (<div key={l} className="min-w-0"><p style={{ ...fontMono, color: C.text, fontSize: 20 }}>{val}</p><p className="text-[11px] mt-0.5 break-words" style={{ color: C.textFaint, ...fontBody }}>{l}</p></div>))}
-      </div>
-    </Card>
-  );
-}
 
 function PlanTabs({ plan }) {
   const { lang } = useLang();
@@ -2113,7 +2129,7 @@ function getGuides(lang) {
       d: T4("Organise ta semaine et tes séances.", "Organise your week and sessions.", "Organiza tu semana y tus sesiones.", "Organize sua semana e suas sessões."),
       b: [T4("Calendrier : touche un jour pour voir son détail et son plan de récup. Les couleurs indiquent le type de journée.", "Calendar: tap a day to see its details and recovery plan. Colours show the type of day.", "Calendario: toca un día para ver su detalle y plan de recuperación. Los colores indican el tipo de día.", "Calendário: toque num dia para ver detalhes e plano de recuperação. As cores indicam o tipo de dia."),
           T4("Semaine type : règle une fois pour toutes tes jours fixes (sport, intensité, heure).", "Weekly: set your fixed days once and for all (sport, intensity, time).", "Semana tipo: fija una vez tus días fijos (deporte, intensidad, hora).", "Semana tipo: defina uma vez seus dias fixos (esporte, intensidade, horário)."),
-          T4("Ajouts : prévois à l'avance une séance exceptionnelle ou un rendez-vous médical, avec rappel possible la veille.", "Add: plan an extra session or a medical appointment in advance, with an optional reminder the day before.", "Añadir: planifica una sesión extra o una cita médica, con recordatorio opcional la víspera.", "Adicionar: planeje uma sessão extra ou uma consulta médica, com lembrete opcional na véspera."),
+          T4("Ajouts : prévois une séance exceptionnelle ou un rendez-vous médical, ou renseigne une séance imprévue déjà faite pour obtenir sa récup.", "Add: plan an extra session or a medical appointment, or enter an unplanned session you already did to get its recovery.", "Añadir: planifica una sesión extra o una cita médica, o introduce una sesión imprevista ya hecha para obtener su recuperación.", "Adicionar: planeje uma sessão extra ou uma consulta médica, ou informe uma sessão imprevista já feita para obter a recuperação."),
           T4("L'app insère elle-même de la récup active ou du repos selon ta charge. Le gratuit permet 3 ajouts par mois.", "The app adds active recovery or rest on its own based on your load. Free allows 3 additions per month.", "La app añade sola recuperación activa o descanso según tu carga. Lo gratuito permite 3 añadidos al mes.", "O app insere sozinho recuperação ativa ou descanso conforme sua carga. O grátis permite 3 adições por mês.")] },
     pro: { Icon: Crown,
       t: T4("REGEN Pro", "REGEN Pro", "REGEN Pro", "REGEN Pro"),
@@ -2414,7 +2430,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
 /* ============================================================
    RÉCUP APRÈS SÉANCE (séance imprévue déjà faite)
    ============================================================ */
-function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessionsLog }) {
+function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessionsLog, embedded }) {
   const { lang } = useLang();
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
@@ -2478,9 +2494,10 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     gt4: tr(lang, { fr: "Plus de 4 jours", en: "More than 4 days", es: "Más de 4 días", pt: "Mais de 4 dias" }),
   };
 
+  const wrapCls = embedded ? "" : "px-5 pb-24 pt-4";
   if (result) {
     return (
-      <div className="px-5 pb-24 pt-4">
+      <div className={wrapCls}>
         <button onClick={() => setResult(null)} className="text-xs mb-3 flex items-center gap-1 py-2" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.newSession}</button>
         <HeroCard accent={scoreColor(result.score)} className="flex flex-col items-center mb-6" style={{ paddingTop: 24, paddingBottom: 20 }}>
           <div className="flex items-center gap-1.5 mb-2 flex-wrap justify-center"><Badge color={C.textMuted}>{fmtDate(result.date, lang)}</Badge><Badge color={C.textMuted}>{sportIcon(result.sport)} {sportLabel(result.sport, lang)}</Badge><Badge color={C.textMuted}>{result.eventType === "match" ? T.matchLabel : result.eventType === "loisir" ? T.loisirLabel : T.entrainementLabel}</Badge>{result.sport === "muscu" && result.muscuZones?.length > 0 && <Badge color={C.textMuted}>{result.muscuZones.map((z) => zoneLabel(z, lang)).join(" + ")}</Badge>}</div>
@@ -2503,9 +2520,9 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }
 
   return (
-    <div className="px-5 pb-24 pt-4">
-      <LargeHeader title={T.title} subtitle={T.subtitle} />
-      <InfoToggle label={T.how}>{T.howText}</InfoToggle>
+    <div className={wrapCls}>
+      {!embedded && <LargeHeader title={T.title} subtitle={T.subtitle} />}
+      {!embedded && <InfoToggle label={T.how}>{T.howText}</InfoToggle>}
       <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step1}</p>
       <Card className="mb-6">
         <Field label={T.sportLabel}><Select value={sport} onChange={(e) => setSport(e.target.value)} options={sportOptions} /></Field>
@@ -2522,7 +2539,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
       </Card>
       <Btn full onClick={submit} icon={Sparkles}>{T.generate}</Btn>
-      {onPlanFuture && <button type="button" onClick={onPlanFuture} className="w-full text-center mt-5 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.futureLink}</button>}
+      {onPlanFuture && !embedded && <button type="button" onClick={onPlanFuture} className="w-full text-center mt-5 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.futureLink}</button>}
     </div>
   );
 }
@@ -2931,13 +2948,14 @@ function DayDetailSheet({ date, entries, isException, auto, profile, onClose, on
 /* ============================================================
    PLANNING TAB
    ============================================================ */
-function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, onNewRecup }) {
+function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onClearException, onAddEntry, onRemoveEntry, goTo, onOpenPlanById, initialView, recup }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
   const monthlyUsed = useMemo(() => countMonthlyExtras(exceptions), [exceptions]);
   const [view, setView] = useState(initialView || "calendrier");
+  useEffect(() => { if (initialView) setView(initialView); }, [initialView]);
   const [expandedDow, setExpandedDow] = useState(null);
   const [monthIdx, setMonthIdx] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -2978,6 +2996,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     off: tr(lang, { fr: "Off", en: "Off", es: "Libre", pt: "Livre" }),
     addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
     addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, séance loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a rescheduled training session, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
+    unplannedTitle: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
+    unplannedHint: tr(lang, { fr: "Tu as fait une séance non prévue ? Renseigne-la pour obtenir son plan de récup. Elle est ajoutée à ton planning.", en: "Did an unplanned session? Enter it to get its recovery plan. It is added to your schedule.", es: "¿Hiciste una sesión no prevista? Introdúcela para obtener su plan de recuperación. Se añade a tu planificación.", pt: "Fez uma sessão não prevista? Informe-a para obter o plano de recuperação. Ela é adicionada ao seu planejamento." }),
     alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
     date: tr(lang, { fr: "Date", en: "Date", es: "Fecha", pt: "Data" }),
     saveDate: tr(lang, { fr: "Enregistrer pour cette date", en: "Save for this date", es: "Guardar para esta fecha", pt: "Salvar para esta data" }),
@@ -3043,7 +3063,6 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         <Field label={T.date}><TextInput type="date" value={excDate} onChange={(e) => setExcDate(e.target.value)} /></Field>
         {excDate && <EntryListEditor entries={excEntries} defaultSport={profile.sports?.[0] || "autre"} onChange={setExcEntries} />}
         <div className="mt-2"><Btn onClick={saveExcForm} full disabled={!excDate} icon={Check}>{T.saveDate}</Btn></div>
-        {onNewRecup && <button type="button" onClick={onNewRecup} className="w-full text-center mt-4 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.alreadyDone}</button>}
         {Object.keys(exceptions).length > 0 && (
           <div className="flex flex-col gap-2 mt-4">
             {Object.entries(exceptions).sort(([a], [b]) => a.localeCompare(b)).map(([date, ents]) => (
@@ -3075,6 +3094,14 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </div>
         )}
       </Card>
+
+      {recup && (
+        <Card className="mt-5 mb-4" style={{ background: `linear-gradient(160deg, ${C.primary}14 0%, ${C.surface} 55%)` }}>
+          <SectionTitle icon={Activity}>{T.unplannedTitle}</SectionTitle>
+          <p className="text-xs -mt-2 mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.unplannedHint}</p>
+          <RecupTab embedded profile={profile} onGenerate={recup.onGenerate} result={recup.result} setResult={recup.setResult} sessionsLog={recup.sessionsLog} />
+        </Card>
+      )}
       </>)}
 
       {view === "calendrier" && (<>
@@ -3190,7 +3217,7 @@ function RemindersScreen({ settings, onSave, onBack, initialView }) {
   };
   return (
     <div className="px-5 pt-4 pb-24">
-      <button onClick={onBack} className="text-xs mb-1 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button>
+      {onBack && <button onClick={onBack} className="text-xs mb-1 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.back}</button>}
       <LargeHeader title={T.title} subtitle={T.subtitle} />
       <div className="mb-6"><SegmentedControl options={[{ value: "sommeil", label: T.tabSleep }, { value: "rappels", label: T.tabRem }]} value={view} onChange={setView} /></div>
 
@@ -3336,9 +3363,40 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     return null;
   }, [schedule]);
 
-  const weekCount = sessionsLog.filter((s) => (today - new Date(s.date)) / 86400000 <= 7).length;
-  const recent = sessionsLog.slice(-5);
-  const avgScore = recent.length ? Math.round(recent.reduce((a, s) => a + s.score, 0) / recent.length) : null;
+  // Séances de la semaine (lundi → dimanche) : prévues, imprévues déjà faites, séances à venir. Une séance n'est comptée qu'une fois.
+  const weekStats = useMemo(() => {
+    const weekDates = weekSchedule.map((d) => d.date);
+    const nowT = Date.now();
+    let total = 0, upcoming = 0;
+    const scores = [];
+    weekSchedule.forEach((d) => {
+      const planned = {}, logged = {}, loggedItems = [];
+      (d.entries || []).filter((e) => SPORT_TYPES.includes(e.type)).forEach((e) => { const k = `${e.sport}|${e.type}`; (planned[k] = planned[k] || []).push(e); });
+      sessionsLog.filter((x) => x && x.date && !x.restDay && isoLocal(new Date(x.date)) === d.date).forEach((x) => { const k = `${x.sport}|${x.eventType}`; logged[k] = (logged[k] || 0) + 1; loggedItems.push(x); if (Number.isFinite(Number(x.score))) scores.push(Number(x.score)); });
+      const keys = new Set([...Object.keys(planned), ...Object.keys(logged)]);
+      keys.forEach((k) => {
+        const np = (planned[k] || []).length, nl = logged[k] || 0;
+        total += Math.max(np, nl);
+        // Séances prévues non encore faites (jour futur, ou aujourd'hui à une heure pas encore passée)
+        (planned[k] || []).slice(nl).forEach((e) => {
+          const [hh, mm] = String(e.heure || "23:59").split(":").map(Number);
+          const t = new Date(d.date + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
+          if (t > nowT) upcoming++;
+        });
+      });
+    });
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+    const done = settings && settings.done ? settings.done : {};
+    const nPlans = sessionsLog.filter((x) => x && x.date && !x.restDay && weekDates.includes(isoLocal(new Date(x.date)))).length;
+    const nDone = sessionsLog.filter((x) => x && x.date && !x.restDay && weekDates.includes(isoLocal(new Date(x.date)))).reduce((a, x) => a + DONE_ITEMS.filter((k) => (done[`s:${x.date}`] || {})[k]).length, 0);
+    const follow = nPlans ? Math.round((nDone / (nPlans * 4)) * 100) : null;
+    const cis = weekDates.map((dt) => ((settings && settings.checkins) || {})[dt]).filter(Boolean);
+    const sleep = cis.length ? (cis.reduce((a, c) => a + (Number(c.sleep) || 0), 0) / cis.length).toFixed(1) : null;
+    return { total, upcoming, avg, follow, checkins: cis.length, sleep };
+  }, [weekSchedule, sessionsLog, settings]);
+  const weekCount = weekStats.total;
+  const avgScore = weekStats.avg;
+  const live = useMemo(() => liveRecoveryNeed(new Date(), LOAD_CTX, settings || {}), [sessionsLog, plannerConfig, settings]);
   const selectedDayObj = selectedDate ? schedule.find((d) => d.date === selectedDate) : null;
 
   const T = {
@@ -3354,7 +3412,14 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     sessionsWeek: tr(lang, { fr: "Séances / 7j", en: "Sessions / 7d", es: "Sesiones / 7d", pt: "Sessões / 7d" }),
     avgScore: tr(lang, { fr: "Score moyen", en: "Average score", es: "Puntuación media", pt: "Pontuação média" }),
     nextEvent: tr(lang, { fr: "Prochain événement", en: "Next event", es: "Próximo evento", pt: "Próximo evento" }),
-    thisWeek: tr(lang, { fr: "Cette semaine", en: "This week", es: "Esta semana", pt: "Esta semana" }),
+    thisWeek: tr(lang, { fr: "Ta semaine", en: "Your week", es: "Tu semana", pt: "Sua semana" }),
+    sessionsLabel: tr(lang, { fr: "Séances", en: "Sessions", es: "Sesiones", pt: "Sessões" }),
+    upcomingOf: (n) => tr(lang, { fr: `dont ${n} à venir`, en: `${n} upcoming`, es: `${n} por venir`, pt: `${n} por vir` }),
+    followLabel: tr(lang, { fr: "Récup suivie", en: "Plan followed", es: "Plan seguido", pt: "Plano seguido" }),
+    checkinsLabel: tr(lang, { fr: "Bilans", en: "Check-ins", es: "Chequeos", pt: "Check-ins" }),
+    sleepLabel: tr(lang, { fr: "Sommeil moyen", en: "Avg sleep", es: "Sueño medio", pt: "Sono médio" }),
+    liveNote: tr(lang, { fr: "Mis à jour en direct : toutes tes séances (faites, imprévues, à venir), ton suivi de récup et ton bilan du jour.", en: "Updated live: all your sessions (done, unplanned, upcoming), your recovery tracking and your daily check-in.", es: "Actualizado en directo: todas tus sesiones (hechas, imprevistas, próximas), tu seguimiento de recuperación y tu chequeo del día.", pt: "Atualizado ao vivo: todas as suas sessões (feitas, imprevistas, futuras), seu acompanhamento de recuperação e seu check-in do dia." }),
+    liveNow: tr(lang, { fr: "Maintenant", en: "Right now", es: "Ahora", pt: "Agora" }),
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
     tapDay: tr(lang, { fr: "Touche un jour pour voir le détail complet.", en: "Tap a day to see the full detail.", es: "Toca un día para ver el detalle completo.", pt: "Toque em um dia para ver o detalhe completo." }),
@@ -3402,24 +3467,16 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         </Card>
       )}
 
-      {lastPlan ? (
-        <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="block w-full text-left mb-5">
-          <HeroCard accent={scoreColor(lastPlan.score)} className="flex flex-col items-center" style={{ paddingTop: 20 }}><p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.lastSession}{lastPlan.date && isoLocal(new Date(lastPlan.date)) < todayIso ? ` · ${fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" })}` : ""}</p><RecoveryDial score={lastPlan.score} label={T.recoveryNeed} sub={lastPlan.duree} size={160} /><p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.scoreExplain}</p><p className="text-xs font-semibold mt-3" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} →</p></HeroCard>
-        </button>
+      {lastPlan || live.any ? (
+        <HeroCard accent={scoreColor(live.score)} className="flex flex-col items-center mb-5" style={{ paddingTop: 20 }}>
+          <p className="text-[11px] uppercase tracking-widest mb-2 text-center" style={{ color: C.textFaint, ...fontBody }}>{T.liveNow}</p>
+          <RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={160} />
+          <p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.liveNote}</p>
+          {lastPlan && <button type="button" onClick={() => onOpenPlan && onOpenPlan(lastPlan)} className="text-xs font-semibold mt-3 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewPlan} · {sportIcon(lastPlan.sport)} {lastPlan.date ? fmtDate(lastPlan.date, lang, { weekday: "short", day: "numeric", month: "short" }) : ""} →</button>}
+        </HeroCard>
       ) : (
         <Card className="mb-5"><p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.noSessionYet}</p><Btn onClick={() => goTo("recup")} icon={Sparkles} full>{T.start}</Btn></Card>
       )}
-
-      <Card style={{ padding: 0 }} className="mb-6">
-        <div className="grid grid-cols-3">
-          {[{ v: weekCount, l: T.sessionsWeek, c: C.primary }, { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint }, { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text }].map((s, i) => (
-            <div key={i} className="flex flex-col items-center py-3.5 px-1 min-w-0" style={{ borderRight: i < 2 ? `1px solid ${C.borderSoft}66` : "none" }}>
-              <p style={{ ...fontMono, color: s.c, fontSize: 20 }}>{s.v}</p>
-              <p className="text-[11px] uppercase tracking-wide text-center break-words leading-tight mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{s.l}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       <div className="flex justify-between gap-2 mb-7 pb-1">
         <IconTile icon={Sparkles} label={T.quickRecup} onClick={() => goTo("recup")} color={C.primary} />
@@ -3458,9 +3515,24 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           </div>
         ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
         <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
+        <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          {[
+            { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
+            { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint },
+            { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text },
+            { v: weekStats.follow === null ? "—" : `${weekStats.follow}%`, l: T.followLabel, c: C.text },
+            { v: `${weekStats.checkins}/7`, l: T.checkinsLabel, c: C.text },
+            { v: weekStats.sleep ? `${weekStats.sleep}/5` : "—", l: T.sleepLabel, c: C.text },
+          ].map((x, i) => (
+            <div key={i} className="min-w-0">
+              <p style={{ ...fontMono, color: x.c, fontSize: 20 }}>{x.v}</p>
+              <p className="text-[11px] uppercase tracking-wide break-words leading-tight mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{x.l}</p>
+              {x.sub && <p className="text-[11px] mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{x.sub}</p>}
+            </div>
+          ))}
+        </div>
       </Card>
 
-      <WeekRecap sessionsLog={sessionsLog} />
       <ScoreChart sessionsLog={sessionsLog} />
 
       <SectionTitle icon={TrendingUp} action={sessionsLog.length > 3 ? <button onClick={() => setShowAllHistory(!showAllHistory)} className="text-xs font-semibold py-2 pl-3" style={{ color: C.primary, ...fontBody }}>{showAllHistory ? T.seeLess : T.seeMore}</button> : null}>{T.history}</SectionTitle>
@@ -3943,7 +4015,7 @@ export default function App() {
     try { const raw = typeof window !== "undefined" ? window.localStorage.getItem(GUIDES_KEY) : null; if (raw) seen = JSON.parse(raw) || {}; } catch { seen = {}; }
     setGuidesSeen(seen);
   }, [GUIDES_KEY]);
-  const guideKey = showProfile ? "profile" : tab === "recup" ? (recupResult ? "recup_result" : "recup") : tab;
+  const guideKey = showProfile ? "profile" : tab;
   useEffect(() => {
     if (screen !== "main" || showTutorial || guide || guidesSeen === null) return;
     if (!guidesSeen[guideKey]) setGuide(guideKey);
@@ -4100,10 +4172,10 @@ export default function App() {
     showToast(tr(lang, { fr: "Séance supprimée", en: "Session deleted", es: "Sesión eliminada", pt: "Sessão excluída" }));
     if (changed) await savePlanner(newCfg);
   };
-  const goToTab = (k) => { setPlanningView(null); setTab(k); };
+  const goToTab = (k) => { if (k === "recup") { openNewRecup(); return; } setPlanningView(null); setTab(k); };
   const openPlanningAdd = () => { setPlanningView("ajouts"); setTab("planning"); };
-  const openNewRecup = () => { setRecupResult(null); setTab("recup"); };
-  const openPlan = (session) => { setRecupResult(session); setTab("recup"); };
+  const openNewRecup = () => { setRecupResult(null); openPlanningAdd(); };
+  const openPlan = (session) => { setRecupResult(session); openPlanningAdd(); };
   const openPlanById = (id) => { const sess = (userData?.sessionsLog || []).find((x) => x.id === id); if (sess) openPlan(sess); };
   const handleSaveProfile = async (p) => {
     const sports = proStatus.isPro ? p.sports : p.sports.slice(0, FREE_SPORTS_MAX);
@@ -4220,14 +4292,14 @@ export default function App() {
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
-    recup: { fr: "Séance imprévue", en: "Unplanned", es: "Imprevista", pt: "Imprevista" },
+    rappels: { fr: "Rappels", en: "Reminders", es: "Avisos", pt: "Lembretes" },
     nutrition: { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" },
     blessures: { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" },
     planning: { fr: "Planning", en: "Schedule", es: "Plan", pt: "Plano" },
     pro: { fr: "Pro", en: "Pro", es: "Pro", pt: "Pro" },
   };
-  const NAV = [["home", Home], ["recup", Activity], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
-  const navActive = (tab === "nutrition" || tab === "rappels") ? "home" : tab;
+  const NAV = [["home", Home], ["rappels", Bell], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
+  const navActive = tab === "nutrition" ? "home" : tab;
 
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
@@ -4248,12 +4320,11 @@ export default function App() {
                 </div>
                 <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
                   {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
-                  {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} sessionsLog={userData.sessionsLog || []} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
-                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} onNewRecup={openNewRecup} />}
+                  {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} recup={{ onGenerate: handleGeneratePlan, result: recupResult, setResult: setRecupResult, sessionsLog: userData.sessionsLog || [] }} />}
                   {tab === "pro" && <ProTab />}
-                  {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} onBack={() => goToTab("home")} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
+                  {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
                   <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
