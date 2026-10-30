@@ -1503,13 +1503,13 @@ function ScalePicker({ label, lowLabel, highLabel, value, onChange }) {
   );
 }
 
-function CheckinCard() {
+function CheckinCard({ asPage, onDone }) {
   const { lang } = useLang();
   const { settings, setCheckin } = useTrack();
   const today = isoLocal();
   const saved = (settings.checkins || {})[today];
-  const [editing, setEditing] = useState(false);
-  const [v, setV] = useState({ sleep: 3, sore: 2, stress: 2, energy: 3, zones: [] });
+  const [editing, setEditing] = useState(!!asPage);
+  const [v, setV] = useState(saved ? { sleep: saved.sleep, sore: saved.sore, stress: saved.stress, energy: saved.energy, zones: saved.zones || [] } : { sleep: 3, sore: 2, stress: 2, energy: 3, zones: [] });
   const T = {
     title: tr(lang, { fr: "Bilan du jour", en: "Daily check-in", es: "Chequeo del día", pt: "Check-in do dia" }),
     sub: tr(lang, { fr: "4 touches pour affiner tes conseils et ton score", en: "4 taps to fine-tune your advice and score", es: "4 toques para afinar tus consejos y tu puntuación", pt: "4 toques para ajustar seus conselhos e sua pontuação" }),
@@ -1565,8 +1565,22 @@ function CheckinCard() {
           <button key={z} type="button" aria-pressed={v.zones.includes(z)} onClick={() => toggleZone(z)} className="px-3 rounded-full text-xs font-semibold" style={{ minHeight: 40, background: v.zones.includes(z) ? C.primary : C.surface, color: v.zones.includes(z) ? "#052821" : C.textMuted, border: `1px solid ${v.zones.includes(z) ? C.primary : C.border}`, ...fontBody }}>{zoneLabels[z]}</button>
         ))}
       </div>
-      <Btn full onClick={() => { setCheckin(today, v); setEditing(false); }}>{T.save}</Btn>
+      <Btn full onClick={() => { setCheckin(today, v); setEditing(false); if (onDone) onDone(); }}>{T.save}</Btn>
     </Card>
+  );
+}
+
+
+const formeWord = (r, lang) => (r >= 70 ? tr(lang, { fr: "Bonne forme", en: "Good form", es: "Buena forma", pt: "Boa forma" }) : r >= 40 ? tr(lang, { fr: "Forme moyenne", en: "Average form", es: "Forma media", pt: "Forma média" }) : tr(lang, { fr: "Récupération à privilégier", en: "Prioritise recovery", es: "Prioriza la recuperación", pt: "Priorize a recuperação" }));
+function CheckinPage({ onBack }) {
+  const { lang } = useLang();
+  const back = tr(lang, { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" });
+  return (
+    <div className="px-5 pt-4 pb-24">
+      <button onClick={onBack} className="text-xs mb-1 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {back}</button>
+      <LargeHeader title={tr(lang, { fr: "Bilan du jour", en: "Daily check-in", es: "Chequeo del día", pt: "Check-in do dia" })} subtitle={tr(lang, { fr: "Ta forme du moment", en: "How you feel today", es: "Cómo te sientes hoy", pt: "Como você está hoje" })} />
+      <CheckinCard asPage onDone={onBack} />
+    </div>
   );
 }
 
@@ -3394,6 +3408,9 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     const sleep = cis.length ? (cis.reduce((a, c) => a + (Number(c.sleep) || 0), 0) / cis.length).toFixed(1) : null;
     return { total, upcoming, avg, follow, checkins: cis.length, sleep };
   }, [weekSchedule, sessionsLog, settings]);
+  const todayCi = ((settings && settings.checkins) || {})[todayIso];
+  const formeVal = todayCi ? readinessScore(todayCi) : null;
+  const formeCol = formeVal === null ? C.text : formeVal >= 70 ? C.primary : formeVal >= 40 ? C.scoreMid : C.scoreHigh;
   const weekCount = weekStats.total;
   const avgScore = weekStats.avg;
   const live = useMemo(() => liveRecoveryNeed(new Date(), LOAD_CTX, settings || {}), [sessionsLog, plannerConfig, settings]);
@@ -3419,6 +3436,8 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     checkinsLabel: tr(lang, { fr: "Bilans", en: "Check-ins", es: "Chequeos", pt: "Check-ins" }),
     sleepLabel: tr(lang, { fr: "Sommeil moyen", en: "Avg sleep", es: "Sueño medio", pt: "Sono médio" }),
     liveNote: tr(lang, { fr: "Mis à jour en direct : toutes tes séances (faites, imprévues, à venir), ton suivi de récup et ton bilan du jour.", en: "Updated live: all your sessions (done, unplanned, upcoming), your recovery tracking and your daily check-in.", es: "Actualizado en directo: todas tus sesiones (hechas, imprevistas, próximas), tu seguimiento de recuperación y tu chequeo del día.", pt: "Atualizado ao vivo: todas as suas sessões (feitas, imprevistas, futuras), seu acompanhamento de recuperação e seu check-in do dia." }),
+    formeLabel: tr(lang, { fr: "Forme du jour", en: "Today's form", es: "Forma de hoy", pt: "Forma de hoje" }),
+    doBilan: tr(lang, { fr: "Faire mon bilan du jour", en: "Do my daily check-in", es: "Hacer mi chequeo del día", pt: "Fazer meu check-in do dia" }),
     liveNow: tr(lang, { fr: "Maintenant", en: "Right now", es: "Ahora", pt: "Agora" }),
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
@@ -3479,7 +3498,6 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
       </div>
 
-      <CheckinCard />
       <button onClick={() => goTo("rappels")} className="w-full text-left mb-4">
         <Card style={tonight ? { background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` } : undefined}>
           <div className="flex items-center gap-3">
@@ -3514,6 +3532,15 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           <p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.liveNote}</p>
           <button type="button" onClick={() => setSelectedDate(todayIso)} className="text-xs font-semibold mt-2 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
         </div>
+        <button type="button" onClick={() => goTo("bilan")} className="w-full flex items-center gap-3 text-left mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          <Sparkles size={18} style={{ color: formeVal === null ? C.primary : formeCol }} className="shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{T.formeLabel}</p>
+            <p className="text-sm font-bold break-words" style={{ color: formeVal === null ? C.text : formeCol, ...fontDisplay }}>{formeVal === null ? T.doBilan : formeWord(formeVal, lang)}</p>
+          </div>
+          {formeVal !== null && <span style={{ ...fontMono, color: formeCol, fontSize: 24, lineHeight: 1 }}>{formeVal}</span>}
+          <ChevronRightIcon size={16} style={{ color: C.textFaint }} className="shrink-0" />
+        </button>
         <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
           {[
             { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
@@ -4014,7 +4041,7 @@ export default function App() {
     try { const raw = typeof window !== "undefined" ? window.localStorage.getItem(GUIDES_KEY) : null; if (raw) seen = JSON.parse(raw) || {}; } catch { seen = {}; }
     setGuidesSeen(seen);
   }, [GUIDES_KEY]);
-  const guideKey = showProfile ? "profile" : tab;
+  const guideKey = showProfile ? "profile" : tab === "bilan" ? "home" : tab;
   useEffect(() => {
     if (screen !== "main" || showTutorial || guide || guidesSeen === null) return;
     if (!guidesSeen[guideKey]) setGuide(guideKey);
@@ -4298,7 +4325,7 @@ export default function App() {
     pro: { fr: "Pro", en: "Pro", es: "Pro", pt: "Pro" },
   };
   const NAV = [["home", Home], ["rappels", Bell], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
-  const navActive = tab === "nutrition" ? "home" : tab;
+  const navActive = (tab === "nutrition" || tab === "bilan") ? "home" : tab;
 
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
@@ -4323,6 +4350,7 @@ export default function App() {
                   {tab === "blessures" && <BlessuresTab injuries={userData.injuries || []} onAddInjury={handleAddInjury} onUpdateInjury={handleUpdateInjury} onDeleteInjury={handleDeleteInjury} onAddRdv={handleAddEntry} />}
                   {tab === "planning" && <PlanningTab profile={userData.profile} plannerConfig={userData.plannerConfig} onSetWeekly={handleSetWeekly} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} goTo={goToTab} onOpenPlanById={openPlanById} initialView={planningView} recup={{ onGenerate: handleGeneratePlan, result: recupResult, setResult: setRecupResult, sessionsLog: userData.sessionsLog || [], onAdded: () => showToast(tr(lang, { fr: "Séance ajoutée ✓ Ton plan de récup du jour est mis à jour.", en: "Session added ✓ Today's recovery plan is updated.", es: "Sesión añadida ✓ El plan de recuperación de hoy está actualizado.", pt: "Sessão adicionada ✓ O plano de recuperação de hoje foi atualizado." })) }} />}
                   {tab === "pro" && <ProTab />}
+                  {tab === "bilan" && <CheckinPage onBack={() => goToTab("home")} />}
                   {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
                 </div>
                 <div className="fixed bottom-0 left-1/2 w-full max-w-[480px] flex flex-col" style={{ pointerEvents: "none", transform: "translateX(-50%)", zIndex: 40 }}>
