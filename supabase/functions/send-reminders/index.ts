@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     if (Array.isArray(settingsRows)) {
       for (const row of settingsRows) {
         // Bilan du jour : à 12h, si l'utilisateur ne l'a pas encore rempli aujourd'hui.
-        if (nowHHMM === "12:00" && row?.data?.bilanOn !== false && !(row?.data?.checkins || {})[todayISO]) {
+        if (nowHHMM === "12:00" && row?.data?.bilanOn !== false && !["sleep", "sore", "stress", "energy"].every((k) => Number((row?.data?.checkins || {})[todayISO]?.[k]) >= 1)) {
           const bSubs = subs.filter((x: any) => x.user_id === row.user_id);
           const bNative = Array.isArray(nativeTokens) ? nativeTokens.filter((t: any) => t.user_id === row.user_id) : [];
           const bKey = `bilan-${todayISO}`;

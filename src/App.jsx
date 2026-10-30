@@ -684,6 +684,7 @@ function readinessRaw(ci) {
   const v = (n) => Math.max(1, Math.min(5, Number(n) || 3));
   return (5 - v(ci.sleep)) + (v(ci.sore) - 1) + (v(ci.stress) - 1) + (5 - v(ci.energy));   // 0 (très en forme) à 16
 }
+const checkinOk = (ci) => !!ci && ["sleep", "sore", "stress", "energy"].every((k) => Number.isFinite(Number(ci[k])) && Number(ci[k]) >= 1);
 const readinessScore = (ci) => (ci ? 100 - Math.round((readinessRaw(ci) * 100) / 16) : null);
 const readinessBonus = (ci) => (ci ? Math.max(-3, Math.min(10, Math.round((readinessRaw(ci) - 6) * 0.9))) : 0);
 /* Besoin de récupération « en direct » : tient compte de TOUTES les séances (faites, imprévues, prévues,
@@ -728,7 +729,8 @@ function liveRecoveryNeed(now = new Date(), ctx = LOAD_CTX, settings = {}) {
     } else if (dh <= 48) { any = true; future += it.w * (dh <= 24 ? 0.5 : 0.25); }   // séance proche = il faut être récupéré avant
   });
   let need = 100 * (1 - Math.exp(-0.9 * (past + 0.6 * future)));
-  const ci = (settings.checkins || {})[isoLocal(now)];
+  const ci0 = (settings.checkins || {})[isoLocal(now)];
+  const ci = checkinOk(ci0) ? ci0 : null;
   if (ci) { any = true; need += Math.max(-5, Math.min(12, (readinessRaw(ci) - 6) * 1.2)); }
   return { score: Math.max(0, Math.min(100, Math.round(need))), any };
 }
@@ -844,7 +846,8 @@ function generatePlan(profile, input, lang) {
   const minutes = Number(input.minutes) > 0 ? Number(input.minutes) : null;
   const rpe = minutes && Number(input.rpe) > 0 ? Number(input.rpe) : null;
   // Le bilan du jour compte pour les séances « maintenant » (pas pour celles prévues plus tard).
-  const ci = restDay || input.loadAt ? null : (LOAD_CTX.checkins || {})[isoLocal()] || null;
+  const ci0 = restDay || input.loadAt ? null : (LOAD_CTX.checkins || {})[isoLocal()] || null;
+  const ci = checkinOk(ci0) ? ci0 : null;
   const age = computeAge(profile.dateNaissance);
   const ld = restDay ? { bonus: 0, count7: 0 } : computeLoad(input.loadAt || new Date());
   const weekLoad = input.weekLoad ?? ld.count7;
@@ -1430,9 +1433,9 @@ function LanguageSwitcher({ compact }) {
   );
 }
 
-function RecoveryDial({ score, label, sub, size = 200 }) {
+function RecoveryDial({ score, label, sub, size = 200, color, valueText }) {
   const compact = size < 175; // petit cadran : le libellé passe sous le cercle pour ne pas toucher l'anneau
-  const r = 80, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100), col = scoreColor(score);
+  const r = 80, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100), col = color || scoreColor(score);
   return (
     <div className="flex flex-col items-center">
       <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -1441,7 +1444,7 @@ function RecoveryDial({ score, label, sub, size = 200 }) {
           <circle cx="100" cy="100" r={r} fill="none" stroke={col} strokeWidth="14" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.8s ease", filter: `drop-shadow(0 0 18px ${col}99)` }} />
         </svg>
         <div className="absolute flex flex-col items-center">
-          <span style={{ ...fontMono, color: col, fontSize: compact ? 38 : 40, fontWeight: 600, lineHeight: 1 }}>{score}</span>
+          <span style={{ ...fontMono, color: col, fontSize: compact ? 38 : 40, fontWeight: 600, lineHeight: 1 }}>{valueText ?? score}</span>
           {!compact && <span className="text-[11px] uppercase tracking-widest mt-1 text-center px-4" style={{ color: C.textMuted, ...fontBody }}>{label}</span>}
         </div>
       </div>
@@ -1490,12 +1493,16 @@ const useTrack = () => useContext(TrackCtx);
 const DONE_ITEMS = ["hydra", "stretch", "meal", "sleep"];
 
 function ScalePicker({ label, lowLabel, highLabel, value, onChange }) {
+  const { lang } = useLang();
+  const none = tr(lang, { fr: "Non renseigné", en: "Not set", es: "Sin indicar", pt: "Não informado" });
+  const on = (sel) => ({ background: sel ? gradPrimary : C.surface, color: sel ? "#052821" : C.textMuted, border: `1px solid ${sel ? "transparent" : C.border}` });
   return (
     <div className="mb-4">
       <p className="text-xs font-semibold mb-1.5" style={{ color: C.text, ...fontBody }}>{label}</p>
       <div className="flex gap-1.5" role="radiogroup" aria-label={label}>
+        <button type="button" role="radio" aria-checked={!value} onClick={() => onChange(null)} className="rounded-xl text-[11px] font-semibold transition-colors px-1" style={{ flex: "2 1 0", minHeight: 44, ...on(!value), ...fontBody }}>{none}</button>
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" role="radio" aria-checked={value === n} onClick={() => onChange(n)} className="flex-1 rounded-xl text-sm font-bold transition-colors" style={{ minHeight: 44, background: value === n ? gradPrimary : C.surface, color: value === n ? "#052821" : C.textMuted, border: `1px solid ${value === n ? "transparent" : C.border}`, ...fontMono }}>{n}</button>
+          <button key={n} type="button" role="radio" aria-checked={value === n} onClick={() => onChange(n)} className="rounded-xl text-sm font-bold transition-colors" style={{ flex: "1 1 0", minHeight: 44, ...on(value === n), ...fontMono }}>{n}</button>
         ))}
       </div>
       <div className="flex justify-between mt-1 px-0.5"><span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{lowLabel}</span><span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{highLabel}</span></div>
@@ -1507,9 +1514,10 @@ function CheckinCard({ asPage, onDone }) {
   const { lang } = useLang();
   const { settings, setCheckin } = useTrack();
   const today = isoLocal();
-  const saved = (settings.checkins || {})[today];
+  const raw = (settings.checkins || {})[today];
+  const saved = checkinOk(raw) ? raw : null;
   const [editing, setEditing] = useState(!!asPage);
-  const [v, setV] = useState(saved ? { sleep: saved.sleep, sore: saved.sore, stress: saved.stress, energy: saved.energy, zones: saved.zones || [] } : { sleep: 3, sore: 2, stress: 2, energy: 3, zones: [] });
+  const [v, setV] = useState(raw ? { sleep: raw.sleep || null, sore: raw.sore || null, stress: raw.stress || null, energy: raw.energy || null, zones: raw.zones || [] } : { sleep: null, sore: null, stress: null, energy: null, zones: [] });
   const T = {
     title: tr(lang, { fr: "Bilan du jour", en: "Daily check-in", es: "Chequeo del día", pt: "Check-in do dia" }),
     sub: tr(lang, { fr: "4 touches pour affiner tes conseils et ton score", en: "4 taps to fine-tune your advice and score", es: "4 toques para afinar tus consejos y tu puntuación", pt: "4 toques para ajustar seus conselhos e sua pontuação" }),
@@ -1522,6 +1530,7 @@ function CheckinCard({ asPage, onDone }) {
     energy: tr(lang, { fr: "Énergie", en: "Energy", es: "Energía", pt: "Energia" }),
     energyLo: tr(lang, { fr: "faible", en: "low", es: "baja", pt: "baixa" }), energyHi: tr(lang, { fr: "haute", en: "high", es: "alta", pt: "alta" }),
     zones: tr(lang, { fr: "Zones sensibles (optionnel)", en: "Sore areas (optional)", es: "Zonas sensibles (opcional)", pt: "Áreas sensíveis (opcional)" }),
+    missing: tr(lang, { fr: "Tant qu'un champ est « Non renseigné », ton bilan du jour reste à faire.", en: "As long as a field is “Not set”, your daily check-in stays to do.", es: "Mientras un campo esté «Sin indicar», tu chequeo del día queda pendiente.", pt: "Enquanto um campo estiver «Não informado», seu check-in do dia continua pendente." }),
     save: tr(lang, { fr: "Enregistrer mon bilan", en: "Save my check-in", es: "Guardar mi chequeo", pt: "Salvar meu check-in" }),
     form: tr(lang, { fr: "Forme du jour", en: "Today's form", es: "Forma de hoy", pt: "Forma de hoje" }),
     edit: tr(lang, { fr: "Modifier", en: "Edit", es: "Modificar", pt: "Editar" }),
@@ -1565,7 +1574,8 @@ function CheckinCard({ asPage, onDone }) {
           <button key={z} type="button" aria-pressed={v.zones.includes(z)} onClick={() => toggleZone(z)} className="px-3 rounded-full text-xs font-semibold" style={{ minHeight: 40, background: v.zones.includes(z) ? C.primary : C.surface, color: v.zones.includes(z) ? "#052821" : C.textMuted, border: `1px solid ${v.zones.includes(z) ? C.primary : C.border}`, ...fontBody }}>{zoneLabels[z]}</button>
         ))}
       </div>
-      <Btn full onClick={() => { setCheckin(today, v); setEditing(false); if (onDone) onDone(); }}>{T.save}</Btn>
+      {!checkinOk(v) && <p className="text-xs mb-3" style={{ color: C.warn, ...fontBody }}>{T.missing}</p>}
+      <Btn full onClick={() => { setCheckin(today, v); setEditing(!checkinOk(v)); if (onDone && checkinOk(v)) onDone(); }}>{T.save}</Btn>
     </Card>
   );
 }
@@ -3404,12 +3414,12 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     const nPlans = sessionsLog.filter((x) => x && x.date && !x.restDay && weekDates.includes(isoLocal(new Date(x.date)))).length;
     const nDone = sessionsLog.filter((x) => x && x.date && !x.restDay && weekDates.includes(isoLocal(new Date(x.date)))).reduce((a, x) => a + DONE_ITEMS.filter((k) => (done[`s:${x.date}`] || {})[k]).length, 0);
     const follow = nPlans ? Math.round((nDone / (nPlans * 4)) * 100) : null;
-    const cis = weekDates.map((dt) => ((settings && settings.checkins) || {})[dt]).filter(Boolean);
+    const cis = weekDates.map((dt) => ((settings && settings.checkins) || {})[dt]).filter(checkinOk);
     const sleep = cis.length ? (cis.reduce((a, c) => a + (Number(c.sleep) || 0), 0) / cis.length).toFixed(1) : null;
     return { total, upcoming, avg, follow, checkins: cis.length, sleep };
   }, [weekSchedule, sessionsLog, settings]);
   const todayCi = ((settings && settings.checkins) || {})[todayIso];
-  const formeVal = todayCi ? readinessScore(todayCi) : null;
+  const formeVal = checkinOk(todayCi) ? readinessScore(todayCi) : null;
   const formeCol = formeVal === null ? C.text : formeVal >= 70 ? C.primary : formeVal >= 40 ? C.scoreMid : C.scoreHigh;
   const weekCount = weekStats.total;
   const avgScore = weekStats.avg;
@@ -3438,6 +3448,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     liveNote: tr(lang, { fr: "Mis à jour en direct : toutes tes séances (faites, imprévues, à venir), ton suivi de récup et ton bilan du jour.", en: "Updated live: all your sessions (done, unplanned, upcoming), your recovery tracking and your daily check-in.", es: "Actualizado en directo: todas tus sesiones (hechas, imprevistas, próximas), tu seguimiento de recuperación y tu chequeo del día.", pt: "Atualizado ao vivo: todas as suas sessões (feitas, imprevistas, futuras), seu acompanhamento de recuperação e seu check-in do dia." }),
     formeLabel: tr(lang, { fr: "Forme du jour", en: "Today's form", es: "Forma de hoy", pt: "Forma de hoje" }),
     doBilan: tr(lang, { fr: "Faire mon bilan du jour", en: "Do my daily check-in", es: "Hacer mi chequeo del día", pt: "Fazer meu check-in do dia" }),
+    recoveryShort: tr(lang, { fr: "Besoin de récup", en: "Recovery need", es: "Necesidad recup.", pt: "Necessidade rec." }),
     notFilled: tr(lang, { fr: "Pas encore remplie", en: "Not filled yet", es: "Aún sin rellenar", pt: "Ainda não preenchida" }),
     bannerTitle: tr(lang, { fr: "Remplis ton bilan du jour", en: "Fill in your daily check-in", es: "Rellena tu chequeo del día", pt: "Preencha seu check-in do dia" }),
     bannerSub: tr(lang, { fr: "4 touches · ça affine ton score et tes conseils", en: "4 taps · it fine-tunes your score and advice", es: "4 toques · afina tu puntuación y tus consejos", pt: "4 toques · ajusta sua pontuação e seus conselhos" }),
@@ -3508,20 +3519,11 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
             ))}
           </div>
         ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
-        <div className="flex items-center gap-4 mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
-          <div className="shrink-0"><RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={128} /></div>
-          <div className="flex-1 min-w-0 flex flex-col gap-3">
-            <button type="button" onClick={() => goTo("bilan")} className="w-full text-left rounded-2xl px-3 py-2.5 flex items-center gap-2" style={{ background: C.surface, border: `1px solid ${C.border}`, minHeight: 56 }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{T.formeLabel}</p>
-                <p className="text-xs font-bold break-words leading-snug" style={{ color: formeVal === null ? C.textMuted : formeCol, ...fontDisplay }}>{formeVal === null ? T.notFilled : formeWord(formeVal, lang)}</p>
-              </div>
-              {formeVal !== null && <span style={{ ...fontMono, color: formeCol, fontSize: 22, lineHeight: 1 }}>{formeVal}</span>}
-              <ChevronRightIcon size={14} style={{ color: C.textFaint }} className="shrink-0" />
-            </button>
-            <button type="button" onClick={() => setSelectedDate(todayIso)} className="text-xs font-semibold text-left py-1" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
-          </div>
+        <div className="grid grid-cols-2 gap-3 mt-4 pt-5" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          <div className="flex flex-col items-center min-w-0"><RecoveryDial score={live.score} label={T.recoveryShort} sub={scoreWord(live.score, lang)} size={116} /></div>
+          <button type="button" onClick={() => goTo("bilan")} className="flex flex-col items-center min-w-0" aria-label={T.formeLabel}><RecoveryDial score={formeVal ?? 0} valueText={formeVal === null ? "—" : undefined} color={formeVal === null ? C.textFaint : formeCol} label={T.formeLabel} sub={formeVal === null ? T.notFilled : formeWord(formeVal, lang)} size={116} /></button>
         </div>
+        <button type="button" onClick={() => setSelectedDate(todayIso)} className="w-full text-center text-xs font-semibold mt-3 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
         <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
           {[
             { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
