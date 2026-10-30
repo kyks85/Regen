@@ -2117,7 +2117,7 @@ function getGuides(lang) {
       d: T4("Tout ton suivi en un coup d'œil.", "Everything you track, at a glance.", "Todo tu seguimiento de un vistazo.", "Todo o seu acompanhamento num relance."),
       b: [T4("La grande carte montre le score de ta dernière séance : plus il est haut, plus ton corps a besoin de récupérer. Touche-la pour rouvrir le plan.", "The big card shows your last session's score: the higher it is, the more your body needs to recover. Tap it to reopen the plan.", "La tarjeta grande muestra la puntuación de tu última sesión: cuanto más alta, más necesita recuperarse tu cuerpo. Tócala para reabrir el plan.", "O cartão grande mostra a pontuação da última sessão: quanto mais alta, mais seu corpo precisa recuperar. Toque para reabrir o plano."),
           T4("Les raccourcis mènent à la Séance imprévue, la Nutrition, les Blessures et le Planning.", "The shortcuts lead to Unplanned session, Nutrition, Injuries and Schedule.", "Los accesos llevan a Sesión imprevista, Nutrición, Lesiones y Plan.", "Os atalhos levam a Sessão imprevista, Nutrição, Lesões e Agenda."),
-          T4("La carte « Sommeil & étirements » règle tes heures de réveil et tes rappels de coucher et d'étirements.", "The \"Sleep & stretching\" card sets your wake-up times and your bedtime and stretching reminders.", "La tarjeta «Sueño y estiramientos» ajusta tus horas de despertar y tus recordatorios de dormir y estirar.", "O cartão «Sono e alongamentos» define seus horários de despertar e lembretes de dormir e alongar."),
+          T4("L'onglet « Sommeil » de la barre du bas règle tes heures de réveil et tes rappels de coucher et d'étirements.", "The \"Sleep\" tab in the bottom bar sets your wake-up times and your bedtime and stretching reminders.", "La pestaña «Sueño» de la barra inferior ajusta tus horas de despertar y tus recordatorios de dormir y estirar.", "A aba «Sono» da barra inferior define seus horários de despertar e lembretes de dormir e alongar."),
           T4("« Cette semaine » résume ton planning : touche un jour pour voir son détail.", "\"This week\" sums up your schedule: tap a day to see its details.", "«Esta semana» resume tu plan: toca un día para ver su detalle.", "«Esta semana» resume sua agenda: toque num dia para ver os detalhes."),
           T4("La courbe suit ton score sur 4, 8 ou 12 semaines. Dans l'historique, touche une séance pour rouvrir son plan, ou la poubelle pour la supprimer.", "The curve tracks your score over 4, 8 or 12 weeks. In the history, tap a session to reopen its plan, or the bin to delete it.", "La curva sigue tu puntuación en 4, 8 o 12 semanas. En el historial, toca una sesión para reabrir su plan, o la papelera para borrarla.", "A curva acompanha sua pontuação em 4, 8 ou 12 semanas. No histórico, toque numa sessão para reabrir o plano, ou na lixeira para excluir.")] },
     recup: { Icon: Activity,
@@ -2978,8 +2978,13 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
   const monthlyUsed = useMemo(() => countMonthlyExtras(exceptions), [exceptions]);
-  const [view, setView] = useState(initialView || "calendrier");
-  useEffect(() => { if (initialView) setView(initialView); }, [initialView]);
+  const [view, setView] = useState(initialView === "ajouts-imprevue" ? "ajouts" : (initialView || "calendrier"));
+  const [addSub, setAddSub] = useState(initialView === "ajouts-imprevue" ? "unplanned" : null);
+  useEffect(() => {
+    if (!initialView) return;
+    if (initialView === "ajouts-imprevue") { setView("ajouts"); setAddSub("unplanned"); }
+    else { setView(initialView); if (initialView === "ajouts") setAddSub(null); }
+  }, [initialView]);
   const [expandedDow, setExpandedDow] = useState(null);
   const [monthIdx, setMonthIdx] = useState(new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -3020,6 +3025,9 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     off: tr(lang, { fr: "Off", en: "Off", es: "Libre", pt: "Livre" }),
     addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
     addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, séance loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a rescheduled training session, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
+    menuSeanceSub: tr(lang, { fr: "Match en plus, entraînement décalé, jour off exceptionnel", en: "Extra match, moved training, exceptional day off", es: "Partido extra, entrenamiento movido, día libre excepcional", pt: "Jogo extra, treino remarcado, folga excepcional" }),
+    menuUnplannedSub: tr(lang, { fr: "Tu viens de faire une séance non prévue", en: "You just did an unplanned session", es: "Acabas de hacer una sesión no prevista", pt: "Você acabou de fazer uma sessão não prevista" }),
+    menuRdvSub: tr(lang, { fr: "Contrôle, suivi de blessure, consultation", en: "Check-up, injury follow-up, consultation", es: "Revisión, seguimiento de lesión, consulta", pt: "Exame, acompanhamento de lesão, consulta" }),
     unplannedTitle: tr(lang, { fr: "Séance imprévue déjà faite", en: "Unplanned session, already done", es: "Sesión imprevista ya hecha", pt: "Sessão imprevista já feita" }),
     unplannedHint: tr(lang, { fr: "Tu viens de faire une séance non prévue ? Ajoute-la : elle rejoint ton planning et ton plan de récup du jour est mis à jour.", en: "Just did an unplanned session? Add it: it joins your schedule and today's recovery plan is updated.", es: "¿Acabas de hacer una sesión no prevista? Añádela: se une a tu planificación y el plan de recuperación de hoy se actualiza.", pt: "Acabou de fazer uma sessão não prevista? Adicione-a: ela entra no planejamento e o plano de recuperação de hoje é atualizado." }),
     alreadyDone: tr(lang, { fr: "Séance imprévue déjà faite ? Génère sa récup →", en: "Unplanned session already done? Generate its recovery →", es: "¿Sesión imprevista ya hecha? Genera su recuperación →", pt: "Sessão imprevista já feita? Gere a recuperação →" }),
@@ -3060,7 +3068,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         </button>
       )}
 
-      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }]} value={view} onChange={setView} /></div>
+      <div className="mb-6"><SegmentedControl options={[{ value: "calendrier", label: T.tabCalendar }, { value: "semaine", label: T.tabWeek }, { value: "ajouts", label: T.tabAdd }]} value={view} onChange={(v) => { setView(v); setAddSub(null); }} /></div>
 
       {view === "semaine" && (
       <Card className="mb-4">
@@ -3080,7 +3088,32 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
       </Card>
       )}
 
-      {view === "ajouts" && (<>
+      {view === "ajouts" && !addSub && (
+        <div className="flex flex-col gap-3">
+          {[
+            { k: "seance", icon: Plus, color: C.primary, title: T.addSession, sub: T.menuSeanceSub },
+            ...(recup ? [{ k: "unplanned", icon: Activity, color: C.primary, title: T.unplannedTitle, sub: T.menuUnplannedSub }] : []),
+            { k: "rdv", icon: Stethoscope, color: C.rdv, title: T.medicalRdv, sub: T.menuRdvSub },
+          ].map((m) => (
+            <button key={m.k} type="button" onClick={() => setAddSub(m.k)} className="w-full text-left">
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: `${m.color}22`, border: `1px solid ${m.color}40` }}><m.icon size={20} style={{ color: m.color }} /></span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold break-words" style={{ color: C.text, ...fontDisplay }}>{m.title}</p>
+                    <p className="text-xs mt-0.5 leading-snug" style={{ color: C.textMuted, ...fontBody }}>{m.sub}</p>
+                  </div>
+                  <ChevronRightIcon size={16} style={{ color: C.textFaint }} className="shrink-0" />
+                </div>
+              </Card>
+            </button>
+          ))}
+        </div>
+      )}
+      {view === "ajouts" && addSub && (
+        <button type="button" onClick={() => setAddSub(null)} className="text-xs mb-3 flex items-center gap-1 py-2 pr-3" style={{ color: C.primary }}><ChevronLeft size={14} /> {T.tabAdd}</button>
+      )}
+      {view === "ajouts" && addSub === "seance" && (<>
       <Card className="mb-5">
         <SectionTitle icon={Plus}>{T.addSession}</SectionTitle>
         <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionHint}</p>
@@ -3098,7 +3131,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </div>
         )}
       </Card>
-
+      </>)}
+      {view === "ajouts" && addSub === "rdv" && (<>
       <Card className="mb-4" style={{ background: `linear-gradient(160deg, ${C.rdv}18 0%, ${C.surface} 55%)` }}>
         <SectionTitle icon={Stethoscope}>{T.medicalRdv}</SectionTitle>
         <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.medicalRdvHint}</p>
@@ -3118,9 +3152,10 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
           </div>
         )}
       </Card>
-
+      </>)}
+      {view === "ajouts" && addSub === "unplanned" && (<>
       {recup && (
-        <Card className="mt-5 mb-4" style={{ background: `linear-gradient(160deg, ${C.primary}14 0%, ${C.surface} 55%)` }}>
+        <Card className="mb-4" style={{ background: `linear-gradient(160deg, ${C.primary}14 0%, ${C.surface} 55%)` }}>
           <SectionTitle icon={Activity}>{T.unplannedTitle}</SectionTitle>
           <p className="text-xs -mt-2 mb-4" style={{ color: C.textFaint, ...fontBody }}>{T.unplannedHint}</p>
           <RecupTab embedded profile={profile} onGenerate={recup.onGenerate} result={null} setResult={recup.setResult} sessionsLog={recup.sessionsLog} onAdded={recup.onAdded} />
@@ -3560,19 +3595,6 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         <IconTile icon={HeartPulse} label={T.injuries} onClick={() => goTo("blessures")} color={C.blessure} />
         <IconTile icon={CalendarDays} label={T.planning} onClick={() => goTo("planning")} color={C.rdv} />
       </div>
-
-      <button onClick={() => goTo("rappels")} className="w-full text-left mb-4">
-        <Card style={tonight ? { background: `linear-gradient(155deg, ${C.primary}1F, ${C.surface})` } : undefined}>
-          <div className="flex items-center gap-3">
-            <Moon size={20} style={{ color: C.primary }} className="shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-bold" style={{ color: C.text, ...fontDisplay }}>{tonight ? T.tonightTitle(tonight.bed) : T.remindersCard}</p>
-              <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{tonight ? T.tonightSub(fmtHoursLabel(tonight.hours), tonight.wake, tonight.time) : T.remindersCardSub}</p>
-            </div>
-            <ChevronRightIcon size={16} style={{ color: C.textFaint }} className="shrink-0" />
-          </div>
-        </Card>
-      </button>
 
       <ScoreChart sessionsLog={sessionsLog} />
 
@@ -4216,8 +4238,8 @@ export default function App() {
   };
   const goToTab = (k) => { if (k === "recup") { openNewRecup(); return; } setPlanningView(null); setTab(k); };
   const openPlanningAdd = () => { setPlanningView("ajouts"); setTab("planning"); };
-  const openNewRecup = () => { setRecupResult(null); openPlanningAdd(); };
-  const openPlan = (session) => { setRecupResult(session); openPlanningAdd(); };
+  const openNewRecup = () => { setRecupResult(null); setPlanningView("ajouts-imprevue"); setTab("planning"); };
+  const openPlan = (session) => { setRecupResult(session); openNewRecup(); };
   const openPlanById = (id) => { const sess = (userData?.sessionsLog || []).find((x) => x.id === id); if (sess) openPlan(sess); };
   const handleSaveProfile = async (p) => {
     const sports = proStatus.isPro ? p.sports : p.sports.slice(0, FREE_SPORTS_MAX);
@@ -4334,13 +4356,13 @@ export default function App() {
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
-    rappels: { fr: "Rappels", en: "Reminders", es: "Avisos", pt: "Lembretes" },
+    rappels: { fr: "Sommeil", en: "Sleep", es: "Sueño", pt: "Sono" },
     nutrition: { fr: "Nutrition", en: "Nutrition", es: "Nutrición", pt: "Nutrição" },
     blessures: { fr: "Blessures", en: "Injuries", es: "Lesiones", pt: "Lesões" },
     planning: { fr: "Planning", en: "Schedule", es: "Plan", pt: "Plano" },
     pro: { fr: "Pro", en: "Pro", es: "Pro", pt: "Pro" },
   };
-  const NAV = [["home", Home], ["rappels", Bell], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
+  const NAV = [["home", Home], ["rappels", Moon], ["blessures", HeartPulse], ["planning", CalendarDays], ["pro", Crown]];
   const navActive = (tab === "nutrition" || tab === "bilan") ? "home" : tab;
 
   return (
