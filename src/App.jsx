@@ -3931,9 +3931,9 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <div className="fixed inset-0 w-full flex items-stretch justify-center" style={{ background: "#000", height: "100dvh" }}>
+        <div className="w-full h-dvh flex items-center justify-center" style={{ background: "#000" }}>
           <style>{FONTS}</style>
-          <div className="relative w-full max-w-[480px] h-full min-h-0 overflow-hidden flex flex-col box-border" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
+          <div className="relative w-full max-w-[480px] overflow-hidden flex flex-col" style={{ height: "100dvh", minHeight: "100%", background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
             {booting && <div className="flex-1 flex items-center justify-center"><img src={APP_LOGO} alt="REGEN" className="w-14 h-14 rounded-2xl object-cover animate-pulse" /></div>}
             {!booting && recoveryToken && <ResetPasswordScreen token={recoveryToken} onDone={() => { setRecoveryToken(null); window.history.replaceState(null, "", window.location.pathname); }} />}
             {!booting && !recoveryToken && screen === "auth" && <AuthScreen onAuth={handleAuth} />}
@@ -3944,7 +3944,7 @@ export default function App() {
                   <div className="flex items-center gap-2"><img src={APP_LOGO} alt="REGEN" className="w-6 h-6 rounded-lg object-cover" /><span className="font-bold text-sm tracking-tight" style={{ color: C.text, ...fontDisplay }}>REGEN</span>{proStatus.isPro && <Crown size={13} style={{ color: C.primary }} />}</div>
                   <div className="flex items-center gap-2"><button onClick={() => setGuide(guideKey)} aria-label={tr(lang, { fr: "Aide sur cette page", en: "Help on this page", es: "Ayuda sobre esta página", pt: "Ajuda sobre esta página" })} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: C.glassSoft, border: `1px solid ${C.glassBorder}` }}><HelpCircle size={16} style={{ color: C.textMuted }} /></button><button onClick={() => setShowProfile(true)} className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: gradPrimary, color: "#052821", ...fontMono }}>{(userData.prenom || userData.username || "U")[0].toUpperCase()}</button></div>
                 </div>
-                <div ref={mainScrollRef} className="flex-1 min-h-0 overflow-y-auto">
+                <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
                   {tab === "home" && <HomeTab profile={userData.profile} sessionsLog={userData.sessionsLog || []} injuries={userData.injuries || []} plannerConfig={userData.plannerConfig} settings={curSettings} lastPlan={lastPlan} goTo={goToTab} onOpenPlan={openPlan} onOpenPlanById={openPlanById} onDeleteSession={handleDeleteSession} onSaveException={handleSaveException} onClearException={handleClearException} onAddEntry={handleAddEntry} onRemoveEntry={handleRemoveEntry} />}
                   {tab === "recup" && <RecupTab profile={userData.profile} onGenerate={handleGeneratePlan} result={recupResult} setResult={setRecupResult} onPlanFuture={openPlanningAdd} sessionsLog={userData.sessionsLog || []} />}
                   {tab === "nutrition" && <NutritionTab lastPlan={lastPlan} onBack={() => goToTab("home")} />}
@@ -3953,9 +3953,9 @@ export default function App() {
                   {tab === "pro" && <ProTab />}
                   {tab === "rappels" && <RemindersScreen settings={curSettings} onSave={handleSaveSettings} onBack={() => goToTab("home")} initialView={planningView === "rappels" ? "rappels" : "sommeil"} />}
                 </div>
-                <div className="relative w-full max-w-[480px] mx-auto shrink-0 flex flex-col" style={{ zIndex: 40 }}>
-                  <div aria-hidden="true" style={{ height: 18, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)`, pointerEvents: "none" }} />
-                  <div className="flex justify-around items-center py-2.5" style={{ background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
+                <div className="absolute bottom-0 left-0 right-0 w-full max-w-[480px] mx-auto flex flex-col" style={{ pointerEvents: "none", zIndex: 40 }}>
+                  <div style={{ height: 28, background: `linear-gradient(to bottom, transparent, ${C.bg}CC)` }} />
+                  <div className="flex justify-around items-center py-2.5" style={{ pointerEvents: "auto", background: "rgba(10,22,19,0.72)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: `1px solid ${C.glassBorder}`, paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}>
                     {NAV.map(([key, Icon]) => (<button key={key} onClick={() => goToTab(key)} className="flex flex-col items-center gap-0.5 px-2"><Icon size={19} style={{ color: navActive === key ? C.primary : C.textFaint }} /><span className="text-[10px] font-semibold text-center" style={{ color: navActive === key ? C.primary : C.textFaint, ...fontBody }}>{tr(lang, NAV_KEYS[key])}</span></button>))}
                   </div>
                 </div>
