@@ -125,6 +125,37 @@ Deno.serve(async (req) => {
     const todayISO = todayISOParis();
     if (Array.isArray(settingsRows)) {
       for (const row of settingsRows) {
+        // Bilan du jour : à 12h, si l'utilisateur ne l'a pas encore rempli aujourd'hui.
+        if (nowHHMM === "12:00" && row?.data?.bilanOn !== false && !(row?.data?.checkins || {})[todayISO]) {
+          const bSubs = subs.filter((x: any) => x.user_id === row.user_id);
+          const bNative = Array.isArray(nativeTokens) ? nativeTokens.filter((t: any) => t.user_id === row.user_id) : [];
+          const bKey = `bilan-${todayISO}`;
+          if (bSubs.length > 0 || bNative.length > 0) {
+            const chk = await fetch(`${SUPABASE_URL}/rest/v1/notification_log?user_id=eq.${row.user_id}&entry_key=eq.${encodeURIComponent(bKey)}&select=id`, { headers: headers() });
+            const seen = await chk.json();
+            if (!(Array.isArray(seen) && seen.length > 0)) {
+              const bBody = row?.data?.bilanBody || "Remplis ton bilan du jour : 4 touches pour affiner ton score et tes conseils.";
+              for (const sub of bSubs) {
+                try {
+                  await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({ title: "REGEN", body: bBody, url: "/" }));
+                  sentQueue++;
+                } catch (err: any) {
+                  if (err?.statusCode === 410 || err?.statusCode === 404) {
+                    await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${sub.id}`, { method: "DELETE", headers: headers() });
+                  }
+                }
+              }
+              for (const nt of bNative) {
+                const result = await sendFcmMessage(nt.token, "REGEN", bBody);
+                if (result.ok) sentQueue++;
+                else if (result.status === 404 || result.status === 400) {
+                  await fetch(`${SUPABASE_URL}/rest/v1/push_tokens_native?id=eq.${nt.id}`, { method: "DELETE", headers: headers() });
+                }
+              }
+              await fetch(`${SUPABASE_URL}/rest/v1/notification_log`, { method: "POST", headers: headers(), body: JSON.stringify({ user_id: row.user_id, entry_key: bKey }) });
+            }
+          }
+        }
         const queue = row?.data?.queue;
         if (!Array.isArray(queue)) continue;
         const due = queue.filter((q: any) => q && q.date === todayISO && q.time === nowHHMM && q.body);

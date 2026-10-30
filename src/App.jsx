@@ -3438,6 +3438,9 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
     liveNote: tr(lang, { fr: "Mis à jour en direct : toutes tes séances (faites, imprévues, à venir), ton suivi de récup et ton bilan du jour.", en: "Updated live: all your sessions (done, unplanned, upcoming), your recovery tracking and your daily check-in.", es: "Actualizado en directo: todas tus sesiones (hechas, imprevistas, próximas), tu seguimiento de recuperación y tu chequeo del día.", pt: "Atualizado ao vivo: todas as suas sessões (feitas, imprevistas, futuras), seu acompanhamento de recuperação e seu check-in do dia." }),
     formeLabel: tr(lang, { fr: "Forme du jour", en: "Today's form", es: "Forma de hoy", pt: "Forma de hoje" }),
     doBilan: tr(lang, { fr: "Faire mon bilan du jour", en: "Do my daily check-in", es: "Hacer mi chequeo del día", pt: "Fazer meu check-in do dia" }),
+    notFilled: tr(lang, { fr: "Pas encore remplie", en: "Not filled yet", es: "Aún sin rellenar", pt: "Ainda não preenchida" }),
+    bannerTitle: tr(lang, { fr: "Remplis ton bilan du jour", en: "Fill in your daily check-in", es: "Rellena tu chequeo del día", pt: "Preencha seu check-in do dia" }),
+    bannerSub: tr(lang, { fr: "4 touches · ça affine ton score et tes conseils", en: "4 taps · it fine-tunes your score and advice", es: "4 toques · afina tu puntuación y tus consejos", pt: "4 toques · ajusta sua pontuação e seus conselhos" }),
     liveNow: tr(lang, { fr: "Maintenant", en: "Right now", es: "Ahora", pt: "Agora" }),
     configure: tr(lang, { fr: "Configurer", en: "Set up", es: "Configurar", pt: "Configurar" }),
     configureHint: tr(lang, { fr: "Configure tes jours fixes pour voir ta semaine ici.", en: "Set up your fixed days to see your week here.", es: "Configura tus días fijos para ver tu semana aquí.", pt: "Configure seus dias fixos para ver sua semana aqui." }),
@@ -3479,6 +3482,64 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         </button>
       )}
 
+      {formeVal === null && (
+        <button type="button" onClick={() => goTo("bilan")} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.primary}33, ${C.surface})`, border: `1px solid ${C.primary}66` }}>
+          <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: C.primary }}><Sparkles size={17} style={{ color: "#052821" }} /></span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold break-words" style={{ color: C.text, ...fontDisplay }}>{T.bannerTitle}</p>
+            <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{T.bannerSub}</p>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: C.primary }} className="shrink-0" />
+        </button>
+      )}
+
+      <Card className="mb-5">
+        <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[11px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
+        {hasPlanner ? (
+          <div className="grid grid-cols-7 gap-1.5">
+            {weekSchedule.map((d) => (
+              <button key={d.date} onClick={() => setSelectedDate(d.date)} className="flex flex-col items-center gap-1">
+                <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
+                <div className="w-full aspect-square rounded-xl flex items-center justify-center relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), border: d.isToday ? `1.5px solid ${C.text}` : "none" }}>
+                  {d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>}
+                  {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
+        <div className="flex items-center gap-4 mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          <div className="shrink-0"><RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={128} /></div>
+          <div className="flex-1 min-w-0 flex flex-col gap-3">
+            <button type="button" onClick={() => goTo("bilan")} className="w-full text-left rounded-2xl px-3 py-2.5 flex items-center gap-2" style={{ background: C.surface, border: `1px solid ${C.border}`, minHeight: 56 }}>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{T.formeLabel}</p>
+                <p className="text-xs font-bold break-words leading-snug" style={{ color: formeVal === null ? C.textMuted : formeCol, ...fontDisplay }}>{formeVal === null ? T.notFilled : formeWord(formeVal, lang)}</p>
+              </div>
+              {formeVal !== null && <span style={{ ...fontMono, color: formeCol, fontSize: 22, lineHeight: 1 }}>{formeVal}</span>}
+              <ChevronRightIcon size={14} style={{ color: C.textFaint }} className="shrink-0" />
+            </button>
+            <button type="button" onClick={() => setSelectedDate(todayIso)} className="text-xs font-semibold text-left py-1" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
+          {[
+            { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
+            { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint },
+            { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text },
+            { v: weekStats.follow === null ? "—" : `${weekStats.follow}%`, l: T.followLabel, c: C.text },
+            { v: `${weekStats.checkins}/7`, l: T.checkinsLabel, c: C.text },
+            { v: weekStats.sleep ? `${weekStats.sleep}/5` : "—", l: T.sleepLabel, c: C.text },
+          ].map((x, i) => (
+            <div key={i} className="min-w-0">
+              <p style={{ ...fontMono, color: x.c, fontSize: 20 }}>{x.v}</p>
+              <p className="text-[11px] uppercase tracking-wide break-words leading-tight mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{x.l}</p>
+              {x.sub && <p className="text-[11px] mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{x.sub}</p>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {reminders.length > 0 && (
         <Card className="mb-5" style={{ background: `linear-gradient(160deg, ${C.primary}22 0%, ${C.surface} 60%)` }}>
           <div className="flex items-center gap-2 mb-2"><Bell size={15} style={{ color: C.primary }} /><p className="font-bold text-sm tracking-tight" style={{ color: C.primary, ...fontDisplay }}>{T.reminderTomorrow}</p></div>
@@ -3510,54 +3571,6 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           </div>
         </Card>
       </button>
-
-      <Card className="mb-7">
-        <div className="flex items-center justify-between mb-3"><SectionTitle icon={CalendarDays}>{T.thisWeek}</SectionTitle>{!hasPlanner && <button onClick={() => goTo("planning")} className="text-[11px] font-semibold" style={{ color: C.primary }}>{T.configure}</button>}</div>
-        {hasPlanner ? (
-          <div className="grid grid-cols-7 gap-1.5">
-            {weekSchedule.map((d) => (
-              <button key={d.date} onClick={() => setSelectedDate(d.date)} className="flex flex-col items-center gap-1">
-                <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
-                <div className="w-full aspect-square rounded-xl flex items-center justify-center relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), border: d.isToday ? `1.5px solid ${C.text}` : "none" }}>
-                  {d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>}
-                  {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : <p className="text-xs" style={{ color: C.textFaint, ...fontBody }}>{T.configureHint}</p>}
-        <p className="text-[11px] mt-2" style={{ color: C.textFaint, ...fontBody }}>{T.tapDay}</p>
-        <div className="flex flex-col items-center mt-4 pt-5" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
-          <RecoveryDial score={live.score} label={T.recoveryNeed} sub={scoreWord(live.score, lang)} size={160} />
-          <p className="text-[11px] leading-relaxed text-center mt-3 px-2" style={{ color: C.textFaint, ...fontBody }}>{T.liveNote}</p>
-          <button type="button" onClick={() => setSelectedDate(todayIso)} className="text-xs font-semibold mt-2 py-2" style={{ color: C.primary, ...fontBody }}>{T.viewDayPlan} →</button>
-        </div>
-        <button type="button" onClick={() => goTo("bilan")} className="w-full flex items-center gap-3 text-left mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
-          <Sparkles size={18} style={{ color: formeVal === null ? C.primary : formeCol }} className="shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] uppercase tracking-wide" style={{ color: C.textFaint, ...fontBody }}>{T.formeLabel}</p>
-            <p className="text-sm font-bold break-words" style={{ color: formeVal === null ? C.text : formeCol, ...fontDisplay }}>{formeVal === null ? T.doBilan : formeWord(formeVal, lang)}</p>
-          </div>
-          {formeVal !== null && <span style={{ ...fontMono, color: formeCol, fontSize: 24, lineHeight: 1 }}>{formeVal}</span>}
-          <ChevronRightIcon size={16} style={{ color: C.textFaint }} className="shrink-0" />
-        </button>
-        <div className="grid grid-cols-3 gap-y-4 gap-x-2 text-center mt-4 pt-4" style={{ borderTop: `1px solid ${C.borderSoft}66` }}>
-          {[
-            { v: weekCount, l: T.sessionsLabel, c: C.primary, sub: weekStats.upcoming > 0 ? T.upcomingOf(weekStats.upcoming) : null },
-            { v: avgScore ?? "—", l: T.avgScore, c: avgScore ? scoreColor(avgScore) : C.textFaint },
-            { v: nextEvent ? `J-${nextEvent.daysAway}` : "—", l: T.nextEvent, c: C.text },
-            { v: weekStats.follow === null ? "—" : `${weekStats.follow}%`, l: T.followLabel, c: C.text },
-            { v: `${weekStats.checkins}/7`, l: T.checkinsLabel, c: C.text },
-            { v: weekStats.sleep ? `${weekStats.sleep}/5` : "—", l: T.sleepLabel, c: C.text },
-          ].map((x, i) => (
-            <div key={i} className="min-w-0">
-              <p style={{ ...fontMono, color: x.c, fontSize: 20 }}>{x.v}</p>
-              <p className="text-[11px] uppercase tracking-wide break-words leading-tight mt-0.5" style={{ color: C.textFaint, ...fontBody }}>{x.l}</p>
-              {x.sub && <p className="text-[11px] mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{x.sub}</p>}
-            </div>
-          ))}
-        </div>
-      </Card>
 
       <ScoreChart sessionsLog={sessionsLog} />
 
@@ -4028,8 +4041,9 @@ export default function App() {
     if (screen !== "main" || !userData?.profile || !authUser) return;
     const st = userData.settings || defaultSettings();
     const queue = buildReminderQueue(userData.plannerConfig, st, userData.profile, userData.sessionsLog || [], lang);
-    if (JSON.stringify(queue) === JSON.stringify(st.queue || [])) return;
-    const next = { ...st, queue };
+    const bilanBody = tr(lang, { fr: "Remplis ton bilan du jour : 4 touches pour affiner ton score et tes conseils.", en: "Fill in your daily check-in: 4 taps to fine-tune your score and advice.", es: "Rellena tu chequeo del día: 4 toques para afinar tu puntuación y tus consejos.", pt: "Preencha seu check-in do dia: 4 toques para ajustar sua pontuação e seus conselhos." });
+    if (JSON.stringify(queue) === JSON.stringify(st.queue || []) && st.bilanBody === bilanBody) return;
+    const next = { ...st, queue, bilanBody };
     setUserData((prev) => ({ ...prev, settings: next }));
     sbUpsert("user_settings", { user_id: authUser.id, data: next }, accessToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
