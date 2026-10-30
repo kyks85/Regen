@@ -3931,9 +3931,9 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <div className="w-full h-dvh flex items-center justify-center" style={{ background: "#000" }}>
+        <div className="fixed inset-0 w-full flex items-stretch justify-center" style={{ background: "#000", height: "100dvh" }}>
           <style>{FONTS}</style>
-          <div className="relative w-full max-w-[480px] h-dvh overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
+          <div className="relative w-full max-w-[480px] h-full min-h-0 overflow-hidden flex flex-col box-border" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
             {booting && <div className="flex-1 flex items-center justify-center"><img src={APP_LOGO} alt="REGEN" className="w-14 h-14 rounded-2xl object-cover animate-pulse" /></div>}
             {!booting && recoveryToken && <ResetPasswordScreen token={recoveryToken} onDone={() => { setRecoveryToken(null); window.history.replaceState(null, "", window.location.pathname); }} />}
             {!booting && !recoveryToken && screen === "auth" && <AuthScreen onAuth={handleAuth} />}
