@@ -25,15 +25,21 @@ function isoLocal(d = new Date()) { return `${d.getFullYear()}-${String(d.getMon
 // ce qui laisse une bande vide sous la barre du bas. On prend alors la hauteur réelle de l'écran.
 function applyFullHeight() {
   try {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !document.body) return;
     const ua = navigator.userAgent || "";
     const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const mm = (q) => !!window.matchMedia?.(q)?.matches;
-    const installed = navigator.standalone === true || mm("(display-mode: standalone)") || mm("(display-mode: fullscreen)") || window.Capacitor?.getPlatform?.() === "ios" || !!window.webkit?.messageHandlers?.bridge;
     const root = document.documentElement;
+    // Hauteur de la zone réservée en haut (encoche / Dynamic Island), mesurée sur l'appareil.
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:0;left:0;width:1px;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top)";
+    document.body.appendChild(probe);
+    const safeTop = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    document.body.removeChild(probe);
     const full = Math.max(window.screen.height, window.screen.width);
     const diff = full - window.innerHeight;
-    if (isIOS && installed && window.innerHeight > window.innerWidth && diff >= 12 && diff <= 140) {
+    // Signature du défaut : la page est plus courte que l'écran d'exactement la zone du haut.
+    const shortByTopInset = safeTop > 0 && Math.abs(diff - safeTop) <= 6;
+    if (isIOS && window.innerHeight > window.innerWidth && shortByTopInset) {
       root.style.setProperty("--app-h", full + "px");
       root.setAttribute("data-fullh", "1");
     } else { root.style.removeProperty("--app-h"); root.removeAttribute("data-fullh"); }
