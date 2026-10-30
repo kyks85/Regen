@@ -1,7 +1,5 @@
 # Conditions générales d'utilisation — REGEN
 
-*Modèle à faire relire par un professionnel avant publication.*
-
 **Dernière mise à jour : [à compléter à la publication]**
 
 ## 1. Objet
@@ -67,7 +65,7 @@ des changements significatifs.
 
 ## 9. Contact
 
-**[email de contact]**
+**regenapp.contact@gmail.com**
 
 ---
 

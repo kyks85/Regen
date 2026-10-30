@@ -6,7 +6,7 @@ de santé (blessures, RDV médicaux), une catégorie sensible au sens du
 RGPD (article 9).*
 
 **Dernière mise à jour : [à compléter à la publication]**
-**Éditeur de l'application : [ton nom / ta société], [ton email de contact]**
+**Éditeur de l'application : [ton nom / ta société], regenapp.contact@gmail.com**
 
 ## 1. Quelles données sont collectées
 
@@ -68,7 +68,7 @@ de portabilité et d'opposition sur ses données.
 
 - **Suppression** : directement depuis l'application (Mon profil →
   Supprimer mon compte).
-- **Autres demandes** : en écrivant à **[email de contact]**.
+- **Autres demandes** : en écrivant à **regenapp.contact@gmail.com**.
 
 ## 7. Sécurité
 
@@ -83,12 +83,6 @@ conditions — important pour les stores.)*
 
 ## 9. Contact
 
-Pour toute question : **[email de contact]**
+Pour toute question : **regenapp.contact@gmail.com**
 
 ---
-
-⚠️ **Avant publication sur l'App Store / Google Play** : ce document doit
-être accessible via une page web publique (déjà fait : voir `/confidentialite`
-sur le site de l'app) et son lien renseigné dans App Store Connect et
-Google Play Console. Fais-le relire par un professionnel du droit avant
-mise en ligne, en particulier pour la partie données de santé.
