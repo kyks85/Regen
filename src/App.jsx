@@ -2426,7 +2426,7 @@ function Onboarding({ onComplete }) {
 /* ============================================================
    ENTRY EDITOR
    ============================================================ */
-function EntryEditor({ entry, onChange, onRemove }) {
+function EntryEditor({ entry, onChange, onRemove, weekly }) {
   const { lang } = useLang();
   const toggleZone = (k) => { const cur = entry.muscuZones || []; onChange({ muscuZones: cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k] }); };
   const T = {
@@ -2442,7 +2442,7 @@ function EntryEditor({ entry, onChange, onRemove }) {
     optional: tr(lang, { fr: "optionnel", en: "optional", es: "opcional", pt: "opcional" }),
     durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
     durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
-    durHint: tr(lang, { fr: "Indique l'effort et la fatigue que tu prévois. À la fin de la séance, l'app te les redemandera. Sans réponse : 1 h, effort 5/10, fatigue 2/5.", en: "Enter the effort and tiredness you expect. When the session ends, the app will ask again. No answer: 1 h, effort 5/10, tiredness 2/5.", es: "Indica el esfuerzo y el cansancio previstos. Al terminar, la app te lo preguntará de nuevo. Sin respuesta: 1 h, esfuerzo 5/10, cansancio 2/5.", pt: "Informe o esforço e o cansaço previstos. No fim da sessão, o app perguntará de novo. Sem resposta: 1 h, esforço 5/10, cansaço 2/5." }),
+    durHint: tr(lang, { fr: "À la fin de la séance, l'app te demandera l'effort et la fatigue ressentis. Sans réponse : 1 h, effort 5/10, fatigue 2/5.", en: "When the session ends, the app will ask how hard it felt and how tired you are. No answer: 1 h, effort 5/10, tiredness 2/5.", es: "Al terminar, la app te preguntará el esfuerzo y el cansancio percibidos. Sin respuesta: 1 h, esfuerzo 5/10, cansancio 2/5.", pt: "No fim da sessão, o app perguntará o esforço e o cansaço percebidos. Sem resposta: 1 h, esforço 5/10, cansaço 2/5." }),
     rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
     rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
     fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f}/5`, en: `Perceived fatigue level: ${f}/5`, es: `Nivel de fatiga percibida: ${f}/5`, pt: `Nível de fadiga percebida: ${f}/5` }),
@@ -2467,7 +2467,7 @@ function EntryEditor({ entry, onChange, onRemove }) {
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
       </div>
       <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange(m > 0 ? { minutes: m, rpe: entry.rpe || 5, fatigue: entry.fatigue || 2 } : { minutes: null, rpe: null, fatigue: null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
-      {entry.minutes > 0 && (
+      {entry.minutes > 0 && !weekly && (
         <div className="mb-2">
           <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.rpeLabel(entry.rpe || 5)}</p>
           <input type="range" min={1} max={10} value={entry.rpe || 5} onChange={(e) => onChange({ rpe: Number(e.target.value) })} className="w-full" style={{ accentColor: C.primary }} />
@@ -2484,7 +2484,7 @@ function EntryEditor({ entry, onChange, onRemove }) {
     </div>
   );
 }
-function EntryListEditor({ entries, defaultSport, onChange }) {
+function EntryListEditor({ entries, defaultSport, onChange, weekly }) {
   const { lang } = useLang();
   const { isPro, openPro } = usePro();
   const update = (id, patch) => onChange(entries.map((e) => e.id === id ? { ...e, ...patch } : e));
@@ -2500,7 +2500,7 @@ function EntryListEditor({ entries, defaultSport, onChange }) {
   return (
     <div>
       {entries.length === 0 && <p className="text-xs mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.none}</p>}
-      {entries.map((e) => <EntryEditor key={e.id} entry={e} onChange={(patch) => update(e.id, patch)} onRemove={() => remove(e.id)} />)}
+      {entries.map((e) => <EntryEditor key={e.id} weekly={weekly} entry={e} onChange={(patch) => update(e.id, patch)} onRemove={() => remove(e.id)} />)}
       <div className="flex gap-2 items-center flex-wrap">
         <Btn small onClick={add} icon={atLimit ? Lock : Plus}>{T.add}</Btn>
         {entries.length > 0 && <Btn small variant="ghost" onClick={() => onChange([])}>{T.removeAll}</Btn>}
@@ -3198,7 +3198,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
                 <ChevronDown size={14} style={{ color: C.textMuted, transform: expandedDow === i ? "rotate(180deg)" : "none" }} />
               </div>
             </button>
-            {expandedDow === i && <div className="mt-2"><EntryListEditor entries={weeklyDays[i]} defaultSport={profile.sports?.[0] || "autre"} onChange={(entries) => onSetWeekly(i, entries)} /></div>}
+            {expandedDow === i && <div className="mt-2"><EntryListEditor weekly entries={weeklyDays[i]} defaultSport={profile.sports?.[0] || "autre"} onChange={(entries) => onSetWeekly(i, entries)} /></div>}
           </div>
         ))}
       </Card>
@@ -3527,14 +3527,15 @@ function FeedbackSheet({ item, onSave, onSkip, onClose }) {
   const { lang } = useLang();
   const e = item.entry;
   const [minutes, setMinutes] = useState(Number(e.minutes) > 0 ? Number(e.minutes) : 0);
-  const [rpe, setRpe] = useState(Number(e.rpe) > 0 ? Number(e.rpe) : 5);
-  const [fat, setFat] = useState(Number(e.fatigue) > 0 ? Number(e.fatigue) : 2);
+  const [rpe, setRpe] = useState(Number(e.rpe) > 0 ? Number(e.rpe) : null);
+  const [fat, setFat] = useState(Number(e.fatigue) > 0 ? Number(e.fatigue) : null);
+  const NR = tr(lang, { fr: "Non renseigné", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchido" });
   const T = {
     title: tr(lang, { fr: "Comment s'est passée ta séance ?", en: "How did your session go?", es: "¿Cómo fue tu sesión?", pt: "Como foi a sua sessão?" }),
     dur: tr(lang, { fr: "Durée de la séance (obligatoire)", en: "Session length (required)", es: "Duración de la sesión (obligatoria)", pt: "Duração da sessão (obrigatória)" }),
-    rpe: tr(lang, { fr: `Fatigue / effort ressenti : ${rpe}/10`, en: `Tiredness / perceived effort: ${rpe}/10`, es: `Cansancio / esfuerzo percibido: ${rpe}/10`, pt: `Cansaço / esforço percebido: ${rpe}/10` }),
+    rpe: tr(lang, { fr: `Effort ressenti : ${rpe ? rpe + "/10" : NR}`, en: `Perceived effort: ${rpe ? rpe + "/10" : NR}`, es: `Esfuerzo percibido: ${rpe ? rpe + "/10" : NR}`, pt: `Esforço percebido: ${rpe ? rpe + "/10" : NR}` }),
     hint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
-    fat: tr(lang, { fr: `Niveau de fatigue ressentie : ${fat}/5`, en: `Perceived fatigue level: ${fat}/5`, es: `Nivel de fatiga percibida: ${fat}/5`, pt: `Nível de fadiga percebida: ${fat}/5` }),
+    fat: tr(lang, { fr: `Niveau de fatigue ressentie : ${fat ? fat + "/5" : NR}`, en: `Perceived fatigue level: ${fat ? fat + "/5" : NR}`, es: `Nivel de fatiga percibida: ${fat ? fat + "/5" : NR}`, pt: `Nível de fadiga percebida: ${fat ? fat + "/5" : NR}` }),
     ok: tr(lang, { fr: "Valider", en: "Confirm", es: "Confirmar", pt: "Confirmar" }),
     skip: tr(lang, { fr: "Passer", en: "Skip", es: "Omitir", pt: "Pular" }),
   };
@@ -3544,9 +3545,9 @@ function FeedbackSheet({ item, onSave, onSkip, onClose }) {
         <p className="text-base font-bold mb-1" style={{ color: C.text, ...fontDisplay }}>{T.title}</p>
         <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{sportIcon(e.sport)} {sportLabel(e.sport, lang)} · {item.date.slice(8)}/{item.date.slice(5, 7)}{e.heure ? ` · ${e.heure}` : ""}</p>
         <Field label={T.dur}><Select value={minutes} onChange={(ev) => setMinutes(Number(ev.target.value))} options={[{ value: 0, label: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }) }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
-        <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe} onChange={(ev) => setRpe(Number(ev.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
-        <Field label={T.fat}><input type="range" min={1} max={5} value={fat} onChange={(ev) => setFat(Number(ev.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
-        <div className="mt-3"><Btn onClick={() => onSave({ minutes, rpe, fatigue: fat })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
+        <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe || 5} onChange={(ev) => setRpe(Number(ev.target.value))} className="w-full" style={{ accentColor: rpe ? C.primary : C.textFaint, opacity: rpe ? 1 : 0.55 }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
+        <Field label={T.fat}><input type="range" min={1} max={5} value={fat || 2} onChange={(ev) => setFat(Number(ev.target.value))} className="w-full" style={{ accentColor: fat ? C.primary : C.textFaint, opacity: fat ? 1 : 0.55 }} /></Field>
+        <div className="mt-3"><Btn onClick={() => onSave({ minutes, ...(rpe ? { rpe } : {}), ...(fat ? { fatigue: fat } : {}) })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
         <button type="button" onClick={onSkip} className="w-full text-center text-xs font-semibold mt-3 py-2" style={{ color: C.textFaint, ...fontBody }}>{T.skip}</button>
       </div>
     </div>
