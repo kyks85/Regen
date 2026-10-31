@@ -644,17 +644,19 @@ const FB_MAX_MIN = 180;   // durée max supposée quand elle est inconnue
 function pendingFeedback(ctx, now = new Date()) {
   const cfg = ctx && ctx.plannerConfig; if (!cfg || !cfg.weeklyDays) return [];
   const fbMap = (ctx && ctx.feedback) || {}; const out = [];
-  for (let d = 0; d <= 6; d++) {
+  const todayIso = isoLocal(now);
+  for (let d = 0; d <= 1; d++) {
     const iso = isoLocal(new Date(now.getTime() - d * 86400000));
     const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions || {}, iso);
     (entries || []).forEach((e) => {
       if (!SPORT_TYPES.includes(e.type) || e.sessionId != null) return;
       const key = `${iso}|${e.id}`;
-      if (fbMap[key]) return;
+      if (fbMap[key] && !fbMap[key].skipped) return;
       const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
       const start = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
       const end = start + (Number(e.minutes) > 0 ? Number(e.minutes) : FB_MAX_MIN) * 60000;
-      if (end <= now.getTime()) out.push({ key, date: iso, entry: e, end });
+      // La demande reste affichée toute la journée de la fin de séance ; le lendemain, les valeurs par défaut s'appliquent.
+      if (end <= now.getTime() && isoLocal(new Date(end)) === todayIso) out.push({ key, date: iso, entry: e, end });
     });
   }
   return out.sort((a, b) => a.end - b.end);
@@ -3548,7 +3550,7 @@ function FeedbackSheet({ item, pos, total, onSave, onSkip, onClose }) {
     hint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
     fat: tr(lang, { fr: `Niveau de fatigue ressentie : ${fat ? fat + "/5" : NR}`, en: `Perceived fatigue level: ${fat ? fat + "/5" : NR}`, es: `Nivel de fatiga percibida: ${fat ? fat + "/5" : NR}`, pt: `Nível de fadiga percebida: ${fat ? fat + "/5" : NR}` }),
     ok: tr(lang, { fr: "Valider", en: "Confirm", es: "Confirmar", pt: "Confirmar" }),
-    skip: tr(lang, { fr: "Passer", en: "Skip", es: "Omitir", pt: "Pular" }),
+    skip: tr(lang, { fr: "Plus tard", en: "Later", es: "Más tarde", pt: "Mais tarde" }),
   };
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center" style={{ background: "rgba(0,0,0,0.78)" }} onClick={onClose}>
@@ -3727,7 +3729,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
           <ChevronRightIcon size={16} style={{ color: C.warn }} className="shrink-0" />
         </button>
       )}
-      {fbOpen && fbPending.length > 0 && <FeedbackSheet key={fbPending[0].key} pos={fbTotal - fbPending.length + 1} total={fbTotal} item={fbPending[0]} onClose={() => setFbOpen(false)} onSave={(v) => setFeedback(fbPending[0].key, v)} onSkip={() => setFeedback(fbPending[0].key, { skipped: true })} />}
+      {fbOpen && fbPending.length > 0 && <FeedbackSheet key={fbPending[0].key} pos={fbTotal - fbPending.length + 1} total={fbTotal} item={fbPending[0]} onClose={() => setFbOpen(false)} onSave={(v) => setFeedback(fbPending[0].key, v)} onSkip={() => setFbOpen(false)} />}
       {formeVal === null && (
         <button type="button" onClick={() => goTo("bilan")} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.primary}33, ${C.surface})`, border: `1px solid ${C.primary}66` }}>
           <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: C.primary }}><Sparkles size={17} style={{ color: "#052821" }} /></span>
