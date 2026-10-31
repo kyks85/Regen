@@ -1,6 +1,6 @@
 # Conditions générales d'utilisation — REGEN
 
-**Dernière mise à jour : [à compléter à la publication]**
+**Dernière mise à jour : 01/12/2026**
 
 ## 1. Objet
 

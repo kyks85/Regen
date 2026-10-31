@@ -5,8 +5,8 @@ relire avant publication, notamment parce que l'app traite des données
 de santé (blessures, RDV médicaux), une catégorie sensible au sens du
 RGPD (article 9).*
 
-**Dernière mise à jour : [à compléter à la publication]**
-**Éditeur de l'application : [ton nom / ta société], regenapp.contact@gmail.com**
+**Dernière mise à jour : 01/12/2026**
+**Éditeur de l'application : Regen, regenapp.contact@gmail.com**
 
 ## 1. Quelles données sont collectées
 

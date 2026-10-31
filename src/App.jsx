@@ -4145,7 +4145,6 @@ function ProfileScreen({ profile, userId, accessToken, onSave, onClose, onLogout
         </button>
         <Field label={T.language}><LanguageSwitcher /></Field>
         {onOpenReminders && <Field label={T.remindersLabel}><Btn full small variant="ghost" onClick={onOpenReminders}>{T.remindersBtn}</Btn></Field>}
-        <p className="text-[10px] text-center mt-4" style={{ color: C.textFaint, ...fontMono }}>{typeof window !== "undefined" ? `${window.innerWidth}×${window.innerHeight} / ${window.screen.width}×${window.screen.height}${document.documentElement.hasAttribute("data-fullh") ? " · plein écran" : ""}` : ""}</p>
         {onTutorial && <Field label={T.tutorial}><Btn full small variant="ghost" onClick={onTutorial}>{T.replayTutorial}</Btn></Field>}
         <Field label={T.notifications}>
           {notifStatus === "unsupported" ? (
