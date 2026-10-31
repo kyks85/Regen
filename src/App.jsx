@@ -635,10 +635,32 @@ function buildProgram(plan, lang) {
    et son poids diminue de moitié toutes les 36 h (oubli sur ~5 jours). Plusieurs séances
    le même jour s'additionnent donc vraiment. Les coefficients sont des estimations
    raisonnables, pas une mesure médicale. */
-let LOAD_CTX = { sessionsLog: [], plannerConfig: null, checkins: {} };
+let LOAD_CTX = { sessionsLog: [], plannerConfig: null, checkins: {}, feedback: {} };
 const setLoadContext = (ctx) => { LOAD_CTX = ctx; };
+const rpeToIntensity = (r) => (r <= 4 ? "chill" : r <= 7 ? "moyen" : "intense");   // utilisé seulement en interne (repas, hydratation…)
+const FB_MAX_MIN = 180;   // durée max supposée quand elle est inconnue
+// Séances du planning (semaine type + exceptionnelles) terminées sans retour de fatigue : on les redemande.
+function pendingFeedback(ctx, now = new Date()) {
+  const cfg = ctx && ctx.plannerConfig; if (!cfg || !cfg.weeklyDays) return [];
+  const fbMap = (ctx && ctx.feedback) || {}; const out = [];
+  for (let d = 0; d <= 2; d++) {
+    const iso = isoLocal(new Date(now.getTime() - d * 86400000));
+    const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions || {}, iso);
+    (entries || []).forEach((e) => {
+      if (!SPORT_TYPES.includes(e.type) || e.sessionId != null) return;
+      const key = `${iso}|${e.id}`;
+      if (fbMap[key]) return;
+      const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
+      const start = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
+      const end = start + (Number(e.minutes) > 0 ? Number(e.minutes) : FB_MAX_MIN) * 60000;
+      if (end <= now.getTime()) out.push({ key, date: iso, entry: e, end });
+    });
+  }
+  return out.sort((a, b) => a.end - b.end);
+}
 function sessionWeight(type, intensity, rpe, minutes) {
-  if (rpe && minutes) return Math.max(0.15, Math.min(1.3, (rpe * minutes) / 600));   // charge « durée × effort ressenti »
+  if (minutes && !rpe) rpe = type === "match" ? 8 : 6;
+  if (rpe) return Math.max(0.15, Math.min(1.3, (rpe * (minutes || 60)) / 600));   // charge « durée × effort ressenti »
   if (type === "match") return 1;
   return intensity === "intense" ? 0.8 : intensity === "chill" ? 0.2 : 0.5;
 }
@@ -664,7 +686,8 @@ function computeLoad(at = new Date(), ctx = LOAD_CTX) {
         if (logged.has(`${iso}|${e.sport}|${e.type}`)) return;
         const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
         const t = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
-        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen") });
+        const fb = (ctx.feedback || {})[`${iso}|${e.id}`] || {};
+        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen", fb.rpe || e.rpe, fb.minutes || e.minutes) });
       });
     }
   }
@@ -715,7 +738,8 @@ function liveRecoveryNeed(now = new Date(), ctx = LOAD_CTX, settings = {}) {
         if (seen[key] <= (loggedCount[key] || 0)) return;   // déjà comptée via l'historique
         const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
         const t = new Date(iso + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0)) * 60000;
-        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen"), n: doneN(`d:${iso}`) });
+        const fb = (ctx.feedback || {})[`${iso}|${e.id}`] || {};
+        items.push({ t, w: sessionWeight(e.type, e.intensity || "moyen", fb.rpe || e.rpe, fb.minutes || e.minutes), n: doneN(`d:${iso}`) });
       });
     }
   }
@@ -741,7 +765,7 @@ function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau,
   // Charge cumulée des séances récentes (voir computeLoad).
   if (loadBonus != null) s += loadBonus;
   else if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
-  if (rpe && minutes) s += Math.max(2, Math.min(34, Math.round((rpe * minutes) / 24)));   // durée × effort ressenti
+  if (rpe || minutes) { const r = rpe || (eventType === "match" ? 8 : 6); s += Math.max(2, Math.min(34, Math.round((r * (minutes || 60)) / 24))); }   // durée × effort ressenti
   else if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
@@ -842,9 +866,10 @@ function computeMuscleKeys(sportKey, muscuZones) {
   return (SPORTS[sportKey] || SPORTS.autre).muscles;
 }
 function generatePlan(profile, input, lang) {
-  const { eventType, intensity, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay } = input;
+  const { eventType, intensity: intensityIn, fatigue, hoursToNext, sport, seed, heure, muscuZones, restDay } = input;
   const minutes = Number(input.minutes) > 0 ? Number(input.minutes) : null;
-  const rpe = minutes && Number(input.rpe) > 0 ? Number(input.rpe) : null;
+  const rpe = Number(input.rpe) > 0 ? Number(input.rpe) : null;
+  const intensity = rpe ? rpeToIntensity(rpe) : (intensityIn || "moyen");
   // Le bilan du jour compte pour les séances « maintenant » (pas pour celles prévues plus tard).
   const ciDate = restDay ? null : (input.checkinDate || (input.loadAt ? null : isoLocal()));
   const ci0 = ciDate ? (LOAD_CTX.checkins || {})[ciDate] || null : null;
@@ -880,7 +905,7 @@ function generatePlan(profile, input, lang) {
 // bonus si plusieurs séances s'accumulent le même jour.
 // Paramètres de plan pour une séance du planning : durée, effort ressenti et fatigue saisis si connus, bilan du jour de CETTE date.
 function entryPlanInput(e, date) {
-  return { eventType: e.type, intensity: e.intensity || "moyen", fatigue: e.fatigue || 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, minutes: e.minutes || null, rpe: e.rpe || null, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00"), checkinDate: date };
+  return { eventType: e.type, intensity: e.intensity || "moyen", fatigue: e.fatigue || 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, minutes: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).minutes || e.minutes || null, rpe: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).rpe || e.rpe || null, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00"), checkinDate: date };
 }
 function mergeSportEntriesPlan(profile, sportEntries, date, lang) {
   const individual = sportEntries.map((e) => ({ entry: e, plan: generatePlan(profile, entryPlanInput(e, date), lang) }));
@@ -1011,7 +1036,7 @@ function sleepHoursForDay(entries, profile, dateIso, sessionsLog) {
 
 function buildReminderQueue(cfg, settings, profile, sessionsLog, lang, now = new Date()) {
   const out = [];
-  if (!profile || !(settings.sleepOn || settings.stretchOn)) return out;
+  if (!profile) return out;
   const weekly = cfg?.weeklyDays || emptyWeekly(); const exc = cfg?.exceptions || {};
   const todayIso = isoLocal(now); const nowAbs = now.getHours() * 60 + now.getMinutes();
   const T4 = (fr, en, es, pt) => tr(lang, { fr, en, es, pt });
@@ -1034,6 +1059,15 @@ function buildReminderQueue(cfg, settings, profile, sessionsLog, lang, now = new
             body: T4(`Dodo dans 30 min 🌙 Couche-toi à ${bed} pour ${fmtHoursLabel(hrs)} de sommeil (réveil ${wakeStr}).`, `Bedtime in 30 min 🌙 Be in bed by ${bed} for ${fmtHoursLabel(hrs)} of sleep (wake-up ${wakeStr}).`, `Hora de dormir en 30 min 🌙 Acuéstate a las ${bed} para dormir ${fmtHoursLabel(hrs)} (despertar ${wakeStr}).`, `Hora de dormir em 30 min 🌙 Deite às ${bed} para ${fmtHoursLabel(hrs)} de sono (despertar ${wakeStr}).`) });
         }
       }
+    }
+    if (settings.feedbackOn !== false) {
+      (entries || []).filter((e) => SPORT_TYPES.includes(e.type) && e.sessionId == null).forEach((e) => {
+        const base = toMin(e.heure) ?? 18 * 60;
+        const t = base + (Number(e.minutes) > 0 ? Number(e.minutes) : FB_MAX_MIN);
+        if (i * 1440 + t <= nowAbs) return;
+        push({ date: t >= 1440 ? addDaysIso(date, 1) : date, time: fmtHM(t % 1440), kind: `fb${e.id}`, sport: e.sport,
+          body: T4(`Séance terminée ? 💪 Dis-moi ta fatigue (${sportLabel(e.sport, "fr")}) pour affiner ta récup.`, `Session done? 💪 Tell me how tired you are (${sportLabel(e.sport, "en")}) to fine-tune your recovery.`, `¿Sesión terminada? 💪 Cuéntame tu cansancio (${sportLabel(e.sport, "es")}) para afinar tu recuperación.`, `Sessão terminada? 💪 Diga o seu cansaço (${sportLabel(e.sport, "pt")}) para afinar a recuperação.`) });
+      });
     }
     if (settings.stretchOn) {
       (entries || []).filter((e) => SPORT_TYPES.includes(e.type)).forEach((e) => {
@@ -2126,7 +2160,7 @@ function getGuides(lang) {
     recup: { Icon: Activity,
       t: T4("Séance exceptionnelle terminée", "Completed extra session", "Sesión extra terminada", "Sessão extra concluída"),
       d: T4("Utilise cette page quand tu as fait du sport sans l'avoir prévu.", "Use this page when you worked out without planning it.", "Usa esta página cuando hayas hecho deporte sin planearlo.", "Use esta página quando tiver treinado sem ter planejado."),
-      b: [T4("Indique le sport, le type de séance, l'intensité, l'heure et ta fatigue.", "Enter the sport, session type, intensity, time and how tired you are.", "Indica el deporte, el tipo de sesión, la intensidad, la hora y tu fatiga.", "Informe o esporte, o tipo de sessão, a intensidade, o horário e sua fadiga."),
+      b: [T4("Indique le sport, le type de séance, l'heure, la durée et ta fatigue ressentie.", "Enter the sport, session type, time, length and how tired you felt.", "Indica el deporte, el tipo de sesión, la hora, la duración y tu cansancio.", "Informe o esporte, o tipo de sessão, o horário, a duração e seu cansaço."),
           T4("Tu reçois un plan de récup complet : programme minuté, étirements, massage, froid/chaud, nutrition et conseils.", "You get a full recovery plan: timed programme, stretching, massage, cold/heat, nutrition and tips.", "Recibes un plan de recuperación completo: programa con horarios, estiramientos, masaje, frío/calor, nutrición y consejos.", "Você recebe um plano de recuperação completo: programa com horários, alongamentos, massagem, frio/calor, nutrição e dicas."),
           T4("Elle apparaît dans « Séances exceptionnelles terminées » (Planning → Ajouts) et s'ajoute au planning d'aujourd'hui.", "It appears in \"Completed extra sessions\" (Schedule → Add) and is added to today's schedule.", "Aparece en «Sesiones extra terminadas» (Plan → Añadir) y se añade al plan de hoy.", "Aparece em «Sessões extras concluídas» (Agenda → Adicionar) e é adicionada à agenda de hoje."),
           T4("Une séance que tu connais à l'avance ? Ajoute-la plutôt dans Planning → Ajouts.", "A session you know about in advance? Add it in Schedule → Add instead.", "¿Una sesión que conoces de antemano? Añádela en Plan → Añadir.", "Uma sessão que você já conhece? Adicione em Agenda → Adicionar.")] },
@@ -2155,7 +2189,7 @@ function getGuides(lang) {
       t: T4("Planning", "Schedule", "Plan", "Agenda"),
       d: T4("Organise ta semaine et tes séances.", "Organise your week and sessions.", "Organiza tu semana y tus sesiones.", "Organize sua semana e suas sessões."),
       b: [T4("Calendrier : touche un jour pour voir son détail et son plan de récup. Les couleurs indiquent le type de journée.", "Calendar: tap a day to see its details and recovery plan. Colours show the type of day.", "Calendario: toca un día para ver su detalle y plan de recuperación. Los colores indican el tipo de día.", "Calendário: toque num dia para ver detalhes e plano de recuperação. As cores indicam o tipo de dia."),
-          T4("Semaine type : règle une fois pour toutes tes jours fixes (sport, intensité, heure).", "Weekly: set your fixed days once and for all (sport, intensity, time).", "Semana tipo: fija una vez tus días fijos (deporte, intensidad, hora).", "Semana tipo: defina uma vez seus dias fixos (esporte, intensidade, horário)."),
+          T4("Semaine type : règle une fois pour toutes tes jours fixes (sport, heure, durée).", "Weekly: set your fixed days once and for all (sport, time, length).", "Semana tipo: fija una vez tus días fijos (deporte, hora, duración).", "Semana tipo: defina uma vez seus dias fixos (esporte, horário, duração)."),
           T4("Ajouts : prévois une séance exceptionnelle ou un rendez-vous médical, ou renseigne une séance exceptionnelle terminée pour obtenir sa récup.", "Add: plan an extra session or a medical appointment, or enter a completed extra session to get its recovery.", "Añadir: planifica una sesión extra o una cita médica, o introduce una sesión extra terminada para obtener su recuperación.", "Adicionar: planeje uma sessão extra ou uma consulta médica, ou informe uma sessão extra concluída para obter a recuperação."),
           T4("L'app insère elle-même de la récup active ou du repos selon ta charge. Le gratuit permet 3 ajouts par mois.", "The app adds active recovery or rest on its own based on your load. Free allows 3 additions per month.", "La app añade sola recuperación activa o descanso según tu carga. Lo gratuito permite 3 añadidos al mes.", "O app insere sozinho recuperação ativa ou descanso conforme sua carga. O grátis permite 3 adições por mês.")] },
     pro: { Icon: Crown,
@@ -2399,6 +2433,9 @@ function EntryEditor({ entry, onChange, onRemove }) {
     heure: tr(lang, { fr: "Heure", en: "Time", es: "Hora", pt: "Horário" }),
     label: tr(lang, { fr: "Libellé", en: "Label", es: "Etiqueta", pt: "Rótulo" }),
     optional: tr(lang, { fr: "optionnel", en: "optional", es: "opcional", pt: "opcional" }),
+    durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
+    durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
+    durHint: tr(lang, { fr: "À la fin de la séance, l'app te demandera ta fatigue (et la durée si tu ne la connais pas).", en: "When the session ends, the app will ask how tired you are (and the length if unknown).", es: "Al terminar la sesión, la app te preguntará tu cansancio (y la duración si no la sabes).", pt: "No fim da sessão, o app perguntará seu cansaço (e a duração, se não souber)." }),
     notify: tr(lang, { fr: "Me notifier la veille", en: "Remind me the day before", es: "Avisarme el día anterior", pt: "Avisar-me na véspera" }),
     reminderTime: tr(lang, { fr: "Heure du rappel (veille)", en: "Reminder time (day before)", es: "Hora del aviso (día anterior)", pt: "Horário do lembrete (véspera)" }),
   };
@@ -2415,7 +2452,7 @@ function EntryEditor({ entry, onChange, onRemove }) {
           <MuscuZonePicker selected={entry.muscuZones || []} onToggle={toggleZone} />
         </div>
       )}
-      {(entry.type === "entrainement" || entry.type === "loisir") && <div className="mb-2"><SegmentedControl small options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={entry.intensity} onChange={(v) => onChange({ intensity: v })} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></div>}
+      <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange({ minutes: m > 0 ? m : null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
       <div className="flex gap-2 mb-2">
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.heure}</p><TextInput type="time" value={entry.heure || ""} onChange={(e) => onChange({ heure: e.target.value })} /></div>
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
@@ -2476,7 +2513,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe: minutes ? rpe : null }, lang); onGenerate(plan); if (embedded) { setMinutes(0); setHeure(""); setMuscuZones([]); onAdded && onAdded(); } else setResult(plan); };
+  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe }, lang); onGenerate(plan); if (embedded) { setMinutes(0); setHeure(""); setMuscuZones([]); onAdded && onAdded(); } else setResult(plan); };
 
   const T = {
     title: tr(lang, { fr: "Séance exceptionnelle terminée", en: "Completed extra session", es: "Sesión extra terminada", pt: "Sessão extra concluída" }),
@@ -2499,8 +2536,8 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     generalDisclaimer: tr(lang, { fr: "Conseils généraux de récupération : ils ne remplacent pas l'avis d'un professionnel de santé. En cas de douleur persistante, consulte un professionnel.", en: "General recovery advice: it doesn't replace a health professional's opinion. If pain persists, see a professional.", es: "Consejos generales de recuperación: no sustituyen la opinión de un profesional sanitario. Si el dolor persiste, consulta a un profesional.", pt: "Conselhos gerais de recuperação: não substituem a opinião de um profissional de saúde. Se a dor persistir, consulte um profissional." }),
     loadNote: (n) => tr(lang, { fr: `Score majoré : tu as déjà fait ${n} séances ces 7 derniers jours.`, en: `Score increased: you already did ${n} sessions in the last 7 days.`, es: `Puntuación aumentada: ya hiciste ${n} sesiones en los últimos 7 días.`, pt: `Pontuação aumentada: você já fez ${n} sessões nos últimos 7 dias.` }),
     addDone: tr(lang, { fr: "Ajouter cette séance", en: "Add this session", es: "Añadir esta sesión", pt: "Adicionar esta sessão" }),
-    durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
-    durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
+    durLabel: tr(lang, { fr: "Durée de la séance (obligatoire)", en: "Session length (required)", es: "Duración de la sesión (obligatoria)", pt: "Duração da sessão (obrigatória)" }),
+    durNone: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }),
     rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
     rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
     usedNote: (m, r) => tr(lang, { fr: `Calculé avec ta durée (${m} min) et ton effort (${r}/10).`, en: `Calculated with your length (${m} min) and effort (${r}/10).`, es: `Calculado con tu duración (${m} min) y esfuerzo (${r}/10).`, pt: `Calculado com sua duração (${m} min) e esforço (${r}/10).` }),
@@ -2556,17 +2593,16 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
         <Field label={T.sportLabel}><Select value={sport} onChange={(e) => setSport(e.target.value)} options={sportOptions} /></Field>
         {sport === "muscu" && <Field label={T.zonesLabel}><MuscuZonePicker selected={muscuZones} onToggle={toggleZone} /></Field>}
         <Field label={T.typeLabel}><SegmentedControl options={[{ value: "entrainement", label: T.entrainementLabel }, { value: "match", label: T.matchLabel }, { value: "loisir", label: T.loisirLabel }]} value={eventType} onChange={setEventType} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></Field>
-        {eventType !== "match" && <Field label={T.intensityLabel}><SegmentedControl options={[{ value: "chill", label: T.chill }, { value: "moyen", label: T.moyen }, { value: "intense", label: T.intense }]} value={intensity} onChange={setIntensity} colorMap={{ chill: C.primaryDim, moyen: C.primary, intense: C.warn }} /></Field>}
         <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
         <Field label={T.durLabel}><Select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
-        {minutes > 0 && <Field label={T.rpeLabel(rpe)}><input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p></Field>}
+        <Field label={T.rpeLabel(rpe)}><input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p></Field>
       </Card>
       <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
       <Card className="mb-7">
         <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
       </Card>
-      <Btn full onClick={submit} icon={embedded ? Plus : Sparkles}>{embedded ? T.addDone : T.generate}</Btn>
+      <Btn full onClick={submit} disabled={!(minutes > 0)} icon={embedded ? Plus : Sparkles}>{embedded ? T.addDone : T.generate}</Btn>
       {onPlanFuture && !embedded && <button type="button" onClick={onPlanFuture} className="w-full text-center mt-5 text-[12px] font-semibold" style={{ color: C.primary, ...fontBody }}>{T.futureLink}</button>}
     </div>
   );
@@ -3467,6 +3503,33 @@ function ScoreChart({ sessionsLog }) {
   );
 }
 
+/* Retour de fatigue après une séance du planning : durée (si inconnue) + effort ressenti. */
+function FeedbackSheet({ item, onSave, onSkip, onClose }) {
+  const { lang } = useLang();
+  const e = item.entry;
+  const [minutes, setMinutes] = useState(Number(e.minutes) > 0 ? Number(e.minutes) : 0);
+  const [rpe, setRpe] = useState(6);
+  const T = {
+    title: tr(lang, { fr: "Comment s'est passée ta séance ?", en: "How did your session go?", es: "¿Cómo fue tu sesión?", pt: "Como foi a sua sessão?" }),
+    dur: tr(lang, { fr: "Durée de la séance (obligatoire)", en: "Session length (required)", es: "Duración de la sesión (obligatoria)", pt: "Duração da sessão (obrigatória)" }),
+    rpe: tr(lang, { fr: `Fatigue / effort ressenti : ${rpe}/10`, en: `Tiredness / perceived effort: ${rpe}/10`, es: `Cansancio / esfuerzo percibido: ${rpe}/10`, pt: `Cansaço / esforço percebido: ${rpe}/10` }),
+    hint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
+    ok: tr(lang, { fr: "Valider", en: "Confirm", es: "Confirmar", pt: "Confirmar" }),
+    skip: tr(lang, { fr: "Passer", en: "Skip", es: "Omitir", pt: "Pular" }),
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-[28px] p-5 pb-8" style={{ background: C.bgElevated, border: `1px solid ${C.glassBorder}` }} onClick={(ev) => ev.stopPropagation()}>
+        <p className="text-base font-bold mb-1" style={{ color: C.text, ...fontDisplay }}>{T.title}</p>
+        <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{sportIcon(e.sport)} {sportLabel(e.sport, lang)} · {item.date.slice(8)}/{item.date.slice(5, 7)}{e.heure ? ` · ${e.heure}` : ""}</p>
+        <Field label={T.dur}><Select value={minutes} onChange={(ev) => setMinutes(Number(ev.target.value))} options={[{ value: 0, label: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }) }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
+        <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe} onChange={(ev) => setRpe(Number(ev.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
+        <div className="mt-3"><Btn onClick={() => onSave({ minutes, rpe })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
+        <button type="button" onClick={onSkip} className="w-full text-center text-xs font-semibold mt-3 py-2" style={{ color: C.textFaint, ...fontBody }}>{T.skip}</button>
+      </div>
+    </div>
+  );
+}
 function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, lastPlan, goTo, onOpenPlan, onOpenPlanById, onDeleteSession, onSaveException, onClearException, onAddEntry, onRemoveEntry }) {
   const { lang } = useLang();
   const today = new Date(); const todayIso = isoLocal(today);
@@ -3474,6 +3537,11 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
   const weeklyDays = plannerConfig?.weeklyDays || emptyWeekly();
   const exceptions = plannerConfig?.exceptions || {};
   const hasPlanner = weeklyDays.some((d) => d.length > 0) || Object.keys(exceptions).length > 0;
+  const { setFeedback } = useTrack();
+  const [fbTick, setFbTick] = useState(0);
+  const [fbOpen, setFbOpen] = useState(false);
+  useEffect(() => { const t = setInterval(() => setFbTick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
+  const fbPending = useMemo(() => pendingFeedback({ plannerConfig, feedback: (settings || {}).feedback }, new Date()), [plannerConfig, settings, fbTick]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const tonight = (settings && settings.sleepOn && (settings.queue || []).find((q) => q.kind === "sleep" && q.date === todayIso)) || null;
@@ -3614,6 +3682,17 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
         </button>
       )}
 
+      {fbPending.length > 0 && (
+        <button type="button" onClick={() => setFbOpen(true)} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.warn}33, ${C.surface})`, border: `1px solid ${C.warn}66` }}>
+          <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: C.warn }}>{sportIcon(fbPending[0].entry.sport)}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold break-words" style={{ color: C.text, ...fontDisplay }}>{tr(lang, { fr: "Séance terminée ? Indique ta fatigue", en: "Session done? Tell us how tired you are", es: "¿Sesión terminada? Indica tu cansancio", pt: "Sessão terminada? Indique seu cansaço" })}</p>
+            <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{sportLabel(fbPending[0].entry.sport, lang)}{fbPending.length > 1 ? ` · +${fbPending.length - 1}` : ""} · {tr(lang, { fr: "ça affine ton besoin de récup", en: "it fine-tunes your recovery need", es: "afina tu necesidad de recuperación", pt: "afina sua necessidade de recuperação" })}</p>
+          </div>
+          <ChevronRightIcon size={16} style={{ color: C.warn }} className="shrink-0" />
+        </button>
+      )}
+      {fbOpen && fbPending.length > 0 && <FeedbackSheet key={fbPending[0].key} item={fbPending[0]} onClose={() => setFbOpen(false)} onSave={(v) => setFeedback(fbPending[0].key, v)} onSkip={() => setFeedback(fbPending[0].key, { skipped: true })} />}
       {formeVal === null && (
         <button type="button" onClick={() => goTo("bilan")} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.primary}33, ${C.surface})`, border: `1px solid ${C.primary}66` }}>
           <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: C.primary }}><Sparkles size={17} style={{ color: "#052821" }} /></span>
@@ -4123,6 +4202,10 @@ export default function App() {
     const st = userData?.settings || defaultSettings();
     handleSaveSettings({ checkins: pruneOld({ ...(st.checkins || {}), [dateIso]: ci }, (k) => k) });
   };
+  const setFeedback = (key, val) => {
+    const st = userData?.settings || defaultSettings();
+    handleSaveSettings({ feedback: pruneOld({ ...(st.feedback || {}), [key]: val }, (k) => k.slice(0, 10)) });
+  };
   const toggleDone = (key, item) => {
     const st = userData?.settings || defaultSettings();
     const cur = (st.done || {})[key] || {};
@@ -4420,7 +4503,7 @@ export default function App() {
     return { ok: true };
   };
 
-  setLoadContext({ sessionsLog: userData?.sessionsLog || [], plannerConfig: userData?.plannerConfig || null, checkins: (userData?.settings || {}).checkins || {} });
+  setLoadContext({ sessionsLog: userData?.sessionsLog || [], plannerConfig: userData?.plannerConfig || null, checkins: (userData?.settings || {}).checkins || {}, feedback: (userData?.settings || {}).feedback || {} });
   const lastPlan = userData?.sessionsLog?.length ? userData.sessionsLog[userData.sessionsLog.length - 1] : null;
   const NAV_KEYS = {
     home: { fr: "Accueil", en: "Home", es: "Inicio", pt: "Início" },
@@ -4436,7 +4519,7 @@ export default function App() {
   return (
     <ProContext.Provider value={{ ...proStatus, startTrial: handleStartTrial, activateDemo: handleActivateDemo, setProDemo: handleSetProDemo, cancelSub: handleCancelSub, resumeSub: handleResumeSub, openPro }}>
       <LangContext.Provider value={{ lang, setLang }}>
-       <TrackCtx.Provider value={{ settings: userData?.settings || {}, setCheckin, toggleDone }}>
+       <TrackCtx.Provider value={{ settings: userData?.settings || {}, setCheckin, toggleDone, setFeedback }}>
         <div className="app-root flex items-center justify-center" style={{ background: C.bg }}>
           <style>{FONTS}</style>
           <div className="relative w-full max-w-[480px] h-full overflow-hidden flex flex-col" style={{ background: C.mesh, backgroundColor: C.bg, paddingTop: "env(safe-area-inset-top)", ...fontBody }}>
