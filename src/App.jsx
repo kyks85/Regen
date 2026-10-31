@@ -3008,13 +3008,18 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
   // Choisir une date : on part des séances déjà prévues ce jour-là (semaine type ou ajouts), pour AJOUTER sans rien écraser.
   const pickExcDate = (d) => {
     setExcDate(d);
-    if (!d) { setExcEntries([]); return; }
-    const { entries } = getDayEntries(weeklyDays, exceptions, d);
-    setExcEntries((entries || []).filter((e) => SPORT_TYPES.includes(e.type)));
+    setExcEntries(d ? [newEntry(profile.sports?.[0] || "autre")] : []);
   };
+  const plannedThatDay = excDate ? (getDayEntries(weeklyDays, exceptions, excDate).entries || []).filter((e) => SPORT_TYPES.includes(e.type)) : [];
   const todayIsoP = isoLocal();
   const nowHHMMP = new Date().toTimeString().slice(0, 5);
-  const weeklyIdsFor = (d) => new Set((weeklyDays[(new Date(d + "T12:00:00").getDay() + 6) % 7] || []).map((e) => e.id));
+  const weeklyFor = (d) => weeklyDays[(new Date(d + "T12:00:00").getDay() + 6) % 7] || [];
+  // « Supplément » = séance de l'exception qui n'est pas la copie fidèle d'une séance de la semaine type.
+  const isExtra = (d, e) => {
+    if (e.extra || e.sessionId != null) return true;
+    const w = weeklyFor(d).find((x) => x.id === e.id);
+    return !w || w.sport !== e.sport || w.type !== e.type || (w.heure || "") !== (e.heure || "");
+  };
   // Une séance exceptionnelle est « terminée » si elle a été saisie après coup, si sa date est passée, ou si son heure est passée aujourd'hui.
   const isDoneEntry = (d, e) => e.sessionId != null || d < todayIsoP || (d === todayIsoP && !!e.heure && e.heure <= nowHHMMP);
   const doneList = useMemo(() => {
@@ -3022,9 +3027,8 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     const refIds = new Set();
     const rows = [];
     Object.entries(exceptions).forEach(([d, ents]) => {
-      const wk = weeklyIdsFor(d);
       (ents || []).forEach((e) => {
-        if (!SPORT_TYPES.includes(e.type) || wk.has(e.id)) return;
+        if (!SPORT_TYPES.includes(e.type) || !isExtra(d, e)) return;
         if (e.sessionId != null) refIds.add(e.sessionId);
         if (isDoneEntry(d, e)) rows.push({ date: d, entry: e, session: e.sessionId != null ? logs.find((x) => x.id === e.sessionId) : null });
       });
@@ -3037,24 +3041,22 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     if (row.entry) removeExtra(row.date, row.entry);
   };
   const upcomingExtras = useMemo(() => Object.entries(exceptions).filter(([d]) => d >= todayIsoP).sort(([a], [b]) => a.localeCompare(b)).flatMap(([d, ents]) => {
-    const dow = (new Date(d + "T12:00:00").getDay() + 6) % 7;
-    const weeklyIds = new Set((weeklyDays[dow] || []).map((e) => e.id));
     if (!ents || ents.length === 0) return [{ date: d, off: true }];
-    return ents.filter((e) => SPORT_TYPES.includes(e.type) && !weeklyIds.has(e.id) && !isDoneEntry(d, e)).map((e) => ({ date: d, entry: e }));
+    return ents.filter((e) => SPORT_TYPES.includes(e.type) && isExtra(d, e) && !isDoneEntry(d, e)).map((e) => ({ date: d, entry: e }));
   }), [exceptions, weeklyDays]);
   const removeExtra = (date, entry) => {
     const ents = exceptions[date] || [];
     const remaining = ents.filter((x) => x.id !== entry.id);
-    const dow = (new Date(date + "T12:00:00").getDay() + 6) % 7;
-    const weeklyIds = new Set((weeklyDays[dow] || []).map((e) => e.id));
-    const onlyWeeklyLeft = remaining.every((x) => weeklyIds.has(x.id));
+    const onlyWeeklyLeft = remaining.every((x) => !isExtra(date, x));
     if (remaining.length === 0 || onlyWeeklyLeft) onClearException(date); else onRemoveEntry(date, entry.id);
   };
   const loadExcForEdit = (date) => { setExcDate(date); setExcEntries((exceptions[date] || []).filter((e) => SPORT_TYPES.includes(e.type))); };
+  // On AJOUTE aux séances déjà prévues ce jour-là (semaine type ou ajouts précédents) : rien n'est écrasé.
   const saveExcForm = () => {
-    if (!excDate) return;
-    const others = (exceptions[excDate] || []).filter((e) => !SPORT_TYPES.includes(e.type));
-    onSaveException(excDate, [...excEntries, ...others]);
+    if (!excDate || excEntries.length === 0) return;
+    const current = getDayEntries(weeklyDays, exceptions, excDate).entries || [];
+    const added = excEntries.map((e) => ({ ...e, extra: true, id: Date.now() + Math.random() }));
+    onSaveException(excDate, [...current, ...added]);
     setExcDate(""); setExcEntries([]);
   };
   const selectedDayObj = selectedDate ? schedule.find((d) => d.date === selectedDate) : null;
@@ -3078,6 +3080,7 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
     addSession: tr(lang, { fr: "Séance exceptionnelle à venir", en: "Upcoming extra session", es: "Sesión extra próxima", pt: "Sessão extra futura" }),
     addSessionHint: tr(lang, { fr: "Tu sais déjà qu'elle aura lieu : match en plus, entraînement décalé, séance loisir ou jour off exceptionnel. Choisis la date, elle apparaît dans ton planning avec rappel possible.", en: "You already know it's happening: an extra match, a rescheduled training session, a casual session or an exceptional day off. Pick the date and it shows up in your schedule, with an optional reminder.", es: "Ya sabes que ocurrirá: partido extra, entrenamiento cambiado, sesión libre o día libre excepcional. Elige la fecha y aparece en tu planificación, con aviso opcional.", pt: "Você já sabe que vai acontecer: jogo extra, treino remarcado, sessão livre ou folga excepcional. Escolha a data e ela aparece no seu planejamento, com lembrete opcional." }),
     addSessionKeep: tr(lang, { fr: "Les séances déjà prévues ce jour-là restent : la nouvelle s'ajoute.", en: "Sessions already planned that day stay: the new one is added.", es: "Las sesiones ya previstas ese día se mantienen: la nueva se añade.", pt: "As sessões já previstas nesse dia continuam: a nova é adicionada." }),
+    alreadyPlanned: tr(lang, { fr: "Déjà prévu ce jour-là :", en: "Already planned that day:", es: "Ya previsto ese día:", pt: "Já previsto nesse dia:" }),
     doneTitle: tr(lang, { fr: "Séances exceptionnelles terminées", en: "Completed extra sessions", es: "Sesiones extra terminadas", pt: "Sessões extras concluídas" }),
     doneNone: tr(lang, { fr: "Aucune séance exceptionnelle terminée pour l'instant.", en: "No completed extra session yet.", es: "Aún no hay sesiones extra terminadas.", pt: "Nenhuma sessão extra concluída por enquanto." }),
     deleteDoneConfirm: tr(lang, { fr: "Supprimer cette séance ? Elle sera aussi retirée du planning.", en: "Delete this session? It will also be removed from your schedule.", es: "¿Eliminar esta sesión? También se quitará de la planificación.", pt: "Excluir esta sessão? Ela também será removida do planejamento." }),
@@ -3177,8 +3180,9 @@ function PlanningTab({ profile, plannerConfig, onSetWeekly, onSaveException, onC
         <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionHint}</p>
         <p className="text-xs mb-3" style={{ color: C.textFaint, ...fontBody }}>{T.addSessionKeep}</p>
         <Field label={T.date}><TextInput type="date" value={excDate} onChange={(e) => pickExcDate(e.target.value)} /></Field>
+        {excDate && plannedThatDay.length > 0 && <p className="text-xs mb-3" style={{ color: C.textMuted, ...fontBody }}>{T.alreadyPlanned} {plannedThatDay.map((e) => `${sportIcon(e.sport)} ${sportLabel(e.sport, lang)}${e.heure ? " " + e.heure : ""}`).join(" · ")}</p>}
         {excDate && <EntryListEditor entries={excEntries} defaultSport={profile.sports?.[0] || "autre"} onChange={setExcEntries} />}
-        <div className="mt-2"><Btn onClick={saveExcForm} full disabled={!excDate} icon={Check}>{T.saveDate}</Btn></div>
+        <div className="mt-2"><Btn onClick={saveExcForm} full disabled={!excDate || excEntries.length === 0} icon={Check}>{T.saveDate}</Btn></div>
       </Card>
 
       <Card className="mb-4">
@@ -3629,8 +3633,10 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
               <button key={d.date} onClick={() => setSelectedDate(d.date)} className="flex flex-col items-center gap-1">
                 <span className="text-[11px]" style={{ color: C.textFaint, ...fontBody }}>{DAYS[lang][d.dow]}</span>
                 <div className="w-full aspect-square rounded-xl flex items-center justify-center relative" style={{ background: dayColor(d) + (d.entries.length === 0 ? "22" : ""), border: d.isToday ? `1.5px solid ${C.text}` : "none" }}>
-                  {d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>}
-                  {d.entries.length > 1 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px]" style={{ background: C.bgElevated, color: C.text }}>{d.entries.length}</span>}
+                  {d.entries.length <= 1
+                    ? (d.entries[0]?.type === "rdv" ? <span className="text-xs">🩺</span> : d.entries[0]?.sport && <span className="text-xs">{sportIcon(d.entries[0].sport)}</span>)
+                    : <div className="flex flex-wrap items-center justify-center gap-px px-0.5" style={{ maxWidth: "100%" }}>{d.entries.slice(0, 4).map((e, k) => <span key={k} style={{ fontSize: d.entries.length > 2 ? 10 : 12, lineHeight: 1 }}>{e.type === "rdv" ? "🩺" : sportIcon(e.sport)}</span>)}</div>}
+                  {d.entries.length > 1 && <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: C.text, color: C.bg || "#070E0D" }}>{d.entries.length}</span>}
                 </div>
               </button>
             ))}
