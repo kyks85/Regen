@@ -659,8 +659,8 @@ function pendingFeedback(ctx, now = new Date()) {
   return out.sort((a, b) => a.end - b.end);
 }
 function sessionWeight(type, intensity, rpe, minutes) {
-  if (!rpe) rpe = 5;   // sans info : 1 h, effort 5/10
-  if (rpe) return Math.max(0.15, Math.min(1.3, (rpe * (minutes || 60)) / 600));   // charge « durée × effort ressenti »
+  if (!rpe) rpe = type === "match" ? 7 : 5;   // sans info : 1 h effort 5/10 (match : 1 h 30, effort 7/10)
+  if (rpe) return Math.max(0.15, Math.min(1.3, (rpe * (minutes || (type === "match" ? 90 : 60))) / 600));   // charge « durée × effort ressenti »
   if (type === "match") return 1;
   return intensity === "intense" ? 0.8 : intensity === "chill" ? 0.2 : 0.5;
 }
@@ -765,7 +765,7 @@ function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau,
   // Charge cumulée des séances récentes (voir computeLoad).
   if (loadBonus != null) s += loadBonus;
   else if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
-  if (rpe || minutes) { const r = rpe || 5; s += Math.max(2, Math.min(34, Math.round((r * (minutes || 60)) / 24))); }   // durée × effort ressenti
+  if (rpe || minutes) { const r = rpe || (eventType === "match" ? 7 : 5); s += Math.max(2, Math.min(34, Math.round((r * (minutes || (eventType === "match" ? 90 : 60))) / 24))); }   // durée × effort ressenti
   else if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
@@ -908,7 +908,7 @@ function entryPlanInput(e, date) {
   const o = entryPlanInputRaw(e, date);
   const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
   const end = new Date(date + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0) + (o.minutes || FB_MAX_MIN)) * 60000;
-  if (end <= Date.now()) { if (!o.minutes) o.minutes = 60; if (!o.rpe) o.rpe = 5; }   // séance passée sans réponse : 1 h, effort 5/10
+  if (end <= Date.now()) { const mt = e.type === "match"; if (!o.minutes) o.minutes = mt ? 90 : 60; if (!o.rpe) o.rpe = mt ? 7 : 5; }   // séance passée sans réponse : 1 h, effort 5/10
   return o;
 }
 function entryPlanInputRaw(e, date) {
