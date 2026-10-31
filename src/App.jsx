@@ -637,13 +637,14 @@ function buildProgram(plan, lang) {
    raisonnables, pas une mesure médicale. */
 let LOAD_CTX = { sessionsLog: [], plannerConfig: null, checkins: {}, feedback: {} };
 const setLoadContext = (ctx) => { LOAD_CTX = ctx; };
+const nrWord = (lang) => tr(lang, { fr: "Non renseigné", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchido" });
 const rpeToIntensity = (r) => (r <= 4 ? "chill" : r <= 7 ? "moyen" : "intense");   // utilisé seulement en interne (repas, hydratation…)
 const FB_MAX_MIN = 180;   // durée max supposée quand elle est inconnue
 // Séances du planning (semaine type + exceptionnelles) terminées sans retour de fatigue : on les redemande.
 function pendingFeedback(ctx, now = new Date()) {
   const cfg = ctx && ctx.plannerConfig; if (!cfg || !cfg.weeklyDays) return [];
   const fbMap = (ctx && ctx.feedback) || {}; const out = [];
-  for (let d = 0; d <= 2; d++) {
+  for (let d = 0; d <= 6; d++) {
     const iso = isoLocal(new Date(now.getTime() - d * 86400000));
     const { entries } = getDayEntries(cfg.weeklyDays, cfg.exceptions || {}, iso);
     (entries || []).forEach((e) => {
@@ -2443,9 +2444,9 @@ function EntryEditor({ entry, onChange, onRemove, weekly }) {
     durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
     durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
     durHint: tr(lang, { fr: "À la fin de la séance, l'app te demandera l'effort et la fatigue ressentis. Sans réponse : 1 h, effort 5/10, fatigue 2/5.", en: "When the session ends, the app will ask how hard it felt and how tired you are. No answer: 1 h, effort 5/10, tiredness 2/5.", es: "Al terminar, la app te preguntará el esfuerzo y el cansancio percibidos. Sin respuesta: 1 h, esfuerzo 5/10, cansancio 2/5.", pt: "No fim da sessão, o app perguntará o esforço e o cansaço percebidos. Sem resposta: 1 h, esforço 5/10, cansaço 2/5." }),
-    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
+    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n ? n + "/10" : nrWord(lang)}`, en: `Perceived effort: ${n ? n + "/10" : nrWord(lang)}`, es: `Esfuerzo percibido: ${n ? n + "/10" : nrWord(lang)}`, pt: `Esforço percebido: ${n ? n + "/10" : nrWord(lang)}` }),
     rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
-    fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f}/5`, en: `Perceived fatigue level: ${f}/5`, es: `Nivel de fatiga percibida: ${f}/5`, pt: `Nível de fadiga percebida: ${f}/5` }),
+    fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f ? f + "/5" : nrWord(lang)}`, en: `Perceived fatigue level: ${f ? f + "/5" : nrWord(lang)}`, es: `Nivel de fatiga percibida: ${f ? f + "/5" : nrWord(lang)}`, pt: `Nível de fadiga percebida: ${f ? f + "/5" : nrWord(lang)}` }),
     notify: tr(lang, { fr: "Me notifier la veille", en: "Remind me the day before", es: "Avisarme el día anterior", pt: "Avisar-me na véspera" }),
     reminderTime: tr(lang, { fr: "Heure du rappel (veille)", en: "Reminder time (day before)", es: "Hora del aviso (día anterior)", pt: "Horário do lembrete (véspera)" }),
   };
@@ -2466,14 +2467,14 @@ function EntryEditor({ entry, onChange, onRemove, weekly }) {
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.heure}</p><TextInput type="time" value={entry.heure || ""} onChange={(e) => onChange({ heure: e.target.value })} /></div>
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
       </div>
-      <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange(m > 0 ? { minutes: m, rpe: entry.rpe || 5, fatigue: entry.fatigue || 2 } : { minutes: null, rpe: null, fatigue: null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
+      <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange({ minutes: m > 0 ? m : null, rpe: null, fatigue: null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
       {entry.minutes > 0 && !weekly && (
         <div className="mb-2">
-          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.rpeLabel(entry.rpe || 5)}</p>
-          <input type="range" min={1} max={10} value={entry.rpe || 5} onChange={(e) => onChange({ rpe: Number(e.target.value) })} className="w-full" style={{ accentColor: C.primary }} />
+          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.rpeLabel(entry.rpe)}</p>
+          <input type="range" min={1} max={10} value={entry.rpe || 5} onChange={(e) => onChange({ rpe: Number(e.target.value) })} onPointerUp={(e) => { if (!entry.rpe) onChange({ rpe: Number(e.target.value) }); }} className="w-full" style={{ accentColor: entry.rpe ? C.primary : C.textFaint, opacity: entry.rpe ? 1 : 0.55 }} />
           <p className="text-[11px] mt-1 mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p>
-          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.fatigueLabel(entry.fatigue || 2)}</p>
-          <input type="range" min={1} max={5} value={entry.fatigue || 2} onChange={(e) => onChange({ fatigue: Number(e.target.value) })} className="w-full" style={{ accentColor: C.primary }} />
+          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.fatigueLabel(entry.fatigue)}</p>
+          <input type="range" min={1} max={5} value={entry.fatigue || 2} onChange={(e) => onChange({ fatigue: Number(e.target.value) })} onPointerUp={(e) => { if (!entry.fatigue) onChange({ fatigue: Number(e.target.value) }); }} className="w-full" style={{ accentColor: entry.fatigue ? C.primary : C.textFaint, opacity: entry.fatigue ? 1 : 0.55 }} />
         </div>
       )}
       <button onClick={() => onChange({ notify: !entry.notify })} className="flex items-center gap-2">
@@ -2518,12 +2519,12 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
   const [intensity, setIntensity] = useState("moyen");
-  const [fatigue, setFatigue] = useState(2);
+  const [fatigue, setFatigue] = useState(null);
   const [hoursToNext, setHoursToNext] = useState(48);
   const [heure, setHeure] = useState("");
   const [muscuZones, setMuscuZones] = useState([]);
   const [minutes, setMinutes] = useState(0);
-  const [rpe, setRpe] = useState(5);
+  const [rpe, setRpe] = useState(null);
 
   const sportOptions = useMemo(() => {
     const declared = (profile.sports || []).map((k) => ({ value: k, label: `${sportIcon(k)} ${sportLabel(k, lang)}` }));
@@ -2532,7 +2533,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   }, [profile.sports, lang]);
 
   const toggleZone = (k) => setMuscuZones((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
-  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe }, lang); onGenerate(plan); if (embedded) { setMinutes(0); setHeure(""); setMuscuZones([]); onAdded && onAdded(); } else setResult(plan); };
+  const submit = () => { const plan = generatePlan(profile, { eventType, intensity, fatigue: fatigue || 2, hoursToNext, sport, heure, muscuZones, minutes: minutes || null, rpe }, lang); onGenerate(plan); if (embedded) { setMinutes(0); setRpe(null); setFatigue(null); setHeure(""); setMuscuZones([]); onAdded && onAdded(); } else setResult(plan); };
 
   const T = {
     title: tr(lang, { fr: "Séance exceptionnelle terminée", en: "Completed extra session", es: "Sesión extra terminada", pt: "Sessão extra concluída" }),
@@ -2546,7 +2547,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     zonesLabel: tr(lang, { fr: "Zone(s) travaillée(s) — plusieurs choix possibles", en: "Muscle zone(s) — multiple choices possible", es: "Zona(s) trabajada(s) — varias opciones posibles", pt: "Zona(s) trabalhada(s) — múltiplas opções possíveis" }),
     typeLabel: tr(lang, { fr: "Type de séance", en: "Session type", es: "Tipo de sesión", pt: "Tipo de sessão" }),
     intensityLabel: tr(lang, { fr: "Intensité de la séance", en: "Session intensity", es: "Intensidad de la sesión", pt: "Intensidade da sessão" }),
-    fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f}/5`, en: `Perceived fatigue level: ${f}/5`, es: `Nivel de fatiga percibida: ${f}/5`, pt: `Nível de fadiga percebida: ${f}/5` }),
+    fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f ? f + "/5" : nrWord(lang)}`, en: `Perceived fatigue level: ${f ? f + "/5" : nrWord(lang)}`, es: `Nivel de fatiga percibida: ${f ? f + "/5" : nrWord(lang)}`, pt: `Nível de fadiga percebida: ${f ? f + "/5" : nrWord(lang)}` }),
     hoursLabel: tr(lang, { fr: "Temps avant la prochaine séance / le prochain match", en: "Time before your next session / match", es: "Tiempo antes de la próxima sesión / partido", pt: "Tempo até a próxima sessão / jogo" }),
     heureLabel: tr(lang, { fr: "Heure de la séance (optionnel)", en: "Session time (optional)", es: "Hora de la sesión (opcional)", pt: "Horário da sessão (opcional)" }),
     generate: tr(lang, { fr: "Générer mon plan de récup", en: "Generate my recovery plan", es: "Generar mi plan de recuperación", pt: "Gerar meu plano de recuperação" }),
@@ -2557,7 +2558,7 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
     addDone: tr(lang, { fr: "Ajouter cette séance", en: "Add this session", es: "Añadir esta sesión", pt: "Adicionar esta sessão" }),
     durLabel: tr(lang, { fr: "Durée de la séance (obligatoire)", en: "Session length (required)", es: "Duración de la sesión (obligatoria)", pt: "Duração da sessão (obrigatória)" }),
     durNone: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }),
-    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
+    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n ? n + "/10" : nrWord(lang)}`, en: `Perceived effort: ${n ? n + "/10" : nrWord(lang)}`, es: `Esfuerzo percibido: ${n ? n + "/10" : nrWord(lang)}`, pt: `Esforço percebido: ${n ? n + "/10" : nrWord(lang)}` }),
     rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
     usedNote: (m, r) => tr(lang, { fr: `Calculé avec ta durée (${m} min) et ton effort (${r}/10).`, en: `Calculated with your length (${m} min) and effort (${r}/10).`, es: `Calculado con tu duración (${m} min) y esfuerzo (${r}/10).`, pt: `Calculado com sua duração (${m} min) e esforço (${r}/10).` }),
     formNote: (r) => tr(lang, { fr: `Ton bilan du jour (forme ${r}/100) a été pris en compte.`, en: `Your daily check-in (form ${r}/100) was factored in.`, es: `Se tuvo en cuenta tu chequeo del día (forma ${r}/100).`, pt: `Seu check-in do dia (forma ${r}/100) foi considerado.` }),
@@ -2614,11 +2615,11 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
         <Field label={T.typeLabel}><SegmentedControl options={[{ value: "entrainement", label: T.entrainementLabel }, { value: "match", label: T.matchLabel }, { value: "loisir", label: T.loisirLabel }]} value={eventType} onChange={setEventType} colorMap={{ entrainement: C.primary, match: C.danger, loisir: C.loisir }} /></Field>
         <Field label={T.heureLabel}><TextInput type="time" value={heure} onChange={(e) => setHeure(e.target.value)} /></Field>
         <Field label={T.durLabel}><Select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
-        <Field label={T.rpeLabel(rpe)}><input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p></Field>
+        <Field label={T.rpeLabel(rpe)}><input type="range" min={1} max={10} value={rpe || 5} onChange={(e) => setRpe(Number(e.target.value))} onPointerUp={(e) => { if (!rpe) setRpe(Number(e.target.value)); }} className="w-full" style={{ accentColor: rpe ? C.primary : C.textFaint, opacity: rpe ? 1 : 0.55 }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p></Field>
       </Card>
       <p className="text-[11px] font-bold uppercase tracking-widest mb-3 px-1" style={{ color: C.textFaint, ...fontBody }}>{T.step2}</p>
       <Card className="mb-7">
-        <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
+        <Field label={T.fatigueLabel(fatigue)}><input type="range" min={1} max={5} value={fatigue || 2} onChange={(e) => setFatigue(Number(e.target.value))} onPointerUp={(e) => { if (!fatigue) setFatigue(Number(e.target.value)); }} className="w-full" style={{ accentColor: fatigue ? C.primary : C.textFaint, opacity: fatigue ? 1 : 0.55 }} /></Field>
         <Field label={T.hoursLabel}><Select value={hoursToNext} onChange={(e) => setHoursToNext(Number(e.target.value))} options={[{ value: 12, label: T.lt12 }, { value: 24, label: T.h24 }, { value: 48, label: T.h48 }, { value: 72, label: T.h72 }, { value: 96, label: T.gt4 }]} /></Field>
       </Card>
       <Btn full onClick={submit} disabled={!(minutes > 0)} icon={embedded ? Plus : Sparkles}>{embedded ? T.addDone : T.generate}</Btn>
@@ -3523,7 +3524,7 @@ function ScoreChart({ sessionsLog }) {
 }
 
 /* Retour de fatigue après une séance du planning : durée (si inconnue) + effort ressenti. */
-function FeedbackSheet({ item, onSave, onSkip, onClose }) {
+function FeedbackSheet({ item, pos, total, onSave, onSkip, onClose }) {
   const { lang } = useLang();
   const e = item.entry;
   const [minutes, setMinutes] = useState(Number(e.minutes) > 0 ? Number(e.minutes) : 0);
@@ -3542,11 +3543,11 @@ function FeedbackSheet({ item, onSave, onSkip, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
       <div className="w-full max-w-md rounded-t-[28px] p-5 pb-8" style={{ background: C.bgElevated, border: `1px solid ${C.glassBorder}` }} onClick={(ev) => ev.stopPropagation()}>
-        <p className="text-base font-bold mb-1" style={{ color: C.text, ...fontDisplay }}>{T.title}</p>
+        <p className="text-base font-bold mb-1" style={{ color: C.text, ...fontDisplay }}>{T.title}{total > 1 ? ` (${pos}/${total})` : ""}</p>
         <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{sportIcon(e.sport)} {sportLabel(e.sport, lang)} · {item.date.slice(8)}/{item.date.slice(5, 7)}{e.heure ? ` · ${e.heure}` : ""}</p>
         <Field label={T.dur}><Select value={minutes} onChange={(ev) => setMinutes(Number(ev.target.value))} options={[{ value: 0, label: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }) }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
-        <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe || 5} onChange={(ev) => setRpe(Number(ev.target.value))} className="w-full" style={{ accentColor: rpe ? C.primary : C.textFaint, opacity: rpe ? 1 : 0.55 }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
-        <Field label={T.fat}><input type="range" min={1} max={5} value={fat || 2} onChange={(ev) => setFat(Number(ev.target.value))} className="w-full" style={{ accentColor: fat ? C.primary : C.textFaint, opacity: fat ? 1 : 0.55 }} /></Field>
+        <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe || 5} onChange={(ev) => setRpe(Number(ev.target.value))} onPointerUp={(ev) => { if (!rpe) setRpe(Number(ev.target.value)); }} className="w-full" style={{ accentColor: rpe ? C.primary : C.textFaint, opacity: rpe ? 1 : 0.55 }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
+        <Field label={T.fat}><input type="range" min={1} max={5} value={fat || 2} onChange={(ev) => setFat(Number(ev.target.value))} onPointerUp={(ev) => { if (!fat) setFat(Number(ev.target.value)); }} className="w-full" style={{ accentColor: fat ? C.primary : C.textFaint, opacity: fat ? 1 : 0.55 }} /></Field>
         <div className="mt-3"><Btn onClick={() => onSave({ minutes, ...(rpe ? { rpe } : {}), ...(fat ? { fatigue: fat } : {}) })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
         <button type="button" onClick={onSkip} className="w-full text-center text-xs font-semibold mt-3 py-2" style={{ color: C.textFaint, ...fontBody }}>{T.skip}</button>
       </div>
@@ -3563,6 +3564,7 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
   const { setFeedback } = useTrack();
   const [fbTick, setFbTick] = useState(0);
   const [fbOpen, setFbOpen] = useState(false);
+  const [fbTotal, setFbTotal] = useState(0);
   useEffect(() => { const t = setInterval(() => setFbTick((n) => n + 1), 60000); return () => clearInterval(t); }, []);
   const fbPending = useMemo(() => pendingFeedback({ plannerConfig, feedback: (settings || {}).feedback }, new Date()), [plannerConfig, settings, fbTick]);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -3706,16 +3708,16 @@ function HomeTab({ profile, sessionsLog, injuries, plannerConfig, settings, last
       )}
 
       {fbPending.length > 0 && (
-        <button type="button" onClick={() => setFbOpen(true)} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.warn}33, ${C.surface})`, border: `1px solid ${C.warn}66` }}>
+        <button type="button" onClick={() => { setFbTotal(fbPending.length); setFbOpen(true); }} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.warn}33, ${C.surface})`, border: `1px solid ${C.warn}66` }}>
           <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: C.warn }}>{sportIcon(fbPending[0].entry.sport)}</span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold break-words" style={{ color: C.text, ...fontDisplay }}>{tr(lang, { fr: "Séance terminée ? Indique ta fatigue", en: "Session done? Tell us how tired you are", es: "¿Sesión terminada? Indica tu cansancio", pt: "Sessão terminada? Indique seu cansaço" })}</p>
-            <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{sportLabel(fbPending[0].entry.sport, lang)}{fbPending.length > 1 ? ` · +${fbPending.length - 1}` : ""} · {tr(lang, { fr: "ça affine ton besoin de récup", en: "it fine-tunes your recovery need", es: "afina tu necesidad de recuperación", pt: "afina sua necessidade de recuperação" })}</p>
+            <p className="text-xs mt-0.5" style={{ color: C.textMuted, ...fontBody }}>{fbPending.length > 1 ? tr(lang, { fr: `${fbPending.length} séances à renseigner`, en: `${fbPending.length} sessions to fill in`, es: `${fbPending.length} sesiones por rellenar`, pt: `${fbPending.length} sessões para preencher` }) : sportLabel(fbPending[0].entry.sport, lang)} · {tr(lang, { fr: "ça affine ton besoin de récup", en: "it fine-tunes your recovery need", es: "afina tu necesidad de recuperación", pt: "afina sua necessidade de recuperação" })}</p>
           </div>
           <ChevronRightIcon size={16} style={{ color: C.warn }} className="shrink-0" />
         </button>
       )}
-      {fbOpen && fbPending.length > 0 && <FeedbackSheet key={fbPending[0].key} item={fbPending[0]} onClose={() => setFbOpen(false)} onSave={(v) => setFeedback(fbPending[0].key, v)} onSkip={() => setFeedback(fbPending[0].key, { skipped: true })} />}
+      {fbOpen && fbPending.length > 0 && <FeedbackSheet key={fbPending[0].key} pos={fbTotal - fbPending.length + 1} total={fbTotal} item={fbPending[0]} onClose={() => setFbOpen(false)} onSave={(v) => setFeedback(fbPending[0].key, v)} onSkip={() => setFeedback(fbPending[0].key, { skipped: true })} />}
       {formeVal === null && (
         <button type="button" onClick={() => goTo("bilan")} className="w-full text-left mb-4 rounded-[22px] px-4 py-3.5 flex items-center gap-3" style={{ background: `linear-gradient(135deg, ${C.primary}33, ${C.surface})`, border: `1px solid ${C.primary}66` }}>
           <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: C.primary }}><Sparkles size={17} style={{ color: "#052821" }} /></span>
