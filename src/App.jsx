@@ -3541,8 +3541,8 @@ function FeedbackSheet({ item, pos, total, onSave, onSkip, onClose }) {
     skip: tr(lang, { fr: "Passer", en: "Skip", es: "Omitir", pt: "Pular" }),
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-[28px] p-5 pb-8" style={{ background: C.bgElevated, border: `1px solid ${C.glassBorder}` }} onClick={(ev) => ev.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center" style={{ background: "rgba(0,0,0,0.78)" }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-[28px] p-5 overflow-y-auto" style={{ background: "#0F1F1B", border: `1px solid ${C.border}`, maxHeight: "92vh", paddingBottom: "calc(2rem + env(safe-area-inset-bottom))", boxShadow: "0 -12px 40px rgba(0,0,0,0.6)" }} onClick={(ev) => ev.stopPropagation()}>
         <p className="text-base font-bold mb-1" style={{ color: C.text, ...fontDisplay }}>{T.title}{total > 1 ? ` (${pos}/${total})` : ""}</p>
         <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{sportIcon(e.sport)} {sportLabel(e.sport, lang)} · {item.date.slice(8)}/{item.date.slice(5, 7)}{e.heure ? ` · ${e.heure}` : ""}</p>
         <Field label={T.dur}><Select value={minutes} onChange={(ev) => setMinutes(Number(ev.target.value))} options={[{ value: 0, label: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }) }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
