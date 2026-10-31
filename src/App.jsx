@@ -659,7 +659,7 @@ function pendingFeedback(ctx, now = new Date()) {
   return out.sort((a, b) => a.end - b.end);
 }
 function sessionWeight(type, intensity, rpe, minutes) {
-  if (minutes && !rpe) rpe = type === "match" ? 8 : 6;
+  if (!rpe) rpe = 5;   // sans info : 1 h, effort 5/10
   if (rpe) return Math.max(0.15, Math.min(1.3, (rpe * (minutes || 60)) / 600));   // charge « durée × effort ressenti »
   if (type === "match") return 1;
   return intensity === "intense" ? 0.8 : intensity === "chill" ? 0.2 : 0.5;
@@ -765,7 +765,7 @@ function computeScore({ eventType, intensity, fatigue, hoursToNext, age, niveau,
   // Charge cumulée des séances récentes (voir computeLoad).
   if (loadBonus != null) s += loadBonus;
   else if (weekLoad >= 2) s += Math.min(12, (weekLoad - 1) * 4);
-  if (rpe || minutes) { const r = rpe || (eventType === "match" ? 8 : 6); s += Math.max(2, Math.min(34, Math.round((r * (minutes || 60)) / 24))); }   // durée × effort ressenti
+  if (rpe || minutes) { const r = rpe || 5; s += Math.max(2, Math.min(34, Math.round((r * (minutes || 60)) / 24))); }   // durée × effort ressenti
   else if (eventType === "match") s += 27;
   else if (intensity === "intense") s += 20;
   else if (intensity === "moyen") s += 10;
@@ -905,7 +905,14 @@ function generatePlan(profile, input, lang) {
 // bonus si plusieurs séances s'accumulent le même jour.
 // Paramètres de plan pour une séance du planning : durée, effort ressenti et fatigue saisis si connus, bilan du jour de CETTE date.
 function entryPlanInput(e, date) {
-  return { eventType: e.type, intensity: e.intensity || "moyen", fatigue: e.fatigue || 3, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, minutes: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).minutes || e.minutes || null, rpe: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).rpe || e.rpe || null, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00"), checkinDate: date };
+  const o = entryPlanInputRaw(e, date);
+  const [hh, mm] = String(e.heure || "18:00").split(":").map(Number);
+  const end = new Date(date + "T00:00:00").getTime() + ((hh || 0) * 60 + (mm || 0) + (o.minutes || FB_MAX_MIN)) * 60000;
+  if (end <= Date.now()) { if (!o.minutes) o.minutes = 60; if (!o.rpe) o.rpe = 5; }   // séance passée sans réponse : 1 h, effort 5/10
+  return o;
+}
+function entryPlanInputRaw(e, date) {
+  return { eventType: e.type, intensity: e.intensity || "moyen", fatigue: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).fatigue || e.fatigue || 2, hoursToNext: 48, sport: e.sport, heure: e.heure, muscuZones: e.muscuZones, minutes: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).minutes || e.minutes || null, rpe: ((LOAD_CTX.feedback || {})[`${date}|${e.id}`] || {}).rpe || e.rpe || null, seed: date + "-" + e.id, loadAt: new Date(date + "T00:00:00"), checkinDate: date };
 }
 function mergeSportEntriesPlan(profile, sportEntries, date, lang) {
   const individual = sportEntries.map((e) => ({ entry: e, plan: generatePlan(profile, entryPlanInput(e, date), lang) }));
@@ -2435,7 +2442,10 @@ function EntryEditor({ entry, onChange, onRemove }) {
     optional: tr(lang, { fr: "optionnel", en: "optional", es: "opcional", pt: "opcional" }),
     durLabel: tr(lang, { fr: "Durée de la séance (optionnel)", en: "Session length (optional)", es: "Duración de la sesión (opcional)", pt: "Duração da sessão (opcional)" }),
     durNone: tr(lang, { fr: "Non précisée", en: "Not specified", es: "Sin especificar", pt: "Não informada" }),
-    durHint: tr(lang, { fr: "À la fin de la séance, l'app te demandera ta fatigue (et la durée si tu ne la connais pas).", en: "When the session ends, the app will ask how tired you are (and the length if unknown).", es: "Al terminar la sesión, la app te preguntará tu cansancio (y la duración si no la sabes).", pt: "No fim da sessão, o app perguntará seu cansaço (e a duração, se não souber)." }),
+    durHint: tr(lang, { fr: "Indique l'effort et la fatigue que tu prévois. À la fin de la séance, l'app te les redemandera. Sans réponse : 1 h, effort 5/10, fatigue 2/5.", en: "Enter the effort and tiredness you expect. When the session ends, the app will ask again. No answer: 1 h, effort 5/10, tiredness 2/5.", es: "Indica el esfuerzo y el cansancio previstos. Al terminar, la app te lo preguntará de nuevo. Sin respuesta: 1 h, esfuerzo 5/10, cansancio 2/5.", pt: "Informe o esforço e o cansaço previstos. No fim da sessão, o app perguntará de novo. Sem resposta: 1 h, esforço 5/10, cansaço 2/5." }),
+    rpeLabel: (n) => tr(lang, { fr: `Effort ressenti : ${n}/10`, en: `Perceived effort: ${n}/10`, es: `Esfuerzo percibido: ${n}/10`, pt: `Esforço percebido: ${n}/10` }),
+    rpeHint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
+    fatigueLabel: (f) => tr(lang, { fr: `Niveau de fatigue ressentie : ${f}/5`, en: `Perceived fatigue level: ${f}/5`, es: `Nivel de fatiga percibida: ${f}/5`, pt: `Nível de fadiga percebida: ${f}/5` }),
     notify: tr(lang, { fr: "Me notifier la veille", en: "Remind me the day before", es: "Avisarme el día anterior", pt: "Avisar-me na véspera" }),
     reminderTime: tr(lang, { fr: "Heure du rappel (veille)", en: "Reminder time (day before)", es: "Hora del aviso (día anterior)", pt: "Horário do lembrete (véspera)" }),
   };
@@ -2452,11 +2462,20 @@ function EntryEditor({ entry, onChange, onRemove }) {
           <MuscuZonePicker selected={entry.muscuZones || []} onToggle={toggleZone} />
         </div>
       )}
-      <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange({ minutes: m > 0 ? m : null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
       <div className="flex gap-2 mb-2">
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.heure}</p><TextInput type="time" value={entry.heure || ""} onChange={(e) => onChange({ heure: e.target.value })} /></div>
         <div className="flex-1"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.label}</p><TextInput value={entry.label || ""} onChange={(e) => onChange({ label: e.target.value })} placeholder={T.optional} /></div>
       </div>
+      <div className="mb-2"><p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.durLabel}</p><Select value={entry.minutes || 0} onChange={(e) => { const m = Number(e.target.value); onChange(m > 0 ? { minutes: m, rpe: entry.rpe || 5, fatigue: entry.fatigue || 2 } : { minutes: null, rpe: null, fatigue: null }); }} options={[{ value: 0, label: T.durNone }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.durHint}</p></div>
+      {entry.minutes > 0 && (
+        <div className="mb-2">
+          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.rpeLabel(entry.rpe || 5)}</p>
+          <input type="range" min={1} max={10} value={entry.rpe || 5} onChange={(e) => onChange({ rpe: Number(e.target.value) })} className="w-full" style={{ accentColor: C.primary }} />
+          <p className="text-[11px] mt-1 mb-2" style={{ color: C.textFaint, ...fontBody }}>{T.rpeHint}</p>
+          <p className="text-[11px] mb-1" style={{ color: C.textFaint }}>{T.fatigueLabel(entry.fatigue || 2)}</p>
+          <input type="range" min={1} max={5} value={entry.fatigue || 2} onChange={(e) => onChange({ fatigue: Number(e.target.value) })} className="w-full" style={{ accentColor: C.primary }} />
+        </div>
+      )}
       <button onClick={() => onChange({ notify: !entry.notify })} className="flex items-center gap-2">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: entry.notify ? C.primary : "transparent", border: `1px solid ${entry.notify ? C.primary : C.border}` }}>{entry.notify && <Check size={11} color="#052821" />}</div>
         <span className="text-xs" style={{ color: C.text, ...fontBody }}>{T.notify}</span>
@@ -2499,12 +2518,12 @@ function RecupTab({ profile, onGenerate, result, setResult, onPlanFuture, sessio
   const [sport, setSport] = useState(profile.sports?.[0] || "autre");
   const [eventType, setEventType] = useState("entrainement");
   const [intensity, setIntensity] = useState("moyen");
-  const [fatigue, setFatigue] = useState(3);
+  const [fatigue, setFatigue] = useState(2);
   const [hoursToNext, setHoursToNext] = useState(48);
   const [heure, setHeure] = useState("");
   const [muscuZones, setMuscuZones] = useState([]);
   const [minutes, setMinutes] = useState(0);
-  const [rpe, setRpe] = useState(6);
+  const [rpe, setRpe] = useState(5);
 
   const sportOptions = useMemo(() => {
     const declared = (profile.sports || []).map((k) => ({ value: k, label: `${sportIcon(k)} ${sportLabel(k, lang)}` }));
@@ -3508,12 +3527,14 @@ function FeedbackSheet({ item, onSave, onSkip, onClose }) {
   const { lang } = useLang();
   const e = item.entry;
   const [minutes, setMinutes] = useState(Number(e.minutes) > 0 ? Number(e.minutes) : 0);
-  const [rpe, setRpe] = useState(6);
+  const [rpe, setRpe] = useState(Number(e.rpe) > 0 ? Number(e.rpe) : 5);
+  const [fat, setFat] = useState(Number(e.fatigue) > 0 ? Number(e.fatigue) : 2);
   const T = {
     title: tr(lang, { fr: "Comment s'est passée ta séance ?", en: "How did your session go?", es: "¿Cómo fue tu sesión?", pt: "Como foi a sua sessão?" }),
     dur: tr(lang, { fr: "Durée de la séance (obligatoire)", en: "Session length (required)", es: "Duración de la sesión (obligatoria)", pt: "Duração da sessão (obrigatória)" }),
     rpe: tr(lang, { fr: `Fatigue / effort ressenti : ${rpe}/10`, en: `Tiredness / perceived effort: ${rpe}/10`, es: `Cansancio / esfuerzo percibido: ${rpe}/10`, pt: `Cansaço / esforço percebido: ${rpe}/10` }),
     hint: tr(lang, { fr: "1 = très facile · 10 = effort maximal", en: "1 = very easy · 10 = maximal effort", es: "1 = muy fácil · 10 = esfuerzo máximo", pt: "1 = muito fácil · 10 = esforço máximo" }),
+    fat: tr(lang, { fr: `Niveau de fatigue ressentie : ${fat}/5`, en: `Perceived fatigue level: ${fat}/5`, es: `Nivel de fatiga percibida: ${fat}/5`, pt: `Nível de fadiga percebida: ${fat}/5` }),
     ok: tr(lang, { fr: "Valider", en: "Confirm", es: "Confirmar", pt: "Confirmar" }),
     skip: tr(lang, { fr: "Passer", en: "Skip", es: "Omitir", pt: "Pular" }),
   };
@@ -3524,7 +3545,8 @@ function FeedbackSheet({ item, onSave, onSkip, onClose }) {
         <p className="text-xs mb-4" style={{ color: C.textMuted, ...fontBody }}>{sportIcon(e.sport)} {sportLabel(e.sport, lang)} · {item.date.slice(8)}/{item.date.slice(5, 7)}{e.heure ? ` · ${e.heure}` : ""}</p>
         <Field label={T.dur}><Select value={minutes} onChange={(ev) => setMinutes(Number(ev.target.value))} options={[{ value: 0, label: tr(lang, { fr: "Non renseignée", en: "Not filled in", es: "Sin rellenar", pt: "Não preenchida" }) }, ...[15, 30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({ value: m, label: `${m} min` }))]} /></Field>
         <Field label={T.rpe}><input type="range" min={1} max={10} value={rpe} onChange={(ev) => setRpe(Number(ev.target.value))} className="w-full" style={{ accentColor: C.primary }} /><p className="text-[11px] mt-1" style={{ color: C.textFaint, ...fontBody }}>{T.hint}</p></Field>
-        <div className="mt-3"><Btn onClick={() => onSave({ minutes, rpe })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
+        <Field label={T.fat}><input type="range" min={1} max={5} value={fat} onChange={(ev) => setFat(Number(ev.target.value))} className="w-full" style={{ accentColor: C.primary }} /></Field>
+        <div className="mt-3"><Btn onClick={() => onSave({ minutes, rpe, fatigue: fat })} full disabled={!(minutes > 0)} icon={Check}>{T.ok}</Btn></div>
         <button type="button" onClick={onSkip} className="w-full text-center text-xs font-semibold mt-3 py-2" style={{ color: C.textFaint, ...fontBody }}>{T.skip}</button>
       </div>
     </div>
